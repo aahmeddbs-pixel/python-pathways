@@ -174,6 +174,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <span class="pill house hidden" id="housePill"></span>
   <button class="iconbtn" id="adminBtn" title="Admin access">🔐 Admin</button>
   <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
+  <button class="iconbtn" id="voiceBtn" title="Spoken encouragement">🗣️ Voice on</button>
   <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
   <span class="pill hidden" id="whoPill"></span>
   <button class="linkbtn hidden" id="switchBtn">Sign out</button>
@@ -755,6 +756,7 @@ $("signBtn").onclick = () => {
   prog = load(progKey(), {lessons:{}});
   syncTeacher("signup", {pin:pin});
   openMap();
+  say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
 };
 $("loginBtn").onclick = () => {
   const err = $("loginErr"), name = $("loginName").value, pin = $("loginPin").value;
@@ -763,6 +765,7 @@ $("loginBtn").onclick = () => {
   if (acc.pin !== pinHash(name, pin)){ err.textContent = "That PIN is not right. Try again, or ask your teacher for help."; $("loginPin").value = ""; return; }
   profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
   openMap();
+  say("Welcome back, " + acc.name.split(" ")[0] + "! Let's keep going. I believe in you!", 300);
   if (acc.last && acc.last.path === acc.path && acc.last.lesson) openLesson(acc.last.lesson, acc.last.step);
 };
 $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
@@ -1061,11 +1064,12 @@ function renderStep(){
         const qd = el("div", "quote", "💬 " + QUOTES[Math.floor(Math.random() * QUOTES.length)]);
         fb.appendChild(qd);
         sfx("correct");
+        if (!(first && housePoints() > hpBefore) && !(first && !eligBefore && mastery(L, s).eligible)) cheer("correct", 450);
         if (first){
           popPoints(POINTS_EACH); updatePills();
           const hpAfter = housePoints();
-          if (hpAfter > hpBefore){ prog.houseLog = prog.houseLog || []; prog.houseLog.push({date:today(), lesson:cur.lesson, total:hpAfter}); saveProg(); setTimeout(() => celebrateHouse(hpAfter), 700); }
-          else if (!eligBefore && mastery(L, s).eligible) setTimeout(() => sfx("unlock"), 600);
+          if (hpAfter > hpBefore){ prog.houseLog = prog.houseLog || []; prog.houseLog.push({date:today(), lesson:cur.lesson, total:hpAfter}); saveProg(); setTimeout(() => celebrateHouse(hpAfter), 700); cheer("house", 1500); }
+          else if (!eligBefore && mastery(L, s).eligible){ setTimeout(() => sfx("unlock"), 600); cheer("unlock", 1300); }
         }
         const mm = mastery(L, s);
         let nxt;
@@ -1081,6 +1085,7 @@ function renderStep(){
         if (r.error) logErr(s, qn, r.error);
         fb.className = "fb no";
         sfx("wrong");
+        cheer((s.tries[qn] || 0) >= 3 ? "stuck" : "wrong", 450);
         fb.textContent = "Not quite yet. " + (r.fail || r.error || "Something went wrong.");
         if (isP && nx && (s.tries[qn] || 0) >= 5){ nx.disabled = false; nx.textContent = "🎲 Try a different question"; }
         consoleOut(con, {out:r.out || "", error:null});
@@ -1411,7 +1416,37 @@ const QUOTES = [
   "Keep shining, coder!", "You make it look easy!", "Every line you write is a step forward.", "Stay curious, stay creative, stay coding!"
 ];
 let actx = null;
-const SND = {sfx:load("pyl_sfx", true), music:false};
+const SND = {sfx:load("pyl_sfx", true), music:false, voice:load("pyl_voice", true)};
+const CHEERS = {
+  correct:["Well done!", "Brilliant!", "You did it!", "Great work!", "Amazing, keep it up!", "Fantastic coding!", "Yes! Nailed it!", "Superstar!", "That's the way!", "You're on fire!"],
+  wrong:["So close!", "Come on, you can do it!", "Nearly there!", "Try again, you've got this!", "Ooh, so close! Have another go.", "Almost! Check your code and try again."],
+  stuck:["I believe in you!", "Don't give up, you're learning!", "Keep going, every mistake helps you learn.", "You can do it! Take your time.", "Come on, I believe in you!"],
+  house:["Fantastic! You earned a house point!", "Woohoo! Another house point for you!"],
+  unlock:["Well done! You can now submit your work.", "Great effort! Submit is unlocked."]
+};
+let voicePick = null;
+function chooseVoice(){
+  try {
+    const vs = speechSynthesis.getVoices().filter(v => /^en/i.test(v.lang));
+    voicePick = vs.find(v => /en-GB/i.test(v.lang) && /female|Samantha|Serena|Kate|Libby|Sonia|Google UK English Female/i.test(v.name))
+      || vs.find(v => /Samantha|Google UK English Female|Google US English|Aria|Jenny/i.test(v.name)) || vs.find(v => /en-GB/i.test(v.lang)) || vs[0] || null;
+  } catch(e){ voicePick = null; }
+}
+try { chooseVoice(); speechSynthesis.onvoiceschanged = chooseVoice; } catch(e){}
+function say(text, delay){
+  if (!SND.voice || !("speechSynthesis" in window)) return;
+  setTimeout(() => {
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      if (voicePick) u.voice = voicePick;
+      u.rate = 1.02; u.pitch = 1.15; u.volume = 1;
+      speechSynthesis.speak(u);
+    } catch(e){}
+  }, delay || 0);
+}
+function cheer(kind, delay){ const a = CHEERS[kind]; if (a) say(a[Math.floor(Math.random() * a.length)], delay); }
+function paintVoice(){ const b = $("voiceBtn"); if (!b) return; b.textContent = SND.voice ? "🗣️ Voice on" : "🤐 Voice off"; b.classList.toggle("off", !SND.voice); }
 function ac(){ if (!actx){ try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } } if (actx.state === "suspended") actx.resume(); return actx; }
 function tone(f, t0, dur, type, vol, dest){
   const a = ac(); if (!a) return;
@@ -1453,6 +1488,8 @@ function paintSound(){
   $("sfxBtn").textContent = SND.sfx ? "🔊" : "🔇"; $("sfxBtn").classList.toggle("off", !SND.sfx);
   $("musicBtn").textContent = SND.music ? "🎵 Music on" : "🎵 Music off"; $("musicBtn").classList.toggle("off", !SND.music);
 }
+$("voiceBtn").onclick = () => { SND.voice = !SND.voice; store("pyl_voice", SND.voice); paintVoice(); if (SND.voice) say("Voice is on. You can do it!"); };
+paintVoice();
 $("sfxBtn").onclick = () => { SND.sfx = !SND.sfx; store("pyl_sfx", SND.sfx); paintSound(); if (SND.sfx) sfx("coin"); };
 $("musicBtn").onclick = () => { SND.music = !SND.music; if (SND.music) startMusic(); else stopMusic(); paintSound(); };
 paintSound();
