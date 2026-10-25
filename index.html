@@ -142,6 +142,15 @@ input.t:focus{border-color:var(--blue)}
 .lockbox ul{list-style:none;margin-top:6px}
 .lockbox li{margin:4px 0}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.tabs{display:flex;gap:6px;background:#eef1f7;border-radius:12px;padding:4px;margin-bottom:16px}
+.tab{flex:1;border:none;background:transparent;border-radius:9px;padding:10px;font-weight:700;color:var(--ink2)}
+.tab.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
+.btn.full{width:100%;justify-content:center;margin-top:16px}
+select.t{background:#fff;appearance:auto}
+input.pin{letter-spacing:.4em;font-weight:700}
+.linkbtn2{background:none;border:none;color:var(--red);font-weight:700;text-decoration:underline;font-size:inherit;padding:0}
+.maptools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.maptools select{width:auto;padding:6px 10px;font-size:.95rem}
 .chip{border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 16px;font-weight:700}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .housebox{background:#fff;border:1px solid var(--line);border-left:5px solid var(--red);border-radius:12px;padding:10px 14px;margin-top:10px;box-shadow:var(--shadow)}
@@ -166,7 +175,7 @@ input.t:focus{border-color:var(--blue)}
   <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
   <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
   <span class="pill hidden" id="whoPill"></span>
-  <button class="linkbtn hidden" id="switchBtn">Switch student</button>
+  <button class="linkbtn hidden" id="switchBtn">Sign out</button>
 </div></div>
 
 <!-- SIGN IN -->
@@ -178,23 +187,40 @@ input.t:focus{border-color:var(--blue)}
       <div class="snip">print("Hello, World!")<br><span style="opacity:.6"># Hello, World!</span></div>
     </div>
     <div class="card">
-      <h2>Sign in to start</h2>
-      <label class="f" for="inName">Your full name (first and last)</label>
-      <input class="t" id="inName" autocomplete="off" maxlength="40" placeholder="e.g. Sara Khan">
-      <label class="f">Your grade</label>
-      <div class="chips" id="gradeChips"><button class="chip" data-g="6">Grade 6</button><button class="chip" data-g="7">Grade 7</button><button class="chip" data-g="8">Grade 8</button></div>
-      <label class="f" for="inClass">Your class</label>
-      <input class="t" id="inClass" autocomplete="off" maxlength="20" placeholder="e.g. 7B">
-      <label class="f">Your teacher</label>
-      <div class="chips" id="teacherChips"><button class="chip" data-t="Mr. Ahmed">Mr. Ahmed</button><button class="chip" data-t="Mr. French">Mr. French</button><button class="chip" data-t="Ms. Abdelaziz">Ms. Abdelaziz</button></div>
-      <label class="f">Your pathway</label>
-      <div class="paths" id="paths">
-        <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never used Python before? Start here: print, variables, decisions, loops. 15 exercises = 1 House Point.</small></span></button>
-        <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles. 10 exercises = 1 House Point.</small></span></button>
-        <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes. 5 exercises = 1 House Point.</small></span></button>
+      <div class="tabs"><button class="tab on" data-tab="in">Sign in</button><button class="tab" data-tab="up">New here? Sign up</button></div>
+      <div id="tabIn">
+        <h2>Welcome back! 👋</h2>
+        <p class="muted" style="margin-top:4px">Sign in to carry on exactly where you stopped.</p>
+        <label class="f" for="loginName">Your full name</label>
+        <input class="t" id="loginName" autocomplete="off" maxlength="40" placeholder="e.g. Sara Khan">
+        <label class="f" for="loginPin">Your 4-digit PIN</label>
+        <input class="t pin" id="loginPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
+        <div class="err" id="loginErr"></div>
+        <button class="btn lg full" id="loginBtn">Continue where I stopped →</button>
+        <p class="muted" style="margin-top:14px;font-size:.9rem">Using a different computer? <button class="linkbtn2" id="importBtn">Load my progress file</button><input type="file" id="importFile" accept=".txt,.json" class="hidden"></p>
+        <div id="importMsg" class="muted" style="font-weight:700;margin-top:6px"></div>
       </div>
-      <div class="err" id="signErr"></div>
-      <button class="btn lg" id="signBtn" style="margin-top:16px;width:100%;justify-content:center">Let's go →</button>
+      <div id="tabUp" class="hidden">
+        <h2>Create your account</h2>
+        <label class="f" for="inName">Your full name (first and last)</label>
+        <input class="t" id="inName" autocomplete="off" maxlength="40" placeholder="e.g. Sara Khan">
+        <label class="f">Your grade</label>
+        <div class="chips" id="gradeChips"><button class="chip" data-g="6">Grade 6</button><button class="chip" data-g="7">Grade 7</button><button class="chip" data-g="8">Grade 8</button></div>
+        <label class="f" for="inClass">Your class</label>
+        <input class="t" id="inClass" autocomplete="off" maxlength="20" placeholder="e.g. 7B">
+        <label class="f" for="inTeacher">Your teacher</label>
+        <select class="t" id="inTeacher"><option value="">Choose your teacher…</option><option>Mr. Ahmed</option><option>Mr. French</option><option>Ms. Abdelaziz</option></select>
+        <label class="f">Your level</label>
+        <div class="paths" id="paths">
+          <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never used Python before? Start here: print, variables, decisions, loops. 15 exercises = 1 House Point.</small></span></button>
+          <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles. 10 exercises = 1 House Point.</small></span></button>
+          <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes. 5 exercises = 1 House Point.</small></span></button>
+        </div>
+        <label class="f" for="inPin">Choose a 4-digit PIN (keep it secret!)</label>
+        <div style="display:flex;gap:10px"><input class="t pin" id="inPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="PIN"><input class="t pin" id="inPin2" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Type it again"></div>
+        <div class="err" id="signErr"></div>
+        <button class="btn lg full" id="signBtn">Create my account and start →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -210,6 +236,8 @@ input.t:focus{border-color:var(--blue)}
     </div>
   </div>
   <div class="housebox" id="mapHouse" style="margin-bottom:14px"></div>
+  <div class="maptools"><label class="muted" style="font-weight:700" for="levelSel">Level:</label><select class="t" id="levelSel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+    <button class="btn ghost" id="exportBtn">💾 Save my progress file</button><span class="muted" style="font-size:.88rem">Use this to move to another computer.</span></div>
   <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
   <div class="lessons" id="lessonList"></div>
   <p class="foot">Your work is saved on this device and sent to your teacher when you submit.</p>
@@ -652,7 +680,7 @@ async function runJob(job, ms){
 startWorker();
 
 /* ---------------- State ---------------- */
-let profile = load("pyl_profile", null);
+let profile = null;
 let prog = null; // progress for current student + pathway
 let cur = {lesson:null, step:0};
 let clockTimer = null;
@@ -679,9 +707,15 @@ function mastery(L, s){
 function newPractice(n, s){
   const gens = GEN[profile.path][n - 1];
   const last = s.prac.cur ? s.prac.cur.gid : (s.prac.done.length ? s.prac.done[s.prac.done.length - 1].gid : null);
-  let g = gens[Math.floor(Math.random() * gens.length)];
-  if (gens.length > 1){ let guard = 0; while (g.id === last && guard++ < 10) g = gens[Math.floor(Math.random() * gens.length)]; }
-  const q = g.q(g.make());
+  prog.seen = prog.seen || [];
+  let g, q, key, guard = 0;
+  do {
+    g = gens[Math.floor(Math.random() * gens.length)];
+    if (gens.length > 1 && g.id === last && guard < 5){ guard++; continue; }
+    q = g.q(g.make()); key = g.id + "|" + q.task;
+    guard++;
+  } while ((!q || prog.seen.indexOf(key) >= 0) && guard < 60);
+  prog.seen.push(key); if (prog.seen.length > 3000) prog.seen.shift();
   if (s.prac.cur && !s.solved[s.prac.cur.id]){ delete s.code[s.prac.cur.id]; }
   s.prac.count++;
   s.prac.cur = Object.assign({gid:g.id, id:"p" + s.prac.count}, q);
@@ -689,35 +723,77 @@ function newPractice(n, s){
   return s.prac.cur;
 }
 
-/* ---------------- Sign in ---------------- */
-let chosen = profile ? profile.path : null;
-let chosenGrade = profile ? profile.grade : null, chosenTeacher = profile ? profile.teacher : null;
-document.querySelectorAll("#gradeChips .chip").forEach(b => {
-  if (b.dataset.g === chosenGrade) b.classList.add("on");
-  b.onclick = () => { chosenGrade = b.dataset.g; document.querySelectorAll("#gradeChips .chip").forEach(x => x.classList.toggle("on", x === b)); };
+/* ---------------- Accounts: sign up once, then sign in with name + PIN ---------------- */
+const ACC_KEY = "pyl_accounts";
+function accounts(){ return load(ACC_KEY, {}); }
+function saveAccount(a){ const all = accounts(); all[slug(a.name)] = a; store(ACC_KEY, all); }
+function pinHash(name, pin){ let h = 5381; const t = slug(name) + "|" + pin + "|sisd-python"; for (const ch of t) h = ((h * 33) ^ ch.charCodeAt(0)) >>> 0; return h.toString(36); }
+function niceName(n){ return n.trim().replace(/\s+/g, " ").split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" "); }
+function rememberPos(){ if (!profile || !cur.lesson) return; profile.last = {path:profile.path, lesson:cur.lesson, step:cur.step, at:Date.now()}; saveAccount(profile); }
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+  $("tabIn").classList.toggle("hidden", t.dataset.tab !== "in"); $("tabUp").classList.toggle("hidden", t.dataset.tab !== "up");
 });
-document.querySelectorAll("#teacherChips .chip").forEach(b => {
-  if (b.dataset.t === chosenTeacher) b.classList.add("on");
-  b.onclick = () => { chosenTeacher = b.dataset.t; document.querySelectorAll("#teacherChips .chip").forEach(x => x.classList.toggle("on", x === b)); };
-});
-document.querySelectorAll(".path").forEach(b => {
-  if (b.dataset.p === chosen) b.classList.add("on");
-  b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); };
-});
-if (profile){ $("inName").value = profile.name; $("inClass").value = profile.cls; }
+let chosen = null, chosenGrade = null;
+document.querySelectorAll("#gradeChips .chip").forEach(b => b.onclick = () => { chosenGrade = b.dataset.g; document.querySelectorAll("#gradeChips .chip").forEach(x => x.classList.toggle("on", x === b)); });
+document.querySelectorAll(".path").forEach(b => b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); });
+["inPin", "inPin2", "loginPin"].forEach(id => $(id).addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); }));
 $("signBtn").onclick = () => {
-  const name = $("inName").value.trim().replace(/\s+/g, " "), cls = $("inClass").value.trim();
-  if (name.split(" ").length < 2){ $("signErr").textContent = "Please type your first and last name."; return; }
-  if (!chosenGrade){ $("signErr").textContent = "Please choose your grade."; return; }
-  if (!cls){ $("signErr").textContent = "Please type your class."; return; }
-  if (!chosenTeacher){ $("signErr").textContent = "Please choose your teacher."; return; }
-  if (!chosen){ $("signErr").textContent = "Please choose your pathway."; return; }
-  const nice = name.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  profile = {name:nice, cls:cls.toUpperCase(), grade:chosenGrade, teacher:chosenTeacher, path:chosen};
-  store("pyl_profile", profile);
+  const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), cls = $("inClass").value.trim(), teacher = $("inTeacher").value, pin = $("inPin").value;
+  if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
+  if (!chosenGrade){ err.textContent = "Please choose your grade."; return; }
+  if (!cls){ err.textContent = "Please type your class."; return; }
+  if (!teacher){ err.textContent = "Please choose your teacher from the list."; return; }
+  if (!chosen){ err.textContent = "Please choose your level."; return; }
+  if (!/^\d{4}$/.test(pin)){ err.textContent = "Your PIN must be exactly 4 numbers."; return; }
+  if (pin !== $("inPin2").value){ err.textContent = "The two PINs don't match. Please type them again."; return; }
+  if (accounts()[slug(name)]){ err.textContent = "There is already an account called " + niceName(name) + " on this computer. Please use Sign in instead."; return; }
+  profile = {name:niceName(name), cls:cls.toUpperCase(), grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
+  saveAccount(profile); store("pyl_lastName", profile.name);
   openMap();
 };
-$("switchBtn").onclick = () => { stopClock(); show("signin"); $("inName").value = ""; $("inClass").value = ""; chosenGrade = chosenTeacher = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on")); };
+$("loginBtn").onclick = () => {
+  const err = $("loginErr"), name = $("loginName").value, pin = $("loginPin").value;
+  const acc = accounts()[slug(name)];
+  if (!acc){ err.textContent = "No account with that name on this computer. Check the spelling, sign up, or load your progress file."; return; }
+  if (acc.pin !== pinHash(name, pin)){ err.textContent = "That PIN is not right. Try again, or ask your teacher for help."; $("loginPin").value = ""; return; }
+  profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
+  openMap();
+  if (acc.last && acc.last.path === acc.path && acc.last.lesson) openLesson(acc.last.lesson, acc.last.step);
+};
+$("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+$("switchBtn").onclick = () => {
+  saveCode(); rememberPos(); stopClock(); profile = null; prog = null; cur = {lesson:null, step:0};
+  $("loginName").value = load("pyl_lastName", ""); $("loginPin").value = "";
+  ["inName", "inClass", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
+  chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on"));
+  document.querySelector('.tab[data-tab="in"]').click();
+  show("signin");
+};
+$("levelSel").onchange = e => { profile.path = e.target.value; saveAccount(profile); openMap(); };
+$("exportBtn").onclick = () => {
+  const data = {v:1, account:profile, progress:{}};
+  Object.keys(PATHS).forEach(p => { const v = load("pyl_" + p + "_" + slug(profile.name), null); if (v) data.progress[p] = v; });
+  const blob = new Blob([JSON.stringify(data)], {type:"text/plain"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "python-progress-" + slug(profile.name).replace(/ /g, "-") + ".txt";
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+};
+$("importBtn").onclick = () => $("importFile").click();
+$("importFile").onchange = e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if (!d.account || !d.account.name || !d.account.pin) throw new Error("bad");
+      saveAccount(d.account);
+      Object.keys(d.progress || {}).forEach(p => { if (PATHS[p]) store("pyl_" + p + "_" + slug(d.account.name), d.progress[p]); });
+      $("loginName").value = d.account.name; $("importMsg").textContent = "✅ Progress loaded for " + d.account.name + ". Now type your PIN and sign in.";
+    } catch(x){ $("importMsg").textContent = "⚠️ That file isn't a Python Pathways progress file."; }
+    e.target.value = "";
+  };
+  r.readAsText(f);
+};
 
 function show(id){
   ["signin", "map", "lesson"].forEach(s => $(s).classList.toggle("hidden", s !== id));
@@ -754,6 +830,7 @@ function openMap(){
   prog = load(progKey(), {lessons:{}});
   const P = PATHS[profile.path];
   setGradeTheme(profile.grade || "7");
+  $("levelSel").value = profile.path;
   $("whoPill").textContent = "👤 " + profile.name + " • " + profile.cls + " • " + (profile.teacher || "");
   updatePills();
   $("mapBadge").textContent = P.l; $("mapBadge").style.background = P.c;
@@ -781,14 +858,14 @@ function openMap(){
 $("backMap").onclick = () => { saveCode(); stopClock(); openMap(); };
 
 /* ---------------- Lesson ---------------- */
-function openLesson(n){
+function openLesson(n, resumeStep){
   cur.lesson = n;
   const L = DATA.lessons[profile.path][n - 1], s = lessonState(n), d = today();
   s.days[d] = s.days[d] || {start:Date.now(), activeMs:0};
   saveProg();
   $("lsNum").textContent = "LESSON " + n + " OF 10 • " + PATHS[profile.path].name.toUpperCase();
   $("lsTitle").textContent = L.title;
-  cur.step = submittedToday(s) ? SUBMIT : firstOpenStep(L, s);
+  cur.step = (resumeStep != null && resumeStep >= 0 && resumeStep <= SUBMIT) ? resumeStep : (submittedToday(s) ? SUBMIT : firstOpenStep(L, s));
   show("lesson");
   $("clockPill").classList.remove("hidden");
   startClock();
@@ -890,6 +967,7 @@ function consoleOut(box, r){
 
 function renderStep(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), body = $("stepBody");
+  rememberPos();
   body.innerHTML = ""; ed = null;
   if (cur.step === 0){
     body.innerHTML = '<h2>📖 Learn</h2><div class="goalbox">🎯 Learning goal: ' + L.goal + '</div><div class="learn">' + L.learn + '</div>';
@@ -945,7 +1023,11 @@ function renderStep(){
     const fb = el("div", ""); body.appendChild(fb);
     let nx = null;
     const con = el("div", "console", '<span class="dim">Press Run to test your code, or Check when you think it is right.</span>'); body.appendChild(con);
-    if (s.solved[qn]){ fb.className = "fb ok"; fb.textContent = "✅ You've already solved this one. Great work!"; }
+    if (s.solved[qn]){
+      fb.className = "fb ok"; fb.textContent = "✅ Completed! Exercises can't be redone. Your solution is shown above.";
+      ed.ta.readOnly = true; ed.wrap.style.opacity = ".85"; act.style.display = "none";
+      if (ib) ib.style.display = "none";
+    }
     hb.onclick = () => {
       if (totalPoints() < HINT_COST || (s.hints[qn] || 0) >= Q.hints.length) return;
       prog.spent = (prog.spent || 0) + HINT_COST; s.hints[qn] = (s.hints[qn] || 0) + 1;
@@ -1289,7 +1371,8 @@ function celebrateHouse(n){
 }
 
 /* ---------------- Boot ---------------- */
-if (profile){ $("inName").value = profile.name; $("inClass").value = profile.cls; }
+$("loginName").value = load("pyl_lastName", "");
+if (!Object.keys(accounts()).length) document.querySelector('.tab[data-tab="up"]').click();
 show("signin");
 })();
 </script>
