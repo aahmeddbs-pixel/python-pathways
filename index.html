@@ -210,7 +210,7 @@ input.t:focus{border-color:var(--blue)}
     </div>
   </div>
   <div class="housebox" id="mapHouse" style="margin-bottom:14px"></div>
-  <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice → Submit</b>. Submit unlocks when you've done enough work.</p>
+  <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
   <div class="lessons" id="lessonList"></div>
   <p class="foot">Your work is saved on this device and sent to your teacher when you submit.</p>
 </div>
@@ -1087,7 +1087,7 @@ function renderSubmit(body, L, s){
   const ph = s.prac.done.filter(x => x.ok).reduce((a, x) => a + (x.hints || 0), 0);
   rows += '<tr><td><b>∞</b> Practice questions</td><td>' + (m.prac ? "✅ " + m.prac + " solved" : "⬜ None yet") + (s.prac.skipped ? " (" + s.prac.skipped + " swapped)" : "") + '</td><td>' + ph + '</td><td></td></tr></table>';
   body.insertAdjacentHTML("beforeend", rows);
-  body.insertAdjacentHTML("beforeend", '<p><b>Skill level: ' + m.level + '</b> • ' + m.total + ' questions solved • Time today: ' + fmtMin(day ? day.activeMs : 0) + '</p>');
+  body.insertAdjacentHTML("beforeend", '<p><b>Skill level: ' + m.level + '</b> • ' + m.total + ' question' + (m.total === 1 ? '' : 's') + ' solved in this lesson • Time today: ' + fmtMin(day ? day.activeMs : 0) + '</p>');
   const g = el("div", "fbgrid");
   g.innerHTML = '<div class="col w"><h3>🌟 What went well</h3><ul>' + fbk.well.map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div><div class="col i"><h3>🚀 Next steps</h3><ul>' + (fbk.next.length ? fbk.next : ["Keep up the great work!"]).map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div>';
   body.appendChild(g);
