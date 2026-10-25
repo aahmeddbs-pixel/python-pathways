@@ -84,6 +84,12 @@ td .em{color:var(--muted);font-size:.82rem}
   <div class="card">
     <h1>Student progress</h1>
     <p class="muted" style="margin-top:4px">Load your student data: in your Google Form open <b>Responses → ⋮ → Download responses (.csv)</b>, then drop the downloaded file here as it is. You can also add students' <b>progress files</b>. Everything is processed on this computer only and never uploaded.</p>
+    <div style="background:#f7f8fb;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px">
+      <b>🔗 Live data from your Google Sheet</b>
+      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><input class="t" id="sheetLink" placeholder="Paste your Google Sheet link (docs.google.com/spreadsheets/d/…)" style="flex:1;min-width:260px"><button class="btn" id="saveSheet">Save</button><button class="btn ghost" id="refreshBtn">🔄 Refresh</button></div>
+      <div class="small" id="sheetState" style="margin-top:6px"></div>
+    </div>
+    <p class="muted small" style="margin-top:12px">Or load a downloaded file:</p>
     <div class="drop" id="drop">
       <p style="font-weight:700">Drop the responses file here (.zip or .csv), plus any student progress .txt files</p>
       <p class="muted small" style="margin:6px 0 12px">or</p>
@@ -93,6 +99,10 @@ td .em{color:var(--muted);font-size:.82rem}
     <div id="loadMsg"></div>
   </div>
 
+  <div class="card hidden" id="signupsCard" style="margin-top:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="signupsHead" style="margin:0"></h2><div style="display:flex;gap:8px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div></div>
+    <div class="tblwrap" style="margin-top:10px"><table id="signupsTbl"></table></div>
+  </div>
   <div id="dash" class="hidden">
     <div class="stats" id="stats"></div>
     <div class="filters">
@@ -142,7 +152,7 @@ function showGate(){
   $("pw2wrap").classList.add("hidden"); $("pw1").value = ""; $("gateErr").textContent = "";
   setTimeout(() => $("pw1").focus(), 50);
 }
-function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); }
+function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); paintSheet(); liveLoad(); }
 $("gateBtn").onclick = () => {
   if (h($("pw1").value.trim()) !== ADMIN_HASH){ $("gateErr").textContent = "Wrong code."; $("pw1").value = ""; return; }
   try { sessionStorage.setItem("pyl_admin_ok", ADMIN_HASH); } catch(e){}
@@ -154,6 +164,7 @@ $("lockBtn").onclick = () => { try { sessionStorage.removeItem("pyl_admin_ok"); 
 
 /* ---------------- Loading data ---------------- */
 let STUDENTS = {};  // key -> student
+let SIGNUPS = {};   // email|time -> sign-up record
 function parseCSV(text){
   const rows = []; let row = [], f = "", q = false;
   text = text.replace(/^﻿/, "");
@@ -229,7 +240,7 @@ async function unzipCsvs(buf){
   }
   return out;
 }
-async function loadFiles(list){
+async function loadFiles(list, opts){
   let rows = 0, files = 0, bad = 0;
   const expanded = [];
   for (const f of list){
@@ -249,6 +260,7 @@ async function loadFiles(list){
           if (!snap || !snap.acct) { bad++; return; }
           const when = Date.parse(snap.at) || Date.parse(r[ci.ts]) || 0;
           upsert(snap.acct, snap, snap.pin || null, when); rows++;
+          if (snap.type === "signup"){ const A = snap.acct; SIGNUPS[(A.email || slug(A.name)) + "|" + when] = {when, name:A.name, email:A.email || "", grade:A.grade, teacher:A.teacher, path:A.path, pin:snap.pin || ""}; }
         });
       } else {
         const d = JSON.parse(text);
@@ -259,8 +271,8 @@ async function loadFiles(list){
   }
   const n = Object.keys(STUDENTS).length;
   $("loadMsg").className = n ? "ok" : "note";
-  $("loadMsg").textContent = n ? "✅ Loaded " + rows + " log rows" + (files ? " and " + files + " progress files" : "") + ": " + n + " students." + (bad ? " (" + bad + " rows skipped)" : "") : "⚠️ No student data found. Check you chose the Google Sheet CSV or a progress file.";
-  buildFilters(); render();
+  $("loadMsg").textContent = n ? (opts && opts.live ? "🔄 Live data updated at " + new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) + ". " : "✅ ") + "Loaded " + rows + " log rows" + (files ? " and " + files + " progress files" : "") + ": " + n + " students." + (bad ? " (" + bad + " rows skipped)" : "") : "⚠️ No student data found. Check you chose the Google Sheet CSV or a progress file.";
+  buildFilters(); render(); renderSignups();
 }
 $("pickBtn").onclick = () => $("files").click();
 $("files").onchange = e => { loadFiles([...e.target.files]); e.target.value = ""; };
@@ -268,7 +280,56 @@ const drop = $("drop");
 ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => loadFiles([...e.dataTransfer.files]));
-$("clearBtn").onclick = () => { STUDENTS = {}; $("loadMsg").textContent = ""; $("loadMsg").className = ""; render(); };
+$("clearBtn").onclick = () => { STUDENTS = {}; SIGNUPS = {}; $("loadMsg").textContent = ""; $("loadMsg").className = ""; render(); renderSignups(); };
+
+/* ---------------- Live data from the Google Sheet linked to the Form ---------------- */
+const SHEET_KEY = "pyl_admin_sheet", SEEN_KEY = "pyl_admin_seen";
+function sheetId(link){ const m = String(link || "").match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]{20,})/); return m ? m[1] : null; }
+function paintSheet(){
+  const link = load(SHEET_KEY, ""), id = sheetId(link);
+  $("sheetLink").value = link || "";
+  $("sheetState").innerHTML = id ? "🟢 Connected: new sign-ups and progress load automatically when you log in." : "⚪ Not connected yet. Paste your Google Sheet link to load data automatically.";
+  $("refreshBtn").disabled = !id;
+}
+async function liveLoad(){
+  const id = sheetId(load(SHEET_KEY, "")); if (!id) return;
+  $("loadMsg").className = "note"; $("loadMsg").textContent = "🔄 Loading live data from your Google Sheet…";
+  const urls = ["https://docs.google.com/spreadsheets/d/" + id + "/gviz/tq?tqx=out:csv&headers=1&t=" + Date.now(), "https://docs.google.com/spreadsheets/d/" + id + "/export?format=csv&t=" + Date.now()];
+  for (const u of urls){
+    try {
+      const res = await fetch(u, {cache:"no-store"}); if (!res.ok) continue;
+      const text = await res.text(); if (/<html/i.test(text.slice(0, 300))) continue;
+      STUDENTS = {}; SIGNUPS = {};
+      await loadFiles([{name:"live.csv", text:async () => text}], {live:true});
+      return;
+    } catch(e){}
+  }
+  $("loadMsg").className = "note";
+  $("loadMsg").innerHTML = "⚠️ Couldn't read the Google Sheet. In the Sheet, press <b>Share</b> and set <b>General access</b> to <b>Anyone with the link: Viewer</b>, then press Refresh. (You can still drop a downloaded file below.)";
+}
+$("saveSheet").onclick = () => {
+  const v = $("sheetLink").value.trim();
+  if (v && !sheetId(v)){ $("sheetState").innerHTML = "⚠️ That doesn't look like a Google Sheets link. It should contain docs.google.com/spreadsheets/d/…"; return; }
+  store(SHEET_KEY, v); paintSheet(); if (v) liveLoad();
+};
+$("refreshBtn").onclick = liveLoad;
+function renderSignups(){
+  const list = Object.values(SIGNUPS).sort((x, y) => y.when - x.when);
+  const seen = load(SEEN_KEY, 0), fresh = list.filter(x => x.when > seen).length;
+  $("signupsCard").classList.toggle("hidden", !list.length);
+  $("signupsHead").innerHTML = "🆕 Sign-ups <span class='muted small'>(" + list.length + " total" + (fresh ? ", <b style='color:var(--red)'>" + fresh + " new since your last visit</b>" : "") + ")</span>";
+  let h = "<tr><th>Signed up</th><th>Student</th><th>School email</th><th>Grade</th><th>Teacher</th><th>Level</th><th>PIN</th></tr>";
+  list.slice(0, showAllSignups ? list.length : 15).forEach(x => {
+    h += "<tr" + (x.when > seen ? " style='background:#fff7f8'" : "") + "><td>" + (x.when > seen ? "<span class='tag i'>NEW</span> " : "") + esc(new Date(x.when).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})) + "</td><td><b>" + esc(x.name) + "</b></td><td>" + esc(x.email) + "</td><td>" + esc(x.grade ? "Grade " + x.grade : "") + "</td><td>" + esc(x.teacher || "") + "</td><td>" + esc(PATH_NAMES[x.path] || x.path || "") + "</td><td><button class='pin' data-sp='" + x.when + "'>" + (showPins ? esc(x.pin) : "••••") + "</button></td></tr>";
+  });
+  $("signupsTbl").innerHTML = h;
+  $("signupsTbl").querySelectorAll("[data-sp]").forEach(b => b.onclick = () => { const x = list.find(y => String(y.when) === b.dataset.sp); b.textContent = b.textContent === "••••" ? x.pin : "••••"; });
+  $("moreSignups").classList.toggle("hidden", list.length <= 15);
+  $("moreSignups").textContent = showAllSignups ? "Show fewer" : "Show all " + list.length;
+}
+let showAllSignups = false;
+$("moreSignups").onclick = () => { showAllSignups = !showAllSignups; renderSignups(); };
+$("seenBtn").onclick = () => { store(SEEN_KEY, Date.now()); renderSignups(); };
 
 /* ---------------- Analysis ---------------- */
 function analyse(st){
@@ -343,7 +404,7 @@ function buildFilters(){
 ["q", "fTeacher", "fGrade", "fClass", "fLevel"].forEach(id => $(id).addEventListener("input", render));
 $("mailMode").value = load("pyl_admin_mail", "gmail");
 $("mailMode").onchange = e => store("pyl_admin_mail", e.target.value);
-$("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = showPins ? "🙈 Hide PINs" : "👁 Show all PINs"; render(); };
+$("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = showPins ? "🙈 Hide PINs" : "👁 Show all PINs"; render(); renderSignups(); };
 function render(){
   const L = list();
   $("dash").classList.toggle("hidden", !Object.keys(STUDENTS).length);
