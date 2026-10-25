@@ -64,15 +64,15 @@ td .em{color:var(--muted);font-size:.82rem}
 </style>
 </head>
 <body>
-<div class="top"><div class="in"><span class="logo">SISD</span><span class="title">Python Pathways · Admin</span><span id="who" class="small"></span><button class="btn ghost sm hidden" id="lockBtn">🔒 Lock</button></div></div>
+<div class="top"><div class="in"><span class="logo">SISD</span><span class="title">Python Pathways · Admin</span><a href="./" style="color:#C9D3E6;font-weight:700;font-size:.9rem">← Student site</a><span id="who" class="small"></span><button class="btn ghost sm hidden" id="lockBtn">🔒 Lock</button></div></div>
 
 <!-- GATE -->
 <div class="wrap hidden" id="gate">
   <div class="card gate">
     <h2 id="gateTitle">Admin sign in</h2>
     <p class="muted small" id="gateMsg"></p>
-    <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin password</label>
-    <input class="t" id="pw1" type="password" autocomplete="off">
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin code</label>
+    <input class="t" id="pw1" type="password" inputmode="numeric" autocomplete="off">
     <div id="pw2wrap" class="hidden"><label style="display:block;font-weight:700;margin:12px 0 6px" for="pw2">Type it again</label><input class="t" id="pw2" type="password" autocomplete="off"></div>
     <div class="err" id="gateErr"></div>
     <button class="btn" id="gateBtn" style="margin-top:14px;width:100%;justify-content:center">Continue</button>
@@ -134,27 +134,23 @@ const fmtAvg = ms => { if (!ms) return "–"; const s = Math.round(ms / 1000); r
 
 /* ---------------- Admin password (stored only on this computer) ---------------- */
 function h(pw){ let x = 5381; for (const ch of "sisd-admin|" + pw) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(36); }
-const PW_KEY = "pyl_admin_pw";
+const ADMIN_HASH = "1fou3y0";
 function showGate(){
-  const has = !!load(PW_KEY, null);
+  try { if (sessionStorage.getItem("pyl_admin_ok") === ADMIN_HASH){ openApp(); return; } } catch(e){}
   $("gate").classList.remove("hidden"); $("app").classList.add("hidden"); $("lockBtn").classList.add("hidden");
-  $("gateTitle").textContent = has ? "Admin sign in" : "Set up admin access";
-  $("gateMsg").textContent = has ? "Enter the admin password for this computer." : "First time on this computer: choose an admin password (at least 6 characters).";
-  $("pw2wrap").classList.toggle("hidden", has); $("pw1").value = ""; $("pw2").value = ""; $("gateErr").textContent = "";
+  $("gateTitle").textContent = "Admin access"; $("gateMsg").textContent = "Enter the admin code.";
+  $("pw2wrap").classList.add("hidden"); $("pw1").value = ""; $("gateErr").textContent = "";
   setTimeout(() => $("pw1").focus(), 50);
 }
+function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); }
 $("gateBtn").onclick = () => {
-  const has = load(PW_KEY, null), p = $("pw1").value;
-  if (!has){
-    if (p.length < 6){ $("gateErr").textContent = "Use at least 6 characters."; return; }
-    if (p !== $("pw2").value){ $("gateErr").textContent = "The passwords don't match."; return; }
-    store(PW_KEY, h(p));
-  } else if (h(p) !== has){ $("gateErr").textContent = "Wrong password."; return; }
-  $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden");
+  if (h($("pw1").value.trim()) !== ADMIN_HASH){ $("gateErr").textContent = "Wrong code."; $("pw1").value = ""; return; }
+  try { sessionStorage.setItem("pyl_admin_ok", ADMIN_HASH); } catch(e){}
+  openApp();
 };
 $("pw1").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
 $("pw2").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
-$("lockBtn").onclick = () => { STUDENTS = {}; render(); showGate(); };
+$("lockBtn").onclick = () => { try { sessionStorage.removeItem("pyl_admin_ok"); } catch(e){} STUDENTS = {}; render(); showGate(); };
 
 /* ---------------- Loading data ---------------- */
 let STUDENTS = {};  // key -> student

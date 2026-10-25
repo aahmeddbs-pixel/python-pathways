@@ -172,6 +172,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <span class="pill hidden" id="clockPill"></span>
   <span class="pill hidden" id="ptsPill"></span>
   <span class="pill house hidden" id="housePill"></span>
+  <button class="iconbtn" id="adminBtn" title="Admin access">🔐 Admin</button>
   <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
   <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
   <span class="pill hidden" id="whoPill"></span>
@@ -1471,6 +1472,25 @@ function celebrateHouse(n){
   bg.querySelector("#hpLater").onclick = () => { bg.remove(); renderSteps(); };
   document.body.appendChild(bg);
 }
+
+/* ---------------- Admin access (teachers) ---------------- */
+const ADMIN_HASH = "1fou3y0";
+function adminHash(pw){ let x = 5381; for (const ch of "sisd-admin|" + pw) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(36); }
+$("adminBtn").onclick = () => {
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal"><div class="big">🔐</div><h2 style="margin-top:8px">Admin access</h2><p class="muted" style="margin-top:6px">For teachers only.</p>' +
+    '<input class="t pin" id="adminCode" type="password" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="Code" style="margin-top:14px;text-align:center">' +
+    '<div class="err" id="adminErr"></div><div style="display:flex;gap:8px;justify-content:center;margin-top:14px"><button class="btn ghost" id="adminCancel">Cancel</button><button class="btn" id="adminGo">Open admin →</button></div></div>';
+  document.body.appendChild(bg);
+  const go = () => {
+    if (adminHash($("adminCode").value.trim()) !== ADMIN_HASH){ $("adminErr").textContent = "Wrong code."; $("adminCode").value = ""; return; }
+    try { sessionStorage.setItem("pyl_admin_ok", ADMIN_HASH); } catch(e){}
+    window.location.href = "admin.html";
+  };
+  $("adminGo").onclick = go; $("adminCancel").onclick = () => bg.remove();
+  $("adminCode").addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+  setTimeout(() => $("adminCode").focus(), 50);
+};
 
 /* ---------------- Boot ---------------- */
 $("loginName").value = load("pyl_lastName", "");
