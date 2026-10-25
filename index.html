@@ -5,28 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Python Pathways</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f5f7fb; --card:#fff; --ink:#0b2149; --ink2:#3b4a6b; --muted:#6b7794; --line:#e1e6f0;
-  --blue:#1865f2; --blue-d:#0b4fd1; --blue-l:#e8f0fe; --green:#00a60e; --green-l:#e5f7e7; --red:#d92916; --red-l:#fdeceb;
-  --amber:#ffb100; --amber-l:#fff6df; --purple:#7854f7; --code-bg:#0f1830; --code-ink:#e6edf7; --gutter:#5b6b8c;
-  --b:#1865f2; --i:#7854f7; --a:#e35d0e;
+  --bg:#f4f6fa; --card:#fff; --ink:#1B2D4E; --ink2:#3d4d6b; --muted:#6b7590; --line:#e0e5ee;
+  --blue:#1B2D4E; --blue-d:#101d35; --blue-l:#e8ecf4; --green:#13a05a; --green-l:#e4f6ec; --red:#DC2B3E; --red-d:#b81f30; --red-l:#fdecee;
+  --amber:#f5b000; --amber-l:#fff6dc; --purple:#DC2B3E; --code-bg:#13213b; --code-ink:#e8edf6; --gutter:#61708f;
+  --b:#1B2D4E; --i:#DC2B3E; --a:#b8862b;
   --shadow:0 2px 8px rgba(11,33,73,.08); --r:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg)}
-body{font-family:'Nunito',system-ui,sans-serif;color:var(--ink);font-size:16px;line-height:1.5;min-height:100vh}
+body{font-family:Arial,Helvetica,sans-serif;color:var(--ink);font-size:16px;line-height:1.5;min-height:100vh}
 button{font:inherit;cursor:pointer}
 code,pre,textarea{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
-code{background:#eef2fa;border-radius:6px;padding:1px 6px;font-size:.88em;color:#0b2149}
+code{background:#eef1f7;border-radius:6px;padding:1px 6px;font-size:.88em;color:#1B2D4E}
 pre{white-space:pre-wrap}
 .hidden{display:none!important}
 .wrap{max-width:1180px;margin:0 auto;padding:16px}
-.topbar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:20}
+.topbar{background:var(--ink);color:#fff;position:sticky;top:0;z-index:20;border-bottom:4px solid var(--red)}
 .topbar .wrap{display:flex;align-items:center;gap:12px;padding-top:10px;padding-bottom:10px;flex-wrap:wrap}
 .brand{font-weight:900;font-size:1.15rem;display:flex;align-items:center;gap:8px;margin-right:auto}
-.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#ffd43b 50%,#3776ab 50%);display:inline-block}
+.brand .logo{background:var(--red);color:#fff;border-radius:6px;padding:3px 8px;font-size:.85rem;letter-spacing:.06em}
+.iconbtn{background:rgba(255,255,255,.12);border:none;color:#fff;border-radius:999px;padding:4px 10px;font-weight:700;font-size:.9rem}
+.iconbtn.off{opacity:.55}
+.pill.house{background:var(--red)}
 .pill{background:rgba(255,255,255,.12);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;white-space:nowrap}
 .pill.warn{background:var(--amber);color:var(--ink)}
 .pill.late{background:var(--red);color:#fff}
@@ -49,7 +52,7 @@ input.t:focus{border-color:var(--blue)}
 /* sign in */
 .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:20px;margin-top:20px}
 @media(max-width:860px){.hero{grid-template-columns:1fr}}
-.hero-art{background:linear-gradient(135deg,#0b2149,#1865f2);color:#fff;border-radius:var(--r);padding:28px;display:flex;flex-direction:column;justify-content:center}
+.hero-art{background:linear-gradient(135deg,#1B2D4E 55%,#DC2B3E);color:#fff;border-radius:var(--r);padding:28px;display:flex;flex-direction:column;justify-content:center}
 .hero-art h1{font-size:2.3rem}
 .hero-art p{opacity:.9;margin-top:10px;font-size:1.1rem}
 .hero-art .snip{background:rgba(0,0,0,.25);border-radius:10px;padding:14px;margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:.95rem}
@@ -114,7 +117,7 @@ input.t:focus{border-color:var(--blue)}
 .hints{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 .hint{background:var(--amber-l);border-radius:10px;padding:10px 14px;border-left:5px solid var(--amber)}
 .hint b{display:block;font-size:.85rem;color:#8a5d00}
-.note{background:#f4f0ff;border-left:5px solid var(--purple);border-radius:10px;padding:10px 14px;margin-top:12px}
+.note{background:#fdf0f2;border-left:5px solid var(--red);border-radius:10px;padding:10px 14px;margin-top:12px}
 .nav{display:flex;justify-content:space-between;margin-top:18px;gap:10px}
 .sumtable{width:100%;border-collapse:collapse;margin:12px 0}
 .sumtable th,.sumtable td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
@@ -138,16 +141,30 @@ input.t:focus{border-color:var(--blue)}
 .lockbox{background:#eef2fa;border:2px dashed #b9c6e0;border-radius:12px;padding:14px 16px;margin:12px 0}
 .lockbox ul{list-style:none;margin-top:6px}
 .lockbox li{margin:4px 0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 16px;font-weight:700}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.housebox{background:#fff;border:1px solid var(--line);border-left:5px solid var(--red);border-radius:12px;padding:10px 14px;margin-top:10px;box-shadow:var(--shadow)}
+.housebox .bar i{background:var(--red)}
+.quote{background:#fff;border:2px solid var(--line);border-left:5px solid var(--red);border-radius:12px;padding:12px 16px;margin-top:10px;font-style:italic;color:var(--ink);font-weight:700}
+.modal-bg{position:fixed;inset:0;background:rgba(27,45,78,.6);display:flex;align-items:center;justify-content:center;z-index:60;padding:16px}
+.modal{background:#fff;border-radius:18px;padding:28px;max-width:420px;text-align:center;border-top:8px solid var(--red);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal .big{font-size:4rem;line-height:1}
+.confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:70;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 .foot{color:var(--muted);text-align:center;font-size:.85rem;margin:26px 0 10px}
 </style>
 </head>
 <body>
 
 <div class="topbar"><div class="wrap">
-  <div class="brand"><span class="logo"></span>Python Pathways</div>
+  <div class="brand"><span class="logo">SISD</span>Python Pathways</div>
   <span class="pill" id="pyStatus">🐍 Loading Python…</span>
   <span class="pill hidden" id="clockPill"></span>
   <span class="pill hidden" id="ptsPill"></span>
+  <span class="pill house hidden" id="housePill"></span>
+  <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
+  <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
   <span class="pill hidden" id="whoPill"></span>
   <button class="linkbtn hidden" id="switchBtn">Switch student</button>
 </div></div>
@@ -157,20 +174,24 @@ input.t:focus{border-color:var(--blue)}
   <div class="hero">
     <div class="hero-art">
       <h1>Learn to code in Python 🐍</h1>
-      <p>Each lesson takes about 40 minutes: read, try the example, solve three coding exercises, then practise with unlimited new questions. Once you've shown the skill, submit so your teacher can see your work.</p>
+      <p>Each lesson takes about 40 minutes: read, try the example, solve three coding exercises, then practise with unlimited new questions. Every exercise you complete earns 10 points, and enough exercises earn you a <b>House Point</b>! 🏠</p>
       <div class="snip">print("Hello, World!")<br><span style="opacity:.6"># Hello, World!</span></div>
     </div>
     <div class="card">
       <h2>Sign in to start</h2>
       <label class="f" for="inName">Your full name (first and last)</label>
       <input class="t" id="inName" autocomplete="off" maxlength="40" placeholder="e.g. Sara Khan">
+      <label class="f">Your grade</label>
+      <div class="chips" id="gradeChips"><button class="chip" data-g="6">Grade 6</button><button class="chip" data-g="7">Grade 7</button><button class="chip" data-g="8">Grade 8</button></div>
       <label class="f" for="inClass">Your class</label>
       <input class="t" id="inClass" autocomplete="off" maxlength="20" placeholder="e.g. 7B">
+      <label class="f">Your teacher</label>
+      <div class="chips" id="teacherChips"><button class="chip" data-t="Mr. Ahmed">Mr. Ahmed</button><button class="chip" data-t="Mr. French">Mr. French</button><button class="chip" data-t="Ms. Abdelaziz">Ms. Abdelaziz</button></div>
       <label class="f">Your pathway</label>
       <div class="paths" id="paths">
-        <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never coded before? Start here: print, variables, decisions, loops.</small></span></button>
-        <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles.</small></span></button>
-        <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes.</small></span></button>
+        <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never used Python before? Start here: print, variables, decisions, loops. 15 exercises = 1 House Point.</small></span></button>
+        <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles. 10 exercises = 1 House Point.</small></span></button>
+        <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes. 5 exercises = 1 House Point.</small></span></button>
       </div>
       <div class="err" id="signErr"></div>
       <button class="btn lg" id="signBtn" style="margin-top:16px;width:100%;justify-content:center">Let's go →</button>
@@ -188,7 +209,8 @@ input.t:focus{border-color:var(--blue)}
       <div style="display:flex;gap:10px;align-items:center;margin-top:8px"><div class="bar" style="flex:1"><i id="mapBar"></i></div><b id="mapPct">0%</b></div>
     </div>
   </div>
-  <p class="muted" style="margin-bottom:14px">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice → Submit</b>. Submit unlocks when you've done enough work.</p>
+  <div class="housebox" id="mapHouse" style="margin-bottom:14px"></div>
+  <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice → Submit</b>. Submit unlocks when you've done enough work.</p>
   <div class="lessons" id="lessonList"></div>
   <p class="foot">Your work is saved on this device and sent to your teacher when you submit.</p>
 </div>
@@ -250,6 +272,22 @@ const FN = (sig) => "def " + sig + ":\n    # your code here\n    pass\n";
 const WORDS = ["apple", "rocket", "pizza", "dragon", "planet", "guitar", "tiger", "laptop", "garden", "window", "pencil", "castle", "banana", "falcon", "jungle", "camera", "orange", "puzzle", "school", "summer"];
 const NAMES = ["Ali", "Sara", "Omar", "Mia", "Leo", "Ava", "Zain", "Noor", "Adam", "Lina", "Yusuf", "Hana", "Sam", "Ella", "Rami", "Tia"];
 const PHRASES = ["Coding is cool", "I love Python", "Today is a great day", "Practice makes progress", "Hello from Dubai", "Robots are awesome", "Never give up", "Learning every day", "Keep calm and code on", "Maths is magic"];
+/* Grade themes: practice questions use words and phrases suited to each grade, and number sizes grow with the grade. */
+let LV = 1;
+const THEMES = {
+  "6": {words: ["puppy", "kitten", "banana", "mango", "football", "rocket", "pizza", "dragon", "robot", "unicorn", "pencil", "rainbow", "castle", "dolphin", "panda", "cookie", "comic", "balloon", "jungle", "pirate"],
+        phrases: ["I love coding", "Pandas are cute", "Robots can dance", "Pizza is yummy", "Coding is fun", "Dragons can fly", "My cat can code", "Rainbows are bright", "Let's go on an adventure", "Cookies make me happy"]},
+  "7": {words: ["planet", "galaxy", "comet", "guitar", "stadium", "trophy", "volcano", "satellite", "drummer", "marathon", "penalty", "orbit", "asteroid", "referee", "festival", "tennis", "cricket", "piano", "meteor", "league"],
+        phrases: ["Reach for the stars", "Teamwork wins games", "Practice makes progress", "Music moves me", "Space is endless", "Every goal counts", "Volcanoes are powerful", "Keep your eye on the ball", "The crowd goes wild", "Explore the galaxy"]},
+  "8": {words: ["algorithm", "network", "database", "sensor", "drone", "circuit", "startup", "podcast", "firewall", "pixel", "bandwidth", "browser", "keyboard", "server", "robotics", "encryption", "gadget", "hologram", "console", "download"],
+        phrases: ["Code the future", "Data tells a story", "Think like an engineer", "Debugging builds patience", "Innovation starts here", "Secure your passwords", "Build it, test it, ship it", "Technology changes the world", "Logic beats luck", "Design with users in mind"]}
+};
+function setGradeTheme(g){
+  const t = THEMES[String(g)] || THEMES["7"];
+  LV = {"6": 0, "7": 1, "8": 2}[String(g)] ?? 1;
+  WORDS.splice(0, WORDS.length, ...t.words);
+  PHRASES.splice(0, PHRASES.length, ...t.phrases);
+}
 const ORD = ["first", "second", "third", "fourth", "fifth"];
 const PAIRS = [["Pass", "Fail"], ["Tall", "Short"], ["Big", "Small"], ["Hot", "Cold"], ["Fast", "Slow"], ["High", "Low"]];
 const isPrime = n => { if (n < 2) return false; for (let i = 2; i * i <= n; i++) if (n % i === 0) return false; return true; };
@@ -263,14 +301,14 @@ beginner: [
   {id: "b1b", make: () => ({w: R.sample(WORDS, R.int(2, 3))}),
    q: P => ({title: "Print " + P.w.length + " lines", task: "Print these words, each on its own line:" + pre(P.w.join("\n")), hints: ["Each print() makes a new line, so you need " + P.w.length + " print lines.", "Start with: print(\"" + P.w[0] + "\")"], starter: ST, tests: [{in: [], check: lines(P.w)}]})}],
  // L2 maths & variables
- [{id: "b2a", make: () => { const op = R.pick(["+", "-", "*"]); let a = R.int(10, 60), b = R.int(2, 12); return {a, b, op}; },
+ [{id: "b2a", make: () => { const op = R.pick(["+", "-", "*"]); let a = R.int(5 + 5 * LV, 20 + 30 * LV), b = R.int(2, 9 + 3 * LV); return {a, b, op}; },
    q: P => { const r = P.op === "+" ? P.a + P.b : P.op === "-" ? P.a - P.b : P.a * P.b; return {title: "Python calculator", task: "Make Python work out and print " + c(P.a + " " + P.op + " " + P.b) + ". Don't type the answer yourself!", hints: ["Numbers don't need quotes. Put the sum inside print().", "print(" + P.a + " " + P.op + " " + P.b + ")"], starter: ST, tests: [{in: [], check: uses(P.op, "Use the " + P.op + " sign so Python does the maths.") + "\n" + lines([r])}]}; }},
-  {id: "b2b", make: () => ({v: R.pick(["coins", "points", "cakes", "books", "stars"]), n: R.int(3, 20), k: R.int(2, 9)}),
+  {id: "b2b", make: () => ({v: R.pick(["coins", "points", "cakes", "books", "stars"]), n: R.int(3, 10 + 10 * LV), k: R.int(2, 5 + 2 * LV)}),
    q: P => ({title: "Variable maths", task: "Make a variable called " + c(P.v) + " that stores " + c(P.n) + ". Then print " + c(P.v) + " multiplied by " + P.k + ".", hints: ["First line: " + P.v + " = " + P.n, "print(" + P.v + " * " + P.k + ")"], starter: ST, tests: [{in: [], check: 'need_var("' + P.v + '", ' + P.n + ')\nif "' + P.v + '*" not in code.replace(" ", ""): fail("Multiply the variable: ' + P.v + ' * ' + P.k + '")\n' + lines([P.n * P.k])}]})}],
  // L3 text variables
  [{id: "b3a", make: () => { const [a, b] = R.sample(WORDS, 2); return {a, b}; },
    q: P => ({title: "Join two words", task: "Make " + c("first = \"" + P.a + "\"") + " and " + c("second = \"" + P.b + "\"") + ". Print them joined with a space between:" + pre(P.a + " " + P.b), hints: ["Join with + and add a space in quotes: \" \"", "print(first + \" \" + second)"], starter: ST, tests: [{in: [], check: 'need_var("first", ' + py(P.a) + ')\nneed_var("second", ' + py(P.b) + ")\n" + lines([P.a + " " + P.b])}]})},
-  {id: "b3b", make: () => ({x: R.int(20, 90), y: R.int(2, 19)}),
+  {id: "b3b", make: () => ({x: R.int(10 + 10 * LV, 40 + 40 * LV), y: R.int(2, 9 + 10 * LV)}),
    q: P => ({title: "Take away with variables", task: "Make " + c("x = " + P.x) + " and " + c("y = " + P.y) + ". Print " + c("x - y") + " using the variables.", hints: ["Two variables, then print the subtraction.", "print(x - y)"], starter: ST, tests: [{in: [], check: 'need_var("x", ' + P.x + ')\nneed_var("y", ' + P.y + ')\nif "x-y" not in code.replace(" ", ""): fail("Print x - y using the variables.")\n' + lines([P.x - P.y])}]})},
   {id: "b3c", make: () => ({n: R.pick(NAMES), f: R.pick(["pizza", "mango", "pasta", "sushi", "tacos"])}),
    q: P => ({title: "Build a sentence", task: "Make " + c("name = \"" + P.n + "\"") + " and " + c("food = \"" + P.f + "\"") + ". Use + to print:" + pre(P.n + " likes " + P.f), hints: ["Remember the spaces inside the quotes: \" likes \"", "print(name + \" likes \" + food)"], starter: ST, tests: [{in: [], check: 'need_var("name", ' + py(P.n) + ')\nneed_var("food", ' + py(P.f) + ")\n" + lines([P.n + " likes " + P.f])}]})}],
@@ -286,7 +324,7 @@ beginner: [
    q: P => ({title: "f-string sentence", task: "Make " + c("pet = \"" + P.pet + "\"") + ", " + c("name = \"" + P.n + "\"") + " and " + c("age = " + P.age) + ". Use an f-string to print:" + pre("My " + P.pet + " " + P.n + " is " + P.age), hints: ["f\"...\" with the variables in {curly brackets}.", "print(f\"My {pet} {name} is {age}\")"], starter: ST, tests: [{in: [], check: 'if \'f"\' not in code and "f\'" not in code: fail("Use an f-string: put f before the quotes.")\nneed_var("pet", ' + py(P.pet) + ')\nneed_var("age", ' + P.age + ")\n" + lines(["My " + P.pet + " " + P.n + " is " + P.age])}]})},
   {id: "b5b", make: () => ({g: R.pick(["Welcome", "Hi", "Good morning", "Hey there", "Salaam"]), a: R.sample(NAMES, 2)}),
    q: P => ({title: "Greeting machine", task: "Ask the user for their name with " + c("input()") + ". Then print a greeting. If they type " + c(P.a[0]) + ", print:" + pre(P.g + ", " + P.a[0] + "!"), hints: ["name = input(\"Name? \")", "print(\"" + P.g + ", \" + name + \"!\")"], starter: ST, sample: P.a[0], tests: P.a.map(n => ({in: [n], check: lines([P.g + ", " + n + "!"])}))})},
-  {id: "b5c", make: () => ({n: R.int(2, 40), k: R.int(5, 60)}),
+  {id: "b5c", make: () => ({n: R.int(2, 15 + 20 * LV), k: R.int(5, 20 + 30 * LV)}),
    q: P => ({title: "Text to number", task: "Make " + c("text = \"" + P.n + "\"") + " (text, with quotes). Turn it into a number with " + c("int()") + " and print it plus " + P.k + ".", hints: ["int(text) gives the number " + P.n + ".", "print(int(text) + " + P.k + ")"], starter: ST, tests: [{in: [], check: 'need_var("text", ' + py(String(P.n)) + ")\n" + uses("int(", "Use int() to convert.") + "\n" + lines([P.n + P.k])}]})}],
  // L6 input + if
  [{id: "b6a", make: () => { const pr = R.pick(PAIRS); const t = R.int(10, 80); return {pr, t}; },
@@ -309,7 +347,7 @@ beginner: [
    q: P => ({title: "Repeat " + P.n + " times", task: "Use a loop to print " + c(P.p) + " " + P.n + " times.", hints: ["range(" + P.n + ") repeats " + P.n + " times.", "for i in range(" + P.n + "):\n    print(\"" + P.p + "\")"], starter: ST, tests: [{in: [], check: uses("for", "Use a for loop.") + "\n" + lines(Array(P.n).fill(P.p))}]})},
   {id: "b8b", make: () => { const s = R.int(2, 5), a = R.int(0, 10); return {a, s, b: a + s * R.int(3, 5)}; },
    q: P => { const out = []; for (let i = P.a; i <= P.b; i += P.s) out.push(i); return {title: "Count in " + P.s + "s", task: "Print the numbers from " + P.a + " to " + P.b + ", counting in steps of " + P.s + ":" + pre(out.join("\n")), hints: ["range(start, stop, step), and stop must be past " + P.b + ".", "for n in range(" + P.a + ", " + (P.b + 1) + ", " + P.s + "):\n    print(n)"], starter: ST, tests: [{in: [], check: 'if "for" not in code and "while" not in code: fail("Use a loop.")\n' + lines(out)}]}; }},
-  {id: "b8c", make: () => { const a = R.int(1, 10); return {a, b: a + R.int(5, 15)}; },
+  {id: "b8c", make: () => { const a = R.int(1, 5 + 5 * LV); return {a, b: a + R.int(4 + 2 * LV, 8 + 6 * LV)}; },
    q: P => { let t = 0; for (let i = P.a; i <= P.b; i++) t += i; return {title: "Add " + P.a + " to " + P.b, task: "Use a loop to add up all the whole numbers from " + P.a + " to " + P.b + ", then print the total once.", hints: ["total = 0 before the loop, add inside, print after.", "total = 0\nfor n in range(" + P.a + ", " + (P.b + 1) + "):\n    total = total + n\nprint(total)"], starter: ST, tests: [{in: [], check: uses("for", "Use a for loop.") + "\n" + lines([t])}]}; }}],
  // L9 while & lists
  [{id: "b9a", make: () => ({n: R.int(3, 8), w: R.pick(["Go!", "Lift off!", "Ready!", "Time's up!"])}),
@@ -530,7 +568,7 @@ advanced: [
    q: P => { const f = n => { let r = [1]; for (let i = 0; i < n; i++) { const nr = [1]; for (let j = 0; j < r.length - 1; j++) nr.push(r[j] + r[j + 1]); nr.push(1); r = nr; } return r; }; const cs = [0, 1, 4, R.int(5, 9)];
      return {title: "One row of Pascal", task: "Create " + c("pascal_row(n)") + " that returns row n of Pascal's triangle (row 0 is " + c("[1]") + ", row 2 is " + c("[1, 2, 1]") + ").", hints: ["Start with [1] and build the next row n times.", "row = [1] + [row[i] + row[i + 1] for i in range(len(row) - 1)] + [1]"], starter: FN("pascal_row(n)"), tests: [{in: [], check: fnCheck("pascal_row", cs.map(n => [[n], f(n)]))}]}; }}],
 ]};
-if (typeof module !== "undefined") module.exports = {GEN, R, py};
+if (typeof module !== "undefined") module.exports = {GEN, R, py, setGradeTheme};
 
 </script>
 <script>
@@ -633,8 +671,9 @@ function mastery(L, s){
   const core = L.ex.filter(q => s.solved[q]).length;
   const prac = s.prac.done.filter(d => d.ok).length;
   const need = MIN_PRACTICE[profile.path];
-  const eligible = core === 3 && prac >= need;
-  const level = eligible && prac >= need + 3 ? "Mastered" : eligible ? "Proficient" : core === 3 ? "Familiar" : core + prac > 0 ? "Attempted" : "Not started";
+  const skill = core === 3 && prac >= need;
+  const level = skill && prac >= need + 3 ? "Mastered" : skill ? "Proficient" : core === 3 ? "Familiar" : core + prac > 0 ? "Attempted" : "Not started";
+  const eligible = canSubmit();
   return {core, prac, need, eligible, level, total:core + prac, target:3 + need};
 }
 function newPractice(n, s){
@@ -652,6 +691,15 @@ function newPractice(n, s){
 
 /* ---------------- Sign in ---------------- */
 let chosen = profile ? profile.path : null;
+let chosenGrade = profile ? profile.grade : null, chosenTeacher = profile ? profile.teacher : null;
+document.querySelectorAll("#gradeChips .chip").forEach(b => {
+  if (b.dataset.g === chosenGrade) b.classList.add("on");
+  b.onclick = () => { chosenGrade = b.dataset.g; document.querySelectorAll("#gradeChips .chip").forEach(x => x.classList.toggle("on", x === b)); };
+});
+document.querySelectorAll("#teacherChips .chip").forEach(b => {
+  if (b.dataset.t === chosenTeacher) b.classList.add("on");
+  b.onclick = () => { chosenTeacher = b.dataset.t; document.querySelectorAll("#teacherChips .chip").forEach(x => x.classList.toggle("on", x === b)); };
+});
 document.querySelectorAll(".path").forEach(b => {
   if (b.dataset.p === chosen) b.classList.add("on");
   b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); };
@@ -660,38 +708,57 @@ if (profile){ $("inName").value = profile.name; $("inClass").value = profile.cls
 $("signBtn").onclick = () => {
   const name = $("inName").value.trim().replace(/\s+/g, " "), cls = $("inClass").value.trim();
   if (name.split(" ").length < 2){ $("signErr").textContent = "Please type your first and last name."; return; }
+  if (!chosenGrade){ $("signErr").textContent = "Please choose your grade."; return; }
   if (!cls){ $("signErr").textContent = "Please type your class."; return; }
+  if (!chosenTeacher){ $("signErr").textContent = "Please choose your teacher."; return; }
   if (!chosen){ $("signErr").textContent = "Please choose your pathway."; return; }
   const nice = name.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
-  profile = {name:nice, cls:cls.toUpperCase(), path:chosen};
+  profile = {name:nice, cls:cls.toUpperCase(), grade:chosenGrade, teacher:chosenTeacher, path:chosen};
   store("pyl_profile", profile);
   openMap();
 };
-$("switchBtn").onclick = () => { stopClock(); show("signin"); $("inName").value = ""; $("inClass").value = ""; };
+$("switchBtn").onclick = () => { stopClock(); show("signin"); $("inName").value = ""; $("inClass").value = ""; chosenGrade = chosenTeacher = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on")); };
 
 function show(id){
   ["signin", "map", "lesson"].forEach(s => $(s).classList.toggle("hidden", s !== id));
   const inApp = id !== "signin";
-  ["whoPill", "switchBtn", "ptsPill"].forEach(x => $(x).classList.toggle("hidden", !inApp));
+  ["whoPill", "switchBtn", "ptsPill", "housePill"].forEach(x => $(x).classList.toggle("hidden", !inApp));
   if (id !== "lesson") $("clockPill").classList.add("hidden");
   window.scrollTo(0, 0);
 }
 
 /* ---------------- Course map ---------------- */
-function totalPoints(){
-  let p = 0;
-  Object.keys(prog.lessons).forEach(n => { const s = prog.lessons[n]; Object.keys(s.solved).forEach(q => { if (s.solved[q]) p += pointsFor(s, q); }); });
-  return p;
+/* Points: 10 per completed exercise; advice costs 5. House point every 15 / 10 / 5 exercises. */
+const POINTS_EACH = 10, HINT_COST = 5;
+const HOUSE_EVERY = {beginner:15, intermediate:10, advanced:5};
+function solvedCount(){ let c = 0; Object.keys(prog.lessons).forEach(n => { const s = prog.lessons[n]; Object.keys(s.solved).forEach(q => { if (s.solved[q]) c++; }); }); return c; }
+function totalPoints(){ return solvedCount() * POINTS_EACH - (prog.spent || 0); }
+function pointsFor(){ return POINTS_EACH; }
+function housePoints(){ return Math.floor(solvedCount() / HOUSE_EVERY[profile.path]); }
+/* Submit unlocks each time a new House Point is earned (15 / 10 / 5 exercises). */
+function canSubmit(){ return housePoints() > (prog.hpSubmitted || 0); }
+function houseHTML(){
+  const every = HOUSE_EVERY[profile.path], c = solvedCount(), into = c % every, hp = housePoints();
+  let h = '<div class="mast-top"><b>🏠 House Points: ' + hp + '</b><span>' + into + ' / ' + every + ' exercises to your next House Point</span></div><div class="bar"><i style="width:' + Math.round(into / every * 100) + '%"></i></div>';
+  h += canSubmit() ? '<div class="mast-msg" style="color:var(--red)">🎉 You earned a House Point! <b>Submit</b> is unlocked: send your work to your teacher.</div>'
+                   : '<div class="mast-msg">Reach your next House Point to unlock <b>Submit</b>.</div>';
+  return h;
 }
-function pointsFor(s, q){ return Math.max(50, 100 - 25 * (s.hints[q] || 0)); }
+function updatePills(){
+  $("ptsPill").textContent = "⭐ " + totalPoints() + " pts";
+  const hp = housePoints();
+  $("housePill").textContent = "🏠 " + hp + " House Point" + (hp === 1 ? "" : "s");
+  if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
+}
 function openMap(){
   prog = load(progKey(), {lessons:{}});
   const P = PATHS[profile.path];
-  $("whoPill").textContent = "👤 " + profile.name + " • " + profile.cls;
-  $("ptsPill").textContent = "⭐ " + totalPoints() + " pts";
+  setGradeTheme(profile.grade || "7");
+  $("whoPill").textContent = "👤 " + profile.name + " • " + profile.cls + " • " + (profile.teacher || "");
+  updatePills();
   $("mapBadge").textContent = P.l; $("mapBadge").style.background = P.c;
   $("mapTitle").textContent = "Python: " + P.name;
-  $("mapWho").textContent = profile.name + " • Class " + profile.cls;
+  $("mapWho").textContent = profile.name + " • Grade " + (profile.grade || "?") + " • Class " + profile.cls + " • " + (profile.teacher || "");
   const list = $("lessonList"); list.innerHTML = "";
   let solvedAll = 0;
   DATA.lessons[profile.path].forEach((L, i) => {
@@ -738,9 +805,10 @@ const STEP_NAMES = ["Learn", "Example", "Exercise 1", "Exercise 2", "Exercise 3"
 function renderMastery(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], m = mastery(L, lessonState(cur.lesson));
   const pct = Math.min(100, Math.round(m.total / m.target * 100));
-  const msg = m.eligible ? "✅ Submit is unlocked! Keep practising to reach Mastered, or submit now." :
-    (m.core < 3 ? "Solve all 3 exercises" : "") + (m.core < 3 && m.prac < m.need ? " and " : "") + (m.prac < m.need ? (m.need - m.prac) + " practice question" + (m.need - m.prac > 1 ? "s" : "") : "") + " to unlock Submit.";
-  $("mastery").innerHTML = '<div class="mast"><div class="mast-top"><b>Skill level: ' + m.level + '</b><span>' + Math.min(m.total, m.target) + ' / ' + m.target + ' to submit</span></div><div class="bar"><i style="width:' + pct + '%;background:' + (m.eligible ? "var(--green)" : "var(--blue)") + '"></i></div><div class="mast-msg">' + msg + '</div></div>';
+  const msg = m.level === "Mastered" ? "🌟 Skill mastered! Keep going to earn more House Points." :
+    m.core < 3 ? "Solve the 3 lesson exercises, then practise to build this skill." : m.prac < m.need ? "Solve " + (m.need - m.prac) + " more practice question" + (m.need - m.prac > 1 ? "s" : "") + " to become Proficient." : "Proficient! " + (m.need + 3 - m.prac) + " more practice to reach Mastered.";
+  $("mastery").innerHTML = '<div class="housebox">' + houseHTML() + (m.eligible ? '<button class="btn green" id="houseSubmitBtn" style="margin-top:8px">📨 Submit to ' + esc(profile.teacher || "my teacher") + '</button>' : '') + '</div><div class="mast"><div class="mast-top"><b>Skill level: ' + m.level + '</b><span>Lesson skill: ' + Math.min(m.total, m.target) + ' / ' + m.target + '</span></div><div class="bar"><i style="width:' + pct + '%;background:var(--green)"></i></div><div class="mast-msg">' + msg + '</div></div>';
+  const hb = document.getElementById("houseSubmitBtn"); if (hb) hb.onclick = () => goStep(SUBMIT);
 }
 function renderSteps(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), m = mastery(L, s);
@@ -865,18 +933,24 @@ function renderStep(){
     const chk = el("button", "btn green", "✓ Check my answer");
     const used = s.hints[qn] || 0;
     const hb = el("button", "btn amber", "");
-    const setHb = () => { const u = s.hints[qn] || 0; hb.textContent = u >= Q.hints.length ? "💡 All hints shown" : "💡 Get a hint (" + (Q.hints.length - u) + " left)"; hb.disabled = u >= Q.hints.length; };
+    const setHb = () => { const u = s.hints[qn] || 0, bal = totalPoints();
+      if (u >= Q.hints.length){ hb.textContent = "💡 All advice bought"; hb.disabled = true; }
+      else if (bal < HINT_COST){ hb.textContent = "💡 Advice costs " + HINT_COST + " pts (you have " + bal + ")"; hb.disabled = true; }
+      else { hb.textContent = "💡 Buy advice for " + HINT_COST + " pts (" + (Q.hints.length - u) + " left)"; hb.disabled = false; } };
     setHb();
-    const rs = el("button", "btn ghost", "↺ Start again");
-    act.append(run, chk, el("span", "sp"), hb, rs); body.appendChild(act);
+    act.append(run, chk, el("span", "sp"), hb); body.appendChild(act);
     const hints = el("div", "hints"); body.appendChild(hints);
-    const showHints = () => { hints.innerHTML = ""; for (let i = 0; i < (s.hints[qn] || 0); i++) hints.appendChild(el("div", "hint", "<b>HINT " + (i + 1) + "</b>" + Q.hints[i])); };
+    const showHints = () => { hints.innerHTML = ""; for (let i = 0; i < (s.hints[qn] || 0); i++) hints.appendChild(el("div", "hint", "<b>ADVICE " + (i + 1) + "</b>" + Q.hints[i])); };
     showHints();
     const fb = el("div", ""); body.appendChild(fb);
+    let nx = null;
     const con = el("div", "console", '<span class="dim">Press Run to test your code, or Check when you think it is right.</span>'); body.appendChild(con);
     if (s.solved[qn]){ fb.className = "fb ok"; fb.textContent = "✅ You've already solved this one. Great work!"; }
-    hb.onclick = () => { s.hints[qn] = (s.hints[qn] || 0) + 1; saveProg(); setHb(); showHints(); };
-    rs.onclick = () => { ed.set(Q.starter); saveCode(); };
+    hb.onclick = () => {
+      if (totalPoints() < HINT_COST || (s.hints[qn] || 0) >= Q.hints.length) return;
+      prog.spent = (prog.spent || 0) + HINT_COST; s.hints[qn] = (s.hints[qn] || 0) + 1;
+      saveProg(); sfx("coin"); updatePills(); setHb(); showHints();
+    };
     run.onclick = async () => {
       saveCode(); run.disabled = true; con.innerHTML = '<span class="dim">Running…</span>';
       const r = await runJob({mode:"run", code:ed.get(), inputs:ib ? ib.querySelector("textarea").value.split("\n").filter((x, i, a) => i < a.length - 1 || x !== "") : []}, 6000);
@@ -888,14 +962,24 @@ function renderStep(){
       const r = await runJob({mode:"check", code:ed.get(), tests:Q.tests}, 8000);
       chk.disabled = false;
       s.tries[qn] = (s.tries[qn] || 0) + 1;
+      const hpBefore = housePoints(), eligBefore = mastery(L, s).eligible;
       if (r.passed){
         const first = !s.solved[qn];
         s.solved[qn] = true;
+        if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); }
         if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], code:(ed.get() || "").slice(0, 1500)});
         saveProg();
         fb.className = "fb ok";
-        fb.textContent = "✅ Correct! " + ["Brilliant work!", "You nailed it!", "Great coding!", "Excellent!"][Math.floor(Math.random() * 4)];
-        if (first){ popPoints(pointsFor(s, qn)); $("ptsPill").textContent = "⭐ " + totalPoints() + " pts"; }
+        fb.textContent = "✅ Correct! " + (first ? "+" + POINTS_EACH + " points" : "Already solved, so no new points.");
+        const qd = el("div", "quote", "💬 " + QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+        fb.appendChild(qd);
+        sfx("correct");
+        if (first){
+          popPoints(POINTS_EACH); updatePills();
+          const hpAfter = housePoints();
+          if (hpAfter > hpBefore){ prog.houseLog = prog.houseLog || []; prog.houseLog.push({date:today(), lesson:cur.lesson, total:hpAfter}); saveProg(); setTimeout(() => celebrateHouse(hpAfter), 700); }
+          else if (!eligBefore && mastery(L, s).eligible) setTimeout(() => sfx("unlock"), 600);
+        }
         const mm = mastery(L, s);
         let nxt;
         if (isP){ nxt = el("button", "btn", "Next practice question →"); nxt.onclick = () => { s.prac.cur = null; newPractice(cur.lesson, s); renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }; }
@@ -909,17 +993,20 @@ function renderStep(){
         saveProg();
         if (r.error) logErr(s, qn, r.error);
         fb.className = "fb no";
+        sfx("wrong");
         fb.textContent = "Not quite yet. " + (r.fail || r.error || "Something went wrong.");
+        if (isP && nx && (s.tries[qn] || 0) >= 5){ nx.disabled = false; nx.textContent = "🎲 Try a different question"; }
         consoleOut(con, {out:r.out || "", error:null});
-        if ((s.tries[qn] || 0) >= 3 && (s.hints[qn] || 0) === 0) fb.textContent += "\n\nStuck? Try the 💡 hint button.";
+        if ((s.tries[qn] || 0) >= 3 && (s.hints[qn] || 0) === 0) fb.textContent += "\n\nStuck? You can buy advice with your points (💡 button).";
         renderSteps();
       }
     };
     const nav = el("div", "nav");
     const pv = el("button", "btn ghost", k === 0 ? "← Example" : isP ? "← Exercise 3" : "← Exercise " + k); pv.onclick = () => goStep(cur.step - 1);
-    let nx;
     if (isP){
-      nx = el("button", "btn ghost", "🎲 Give me a different question");
+      const can = (s.tries[qn] || 0) >= 5 || s.solved[qn];
+      nx = el("button", "btn ghost", can ? "🎲 Try a different question" : "🎲 Different question (after 5 tries)");
+      nx.disabled = !can;
       nx.onclick = () => { if (!s.solved[qn]) s.prac.skipped++; s.prac.cur = null; newPractice(cur.lesson, s); renderSteps(); renderStep(); };
     } else { nx = el("button", "btn ghost", k < 2 ? "Skip to Exercise " + (k + 2) + " →" : "Go to Practice →"); nx.onclick = () => goStep(cur.step + 1); }
     nav.append(pv, nx); body.appendChild(nav);
@@ -982,11 +1069,12 @@ function renderSubmit(body, L, s){
   const fbk = buildFeedback(L, s);
   const doneToday = submittedToday(s);
   const last = [...s.submissions].reverse().find(x => x.date === d && x.complete);
-  body.innerHTML = '<h2>' + (m.eligible ? "📨" : "🔒") + ' Submit your lesson</h2><p class="muted" style="margin-top:6px">' + (m.eligible ? "Great work, you've shown this skill! Check your work, then submit. You can keep practising and submit again." : "Submit unlocks when you've done enough work to show the skill.") + '</p>';
+  const every = HOUSE_EVERY[profile.path], left = every - (solvedCount() % every);
+  body.innerHTML = '<h2>' + (m.eligible ? "📨" : "🔒") + ' Submit your work</h2><p class="muted" style="margin-top:6px">' + (m.eligible ? "🏠 You earned a House Point! Check your work below, then submit it to " + esc(profile.teacher || "your teacher") + "." : "Submit unlocks every time you earn a House Point (" + every + " completed exercises).") + '</p>';
   if (!m.eligible){
-    body.insertAdjacentHTML("beforeend", '<div class="lockbox"><b>To unlock Submit you need to:</b><ul>' +
-      '<li>' + (m.core === 3 ? "✅" : "⬜") + ' Solve all 3 lesson exercises (' + m.core + '/3 done)</li>' +
-      '<li>' + (m.prac >= m.need ? "✅" : "⬜") + ' Solve at least ' + m.need + ' practice question' + (m.need > 1 ? "s" : "") + ' (' + m.prac + ' done)</li></ul></div>');
+    body.insertAdjacentHTML("beforeend", '<div class="lockbox"><b>To unlock Submit:</b><ul>' +
+      '<li>⬜ Complete <b>' + left + ' more exercise' + (left > 1 ? "s" : "") + '</b> to earn your next House Point (' + (every - left) + ' / ' + every + ')</li>' +
+      '<li>💡 Lesson exercises and practice questions both count.</li></ul></div>');
     const go = el("button", "btn", m.core < 3 ? "Go to Exercise " + (L.ex.findIndex(q => !s.solved[q]) + 1) + " →" : "Go to Practice →");
     go.onclick = () => goStep(m.core < 3 ? 2 + L.ex.findIndex(q => !s.solved[q]) : PRACTICE);
     body.appendChild(go);
@@ -1004,7 +1092,7 @@ function renderSubmit(body, L, s){
   g.innerHTML = '<div class="col w"><h3>🌟 What went well</h3><ul>' + fbk.well.map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div><div class="col i"><h3>🚀 Next steps</h3><ul>' + (fbk.next.length ? fbk.next : ["Keep up the great work!"]).map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div>';
   body.appendChild(g);
   const act = el("div", "actions");
-  const sb = el("button", "btn green lg", m.eligible ? (doneToday ? "📨 Update my submission" : "📨 Submit to my teacher") : "🔒 Submit is locked");
+  const sb = el("button", "btn green lg", m.eligible ? "📨 Submit to " + (profile.teacher || "my teacher") : "🔒 Submit unlocks at your next House Point");
   sb.disabled = !m.eligible;
   act.appendChild(sb); body.appendChild(act);
   const st = el("div", ""); body.appendChild(st);
@@ -1012,8 +1100,8 @@ function renderSubmit(body, L, s){
   sb.onclick = async () => {
     if (!mastery(L, s).eligible) return;
     sb.disabled = true;
-    await submitLesson(L, s, doneToday ? "Updated submission" : "Submitted by student", st, true);
-    sb.disabled = false; sb.textContent = "📨 Update my submission";
+    await submitLesson(L, s, "Submitted by student", st, true);
+    sb.textContent = "✅ Submitted, earn your next House Point to submit again";
     renderSteps();
   };
 }
@@ -1035,19 +1123,23 @@ async function submitLesson(L, s, kind, st, complete){
   const exLines = L.ex.map((q, i) => { const Q = qOf(profile.path, q); return "Exercise " + (i + 1) + " – " + Q.title + ": " + (s.solved[q] ? "✅ Solved" : s.tries[q] ? "❌ Not solved" : "⬜ Not attempted") + " (" + (s.hints[q] || 0) + " hints, " + (s.tries[q] || 0) + " checks)"; });
   const pracLines = pracOk.length ? pracOk.map((x, i) => "Practice " + (i + 1) + " – " + x.title + ": ✅ (" + (x.hints || 0) + " hints, " + (x.checks || 0) + " checks)") : ["No practice questions solved"];
   if (s.prac.skipped) pracLines.push("Questions swapped without solving: " + s.prac.skipped);
-  const status = complete ? (m.level === "Mastered" ? "Mastered" : "Proficient") : "Incomplete";
-  const tracker = {v:2, name:profile.name, cls:profile.cls, path:profile.path, lesson:n, title:L.title, date:d,
-    submitted:new Date().toISOString(), kind:kind, status:status, level:m.level, core:m.core, practice:m.prac, practiceNeeded:m.need, skipped:s.prac.skipped,
+  const status = complete ? "House Point earned" : "Incomplete";
+  const since = (prog.log || []).filter(x => x.at > (prog.lastSubmitAt || 0));
+  const hpToday = (prog.houseLog || []).filter(h => h.date === d && h.lesson === n).length;
+  const tracker = {v:3, name:profile.name, cls:profile.cls, grade:profile.grade, teacher:profile.teacher, path:profile.path, pointsBalance:totalPoints(), exercisesTotal:solvedCount(), housePoints:housePoints(), housePointsThisLesson:hpToday, lesson:n, title:L.title, date:d,
+    submitted:new Date().toISOString(), kind:kind, status:status, level:m.level, sinceLast:since.length, core:m.core, practice:m.prac, practiceNeeded:m.need, skipped:s.prac.skipped,
     points:pts, mins:Math.round(day.activeMs / 60000),
     ex:L.ex.map(q => ({q:q, ok:!!s.solved[q], hints:s.hints[q] || 0, checks:s.tries[q] || 0})), well:fbk.well, next:fbk.next};
   const codeTxt = L.ex.map((q, i) => { const c = s.code[q]; return "===== Exercise " + (i + 1) + ": " + qOf(profile.path, q).title + " =====\n" + (c && c.trim() ? c.slice(0, 1500) : "(no code)"); })
     .concat(pracOk.slice(-5).map(x => "===== Practice: " + x.title + " =====\n" + (x.code || "(no code)"))).join("\n\n");
   const report = {
-    "_subject":"Python Lesson: " + profile.name + " (" + profile.cls + ") | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
+    "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " (" + profile.cls + ") | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
     "_template":"table", "_captcha":"false",
-    "Student":profile.name, "Class":profile.cls, "Pathway":P,
+    "Student":profile.name, "Grade":"Grade " + profile.grade, "Class":profile.cls, "Teacher":profile.teacher, "Pathway":P,
+    "House points":housePoints() + " in total" + (hpToday ? " (🏠 +" + hpToday + " earned in this lesson, please award!)" : "") + " • " + solvedCount() + " exercises completed • " + totalPoints() + " points to spend",
     "Lesson":"Lesson " + n + ": " + L.title, "Date":d,
-    "Status":status + (complete ? "" : " (time ran out before the work was complete)"),
+    "Status":status + (complete ? "" : " (time ran out before the next House Point was reached)"),
+    "Work since last submission":since.length + " exercise" + (since.length === 1 ? "" : "s") + " completed\n" + since.map(x => "Lesson " + x.lesson + " " + (x.kind === "practice" ? "practice" : "exercise") + ": " + x.title).join("\n"),
     "Skill level":m.level,
     "Started":new Date(day.start).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}),
     "Submitted":new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}),
@@ -1059,6 +1151,7 @@ async function submitLesson(L, s, kind, st, complete){
     "Code":codeTxt,
     "TRACKER DATA (do not edit)":JSON.stringify(tracker)
   };
+  if (complete){ prog.hpSubmitted = housePoints(); prog.lastSubmitAt = Date.now(); }
   const rec = {date:d, at:Date.now(), kind:kind, complete:!!complete, level:m.level, sent:"pending"};
   s.submissions.push(rec); saveProg();
   if (st) showSent(st, rec);
@@ -1115,6 +1208,85 @@ function startClock(){
 }
 function stopClock(){ if (clockTimer){ clearInterval(clockTimer); clockTimer = null; } if (prog) saveProg(); }
 window.addEventListener("beforeunload", () => { saveCode(); if (prog) saveProg(); });
+
+/* ---------------- Sound, music, quotes, celebrations ---------------- */
+const QUOTES = [
+  "Every expert was once a beginner.", "Mistakes are proof that you are trying.", "Great things are built one line at a time.",
+  "You just taught a computer something new!", "Small steps every day lead to big results.", "Your brain grows every time you solve a problem.",
+  "Code is like a puzzle, and you just solved it!", "Believe in yourself and keep going!", "Practice makes progress.",
+  "You are becoming a real programmer.", "Hard work beats talent when talent doesn't work hard.", "Curiosity is your superpower.",
+  "Don't stop when you're tired; stop when you're done.", "Today a coder, tomorrow an inventor!", "Success is the sum of small efforts.",
+  "The more you code, the luckier you get.", "Debugging is just learning in disguise.", "You turned a problem into a solution!",
+  "Keep calm and code on.", "Dream big, start small, code now.", "Every bug you fix makes you stronger.",
+  "Thinking like a programmer means never giving up.", "You've got the logic of a champion!", "Your future self will thank you for this.",
+  "Learning never exhausts the mind.", "The secret of getting ahead is getting started.", "Persistence pays off, and you just proved it!",
+  "One more problem solved, one step closer to mastery.", "Great job staying focused!", "Challenges make you better, not bitter.",
+  "Be proud of how far you've come.", "You don't have to be great to start, but you have to start to be great.", "Think it. Code it. Run it. Win it!",
+  "Smart work and hard work: you did both!", "The best way to learn coding is to code, just like you did!", "Your effort is your greatest strength.",
+  "Keep shining, coder!", "You make it look easy!", "Every line you write is a step forward.", "Stay curious, stay creative, stay coding!"
+];
+let actx = null;
+const SND = {sfx:load("pyl_sfx", true), music:false};
+function ac(){ if (!actx){ try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } } if (actx.state === "suspended") actx.resume(); return actx; }
+function tone(f, t0, dur, type, vol, dest){
+  const a = ac(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type || "sine"; o.frequency.setValueAtTime(f, t0);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.15, t0 + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g); g.connect(dest || a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+function sfx(kind){
+  if (!SND.sfx) return; const a = ac(); if (!a) return; const t = a.currentTime + 0.02;
+  if (kind === "correct"){ [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, t + i * 0.08, 0.35, "triangle", 0.16)); tone(2093, t + 0.34, 0.25, "sine", 0.06); tone(2637, t + 0.42, 0.3, "sine", 0.05); }
+  else if (kind === "wrong"){ tone(330, t, 0.18, "sine", 0.1); tone(262, t + 0.14, 0.28, "sine", 0.1); }
+  else if (kind === "coin"){ tone(988, t, 0.09, "square", 0.06); tone(1319, t + 0.08, 0.35, "square", 0.06); }
+  else if (kind === "unlock"){ [392, 523.25, 659.25, 783.99].forEach((f, i) => tone(f, t + i * 0.06, 0.9, "sine", 0.1)); }
+  else if (kind === "house"){
+    [[523.25, 0], [659.25, .12], [783.99, .24], [1046.5, .36], [783.99, .52], [1046.5, .64]].forEach(([f, d]) => { tone(f, t + d, 0.4, "triangle", 0.18); tone(f / 2, t + d, 0.4, "sine", 0.08); });
+    [1046.5, 1318.5, 1568].forEach(f => tone(f, t + 0.8, 1.4, "triangle", 0.12));
+  }
+}
+let musicTimer = null, musicGain = null, mStep = 0, mNext = 0;
+const CHORDS = [[261.63, 329.63, 392, 493.88], [220, 261.63, 329.63, 392], [174.61, 220, 261.63, 329.63], [196, 246.94, 293.66, 349.23]];
+function startMusic(){
+  const a = ac(); if (!a) return;
+  musicGain = a.createGain(); musicGain.gain.value = 0.5; musicGain.connect(a.destination);
+  mStep = 0; mNext = a.currentTime + 0.1;
+  const pat = [0, 1, 2, 3, 2, 1, 2, 3];
+  musicTimer = setInterval(() => {
+    while (mNext < a.currentTime + 0.4){
+      const ch = CHORDS[Math.floor(mStep / 8) % 4], i = mStep % 8;
+      tone(ch[pat[i]] * 2, mNext, 0.55, "sine", 0.04, musicGain);
+      if (i === 0) tone(ch[0] / 2, mNext, 2.4, "triangle", 0.05, musicGain);
+      if (i === 4) tone(ch[2] / 2, mNext, 1.2, "triangle", 0.03, musicGain);
+      mStep++; mNext += 0.3;
+    }
+  }, 100);
+}
+function stopMusic(){ if (musicTimer) clearInterval(musicTimer); musicTimer = null; if (musicGain){ try { musicGain.disconnect(); } catch(e){} musicGain = null; } }
+function paintSound(){
+  $("sfxBtn").textContent = SND.sfx ? "🔊" : "🔇"; $("sfxBtn").classList.toggle("off", !SND.sfx);
+  $("musicBtn").textContent = SND.music ? "🎵 Music on" : "🎵 Music off"; $("musicBtn").classList.toggle("off", !SND.music);
+}
+$("sfxBtn").onclick = () => { SND.sfx = !SND.sfx; store("pyl_sfx", SND.sfx); paintSound(); if (SND.sfx) sfx("coin"); };
+$("musicBtn").onclick = () => { SND.music = !SND.music; if (SND.music) startMusic(); else stopMusic(); paintSound(); };
+paintSound();
+function confetti(){
+  const colors = ["#1B2D4E", "#DC2B3E", "#f5b000", "#13a05a", "#ffffff"];
+  for (let i = 0; i < 90; i++){
+    const c = el("div", "confetti"); c.style.left = Math.random() * 100 + "vw"; c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (2 + Math.random() * 2) + "s"; c.style.animationDelay = Math.random() * 0.5 + "s";
+    document.body.appendChild(c); setTimeout(() => c.remove(), 5000);
+  }
+}
+function celebrateHouse(n){
+  sfx("house"); confetti();
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal"><div class="big">🏠</div><h2 style="margin-top:8px">House Point earned!</h2><p style="margin-top:8px">Amazing work, ' + esc(profile.name.split(" ")[0]) + '! You now have <b>' + n + ' House Point' + (n === 1 ? "" : "s") + '</b>. Submit is now unlocked, so send your work to ' + esc(profile.teacher || "your teacher") + '!</p><div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn green lg" id="hpSubmit">📨 Submit now</button><button class="btn ghost lg" id="hpLater">Keep going</button></div></div>';
+  bg.querySelector("#hpSubmit").onclick = () => { bg.remove(); goStep(SUBMIT); };
+  bg.querySelector("#hpLater").onclick = () => { bg.remove(); renderSteps(); };
+  document.body.appendChild(bg);
+}
 
 /* ---------------- Boot ---------------- */
 if (profile){ $("inName").value = profile.name; $("inClass").value = profile.cls; }
