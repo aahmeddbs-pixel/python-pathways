@@ -204,6 +204,8 @@ input.pin{letter-spacing:.4em;font-weight:700}
         <h2>Create your account</h2>
         <label class="f" for="inName">Your full name (first and last)</label>
         <input class="t" id="inName" autocomplete="off" maxlength="40" placeholder="e.g. Sara Khan">
+        <label class="f" for="inEmail">Your school email</label>
+        <input class="t" id="inEmail" type="email" autocomplete="off" maxlength="80" placeholder="e.g. sara.khan@sisd.ae">
         <label class="f">Your grade</label>
         <div class="chips" id="gradeChips"><button class="chip" data-g="6">Grade 6</button><button class="chip" data-g="7">Grade 7</button><button class="chip" data-g="8">Grade 8</button></div>
         <label class="f" for="inClass">Your class</label>
@@ -741,6 +743,8 @@ document.querySelectorAll(".path").forEach(b => b.onclick = () => { chosen = b.d
 $("signBtn").onclick = () => {
   const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), cls = $("inClass").value.trim(), teacher = $("inTeacher").value, pin = $("inPin").value;
   if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
+  const email = $("inEmail").value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "Please type your school email address."; return; }
   if (!chosenGrade){ err.textContent = "Please choose your grade."; return; }
   if (!cls){ err.textContent = "Please type your class."; return; }
   if (!teacher){ err.textContent = "Please choose your teacher from the list."; return; }
@@ -748,8 +752,10 @@ $("signBtn").onclick = () => {
   if (!/^\d{4}$/.test(pin)){ err.textContent = "Your PIN must be exactly 4 numbers."; return; }
   if (pin !== $("inPin2").value){ err.textContent = "The two PINs don't match. Please type them again."; return; }
   if (accounts()[slug(name)]){ err.textContent = "There is already an account called " + niceName(name) + " on this computer. Please use Sign in instead."; return; }
-  profile = {name:niceName(name), cls:cls.toUpperCase(), grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
+  profile = {name:niceName(name), email:email, cls:cls.toUpperCase(), grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
   saveAccount(profile); store("pyl_lastName", profile.name);
+  prog = load(progKey(), {lessons:{}});
+  syncTeacher("signup", {pin:pin});
   openMap();
 };
 $("loginBtn").onclick = () => {
@@ -763,9 +769,9 @@ $("loginBtn").onclick = () => {
 };
 $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
 $("switchBtn").onclick = () => {
-  saveCode(); rememberPos(); stopClock(); profile = null; prog = null; cur = {lesson:null, step:0};
+  saveCode(); rememberPos(); stopClock(); if (prog) syncTeacher("progress"); profile = null; prog = null; cur = {lesson:null, step:0};
   $("loginName").value = load("pyl_lastName", ""); $("loginPin").value = "";
-  ["inName", "inClass", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
+  ["inName", "inEmail", "inClass", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
   chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on"));
   document.querySelector('.tab[data-tab="in"]').click();
   show("signin");
@@ -1048,8 +1054,9 @@ function renderStep(){
       if (r.passed){
         const first = !s.solved[qn];
         s.solved[qn] = true;
+        if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); }
         if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); }
-        if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], code:(ed.get() || "").slice(0, 1500)});
+        if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)});
         saveProg();
         fb.className = "fb ok";
         fb.textContent = "✅ Correct! " + (first ? "+" + POINTS_EACH + " points" : "Already solved, so no new points.");
@@ -1217,7 +1224,7 @@ async function submitLesson(L, s, kind, st, complete){
   const report = {
     "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " (" + profile.cls + ") | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
     "_template":"table", "_captcha":"false",
-    "Student":profile.name, "Grade":"Grade " + profile.grade, "Class":profile.cls, "Teacher":profile.teacher, "Pathway":P,
+    "Student":profile.name, "Student email":profile.email || "", "Grade":"Grade " + profile.grade, "Class":profile.cls, "Teacher":profile.teacher, "Pathway":P,
     "House points":housePoints() + " in total" + (hpToday ? " (🏠 +" + hpToday + " earned in this lesson, please award!)" : "") + " • " + solvedCount() + " exercises completed • " + totalPoints() + " points to spend",
     "Lesson":"Lesson " + n + ": " + L.title, "Date":d,
     "Status":status + (complete ? "" : " (time ran out before the next House Point was reached)"),
@@ -1237,6 +1244,7 @@ async function submitLesson(L, s, kind, st, complete){
   const rec = {date:d, at:Date.now(), kind:kind, complete:!!complete, level:m.level, sent:"pending"};
   s.submissions.push(rec); saveProg();
   if (st) showSent(st, rec);
+  syncTeacher(complete ? "submission" : "time-up");
   const ok = await postReport(report);
   rec.sent = ok ? true : false; saveProg();
   if (!ok) queueReport(report);
@@ -1254,6 +1262,55 @@ async function flushOutbox(){
   for (const r of q){ const ok = await postReport(r); if (!ok) queueReport(r); }
 }
 setTimeout(flushOutbox, 2500);
+
+/* ---------------- Private teacher log (Google Form → Google Sheet) ----------------
+   Every sign-up, completed exercise and submission sends one row to the teacher's private Google Form.
+   The Admin page reads the downloaded Sheet. Nothing is shown publicly. */
+const FORM = {"url": "", "entries": {"type": "", "student": "", "email": "", "teacher": "", "data": ""}};
+function formReady(){ return FORM && FORM.url && FORM.url.indexOf("docs.google.com/forms") >= 0; }
+function snapshot(type, extra){
+  const acct = {name:profile.name, email:profile.email || "", grade:profile.grade, cls:profile.cls, teacher:profile.teacher, path:profile.path, created:profile.created};
+  const paths = {};
+  Object.keys(PATHS).forEach(p => {
+    const pr = p === profile.path ? prog : load("pyl_" + p + "_" + slug(profile.name), null);
+    if (!pr || !pr.lessons || !Object.keys(pr.lessons).length) return;
+    const lessons = {};
+    let solved = 0;
+    Object.keys(pr.lessons).forEach(n => {
+      const s = pr.lessons[n], L = DATA.lessons[p][n - 1]; if (!L) return;
+      const ms = s.ms || {}, at = s.solvedAt || {};
+      const core = L.ex.map(q => ({t:DATA.questions[p][q - 1].title, ok:!!s.solved[q], h:s.hints[q] || 0, c:s.tries[q] || 0, ms:ms[q] || 0, at:at[q] || 0}));
+      const prac = ((s.prac || {}).done || []).filter(x => x.ok).map(x => ({t:x.title, h:x.hints || 0, c:x.checks || 0, ms:x.ms || 0, at:x.at || 0}));
+      solved += core.filter(x => x.ok).length + prac.length;
+      const days = {}; Object.keys(s.days || {}).forEach(d => days[d] = s.days[d].activeMs || 0);
+      const errs = {}; Object.keys(s.errs || {}).forEach(q => Object.keys(s.errs[q]).forEach(k => errs[k] = (errs[k] || 0) + s.errs[q][k]));
+      lessons[n] = {title:L.title, core, prac, skipped:(s.prac || {}).skipped || 0, days, errs, subs:(s.submissions || []).filter(x => x.complete).length};
+    });
+    paths[p] = {solved, points:solved * POINTS_EACH - (pr.spent || 0), spent:pr.spent || 0, house:Math.floor(solved / HOUSE_EVERY[p]), lessons};
+  });
+  return Object.assign({v:1, type, at:new Date().toISOString(), acct, paths}, extra || {});
+}
+function postForm(fields){
+  const body = new URLSearchParams();
+  Object.keys(fields).forEach(k => { if (FORM.entries[k]) body.append(FORM.entries[k], fields[k]); });
+  return fetch(FORM.url, {method:"POST", mode:"no-cors", body}).then(() => true).catch(() => false);
+}
+function syncTeacher(type, extra){
+  if (!formReady() || !profile) return;
+  const snap = snapshot(type, extra);
+  const fields = {type, student:profile.name, email:profile.email || "", teacher:profile.teacher || "", data:JSON.stringify(snap)};
+  postForm(fields).then(ok => { if (!ok){ const q = load("pyl_formbox", []); q.push(fields); while (q.length > 30) q.shift(); store("pyl_formbox", q); } });
+}
+let syncTimer = null;
+function queueSync(){ clearTimeout(syncTimer); syncTimer = setTimeout(() => syncTeacher("progress"), 4000); }
+async function flushFormbox(){
+  if (!formReady()) return;
+  const q = load("pyl_formbox", []); if (!q.length) return;
+  store("pyl_formbox", []);
+  for (const f of q){ const ok = await postForm(f); if (!ok){ const r = load("pyl_formbox", []); r.push(f); store("pyl_formbox", r); } }
+}
+setTimeout(flushFormbox, 3000);
+window.addEventListener("online", flushFormbox);
 window.addEventListener("online", flushOutbox);
 
 /* ---------------- Lesson clock (40 minutes) ---------------- */
@@ -1263,7 +1320,15 @@ function startClock(){
   const tick = () => {
     const s = lessonState(cur.lesson), d = today(), day = s.days[d];
     const now = Date.now();
-    if (!document.hidden) day.activeMs += Math.min(now - lastTick, 5000);
+    const dt = Math.min(now - lastTick, 5000);
+    if (!document.hidden){
+      day.activeMs += dt;
+      if (cur.step >= 2 && cur.step <= PRACTICE){
+        const LL = DATA.lessons[profile.path][cur.lesson - 1];
+        const qid = cur.step === PRACTICE ? (s.prac.cur ? s.prac.cur.id : null) : LL.ex[cur.step - 2];
+        if (qid != null && !s.solved[qid]){ s.ms = s.ms || {}; s.ms[qid] = (s.ms[qid] || 0) + dt; }
+      }
+    }
     lastTick = now;
     const left = LESSON_MIN * 60000 - (now - day.start);
     const pill = $("clockPill");

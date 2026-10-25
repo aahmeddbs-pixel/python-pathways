@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Python Pathways Admin</title>
+<style>
+:root{--navy:#1B2D4E;--red:#DC2B3E;--red-l:#fdecee;--bg:#f4f6fa;--line:#e0e5ee;--muted:#6b7590;--green:#13a05a;--green-l:#e4f6ec;--amber:#f5b000;--amber-l:#fff6dc;--shadow:0 2px 8px rgba(27,45,78,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--navy);font-size:15px;line-height:1.45;min-height:100vh}
+button,select,input{font:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.top{background:var(--navy);color:#fff;border-bottom:4px solid var(--red)}
+.top .in{max-width:1300px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{background:var(--red);border-radius:6px;padding:3px 8px;font-weight:700;font-size:.85rem;letter-spacing:.06em}
+.title{font-weight:700;font-size:1.15rem;margin-right:auto}
+.wrap{max-width:1300px;margin:0 auto;padding:16px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:20px}
+h1{font-size:1.6rem} h2{font-size:1.2rem;margin-bottom:8px}
+.muted{color:var(--muted)}
+.btn{border:none;border-radius:9px;padding:9px 16px;font-weight:700;background:var(--navy);color:#fff;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{background:#101d35}
+.btn.red{background:var(--red)} .btn.red:hover{background:#b81f30}
+.btn.green{background:var(--green)}
+.btn.ghost{background:#fff;color:var(--navy);border:2px solid var(--line)} .btn.ghost:hover{border-color:var(--navy)}
+.btn.sm{padding:5px 10px;font-size:.85rem;border-radius:7px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+input.t,select.t{width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:9px;outline:none;background:#fff}
+input.t:focus,select.t:focus{border-color:var(--navy)}
+.gate{max-width:420px;margin:60px auto}
+.err{color:var(--red);font-weight:700;margin-top:8px}
+.drop{border:3px dashed #b9c6e0;border-radius:14px;padding:26px;text-align:center;background:#fff;margin-top:14px}
+.drop.over{border-color:var(--red);background:var(--red-l)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0}
+.stat{background:#fff;border:1px solid var(--line);border-left:5px solid var(--navy);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.stat:nth-child(2n){border-left-color:var(--red)}
+.stat b{display:block;font-size:1.6rem}
+.stat span{color:var(--muted);font-size:.85rem}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.filters select,.filters input{width:auto;min-width:150px}
+.tblwrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{background:#f7f8fb;font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0}
+td .em{color:var(--muted);font-size:.82rem}
+.pin{font-family:Consolas,Menlo,monospace;font-weight:700;letter-spacing:.2em;background:#eef1f7;border-radius:6px;padding:2px 8px;border:none}
+.tag{display:inline-block;border-radius:999px;padding:2px 9px;font-size:.78rem;font-weight:700}
+.tag.b{background:#e8ecf4;color:var(--navy)} .tag.i{background:var(--red-l);color:#a01a2b} .tag.a{background:#f6ecd9;color:#8a6414}
+.bar{height:8px;background:var(--line);border-radius:999px;overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:var(--red)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.note{background:var(--amber-l);border:2px solid #ffe08a;border-radius:12px;padding:12px 14px;margin-top:12px;font-weight:700}
+.ok{background:var(--green-l);border:2px solid #9be0a1;border-radius:12px;padding:12px 14px;margin-top:12px;font-weight:700;color:#0c6b3b}
+.modal-bg{position:fixed;inset:0;background:rgba(27,45,78,.55);display:flex;align-items:flex-start;justify-content:center;z-index:50;padding:30px 16px;overflow:auto}
+.modal{background:#fff;border-radius:16px;max-width:860px;width:100%;padding:24px;border-top:8px solid var(--red)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.box{border-radius:12px;padding:12px 14px}
+.box.g{background:var(--green-l)} .box.a{background:var(--amber-l)}
+.box ul{padding-left:20px;margin-top:6px}
+.small{font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="top"><div class="in"><span class="logo">SISD</span><span class="title">Python Pathways · Admin</span><span id="who" class="small"></span><button class="btn ghost sm hidden" id="lockBtn">🔒 Lock</button></div></div>
+
+<!-- GATE -->
+<div class="wrap hidden" id="gate">
+  <div class="card gate">
+    <h2 id="gateTitle">Admin sign in</h2>
+    <p class="muted small" id="gateMsg"></p>
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin password</label>
+    <input class="t" id="pw1" type="password" autocomplete="off">
+    <div id="pw2wrap" class="hidden"><label style="display:block;font-weight:700;margin:12px 0 6px" for="pw2">Type it again</label><input class="t" id="pw2" type="password" autocomplete="off"></div>
+    <div class="err" id="gateErr"></div>
+    <button class="btn" id="gateBtn" style="margin-top:14px;width:100%;justify-content:center">Continue</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="wrap hidden" id="app">
+  <div class="card">
+    <h1>Student progress</h1>
+    <p class="muted" style="margin-top:4px">Load the responses from your private Google Sheet (<b>File → Download → Comma-separated values (.csv)</b>). You can also add students' <b>progress files</b>. Everything is processed on this computer only and never uploaded.</p>
+    <div class="drop" id="drop">
+      <p style="font-weight:700">Drop the .csv (and any progress .txt files) here</p>
+      <p class="muted small" style="margin:6px 0 12px">or</p>
+      <button class="btn red" id="pickBtn">📂 Choose files</button>
+      <input type="file" id="files" multiple accept=".csv,.txt,.json" class="hidden">
+    </div>
+    <div id="loadMsg"></div>
+  </div>
+
+  <div id="dash" class="hidden">
+    <div class="stats" id="stats"></div>
+    <div class="filters">
+      <input class="t" id="q" placeholder="🔎 Search name or email">
+      <select class="t" id="fTeacher"></select>
+      <select class="t" id="fGrade"></select>
+      <select class="t" id="fClass"></select>
+      <select class="t" id="fLevel"></select>
+      <span style="flex:1"></span>
+      <label class="small muted" for="mailMode">Email opens in</label>
+      <select class="t" id="mailMode" style="min-width:130px"><option value="gmail">Gmail</option><option value="mailto">Mail app</option></select>
+    </div>
+    <div class="filters">
+      <button class="btn" id="allPdf">⬇ All PDF reports (.zip)</button>
+      <button class="btn ghost" id="trackerBtn">⬇ Attendance &amp; progress tracker (Excel .csv)</button>
+      <button class="btn ghost" id="pinsBtn">👁 Show all PINs</button>
+      <button class="btn ghost" id="clearBtn">🧹 Clear loaded data</button>
+    </div>
+    <div class="tblwrap"><table id="tbl"></table></div>
+    <p class="muted small" style="margin-top:10px">📧 <b>Email</b> opens a ready-written email to the student and downloads their PDF report so you can attach it. 🔑 <b>PIN</b> emails a student their PIN if they've forgotten it.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const TITLES = {"beginner": {"lessons": [{"title": "Talking to the computer", "ex": [1, 2, 3]}, {"title": "Maths and variables", "ex": [4, 5, 6]}, {"title": "Variables with words and numbers", "ex": [7, 8, 9]}, {"title": "Text tricks", "ex": [10, 11, 12]}, {"title": "f-strings and asking questions", "ex": [13, 14, 15]}, {"title": "Making decisions", "ex": [16, 17, 18]}, {"title": "Smarter decisions and your first loop", "ex": [19, 20, 21]}, {"title": "Loops that count and add", "ex": [22, 23, 24]}, {"title": "While loops and lists", "ex": [25, 26, 27]}, {"title": "Growing lists and making functions", "ex": [28, 29, 30]}], "q": ["Hello, World!", "Your first sentence", "Two lines", "Python can add", "Python can multiply", "Your first variable", "Saying hello with a variable", "Maths with variables", "Sticking words together", "Laughing Python", "How long is a word?", "SHOUTING", "f-strings", "Text into numbers", "Asking a question", "Adding machine", "Is it hot?", "Odd or even", "Grade machine", "Junior club", "Counting with a loop", "Three cheers", "Even numbers", "Adding it all up", "Blast off!", "Your first list", "Looping through a list", "Shopping list", "Your first function", "A function that gives back"]}, "intermediate": {"lessons": [{"title": "Functions that return answers", "ex": [1, 2, 3]}, {"title": "Looping through lists and text", "ex": [4, 5, 6]}, {"title": "Logic puzzles with strings and loops", "ex": [7, 8, 9]}, {"title": "Building lists quickly", "ex": [10, 11, 12]}, {"title": "Dictionaries", "ex": [13, 14, 15]}, {"title": "Searching and number crunching", "ex": [16, 17, 18]}, {"title": "Sequences and primes", "ex": [19, 20, 21]}, {"title": "Cleaning up data", "ex": [22, 23, 24]}, {"title": "Nested data and handling errors", "ex": [25, 26, 27]}, {"title": "Sorting and a mini project", "ex": [28, 29, 30]}], "q": ["Square it", "Even checker", "Biggest of three", "Total of a list", "Vowel counter", "Backwards", "Palindromes", "FizzBuzz", "Times table list", "List comprehension", "Only the evens", "Average", "Dictionaries", "Word counter", "Letter grades", "Where is the biggest?", "Digit sum", "Factorial", "Fibonacci", "Prime checker", "All the primes", "Title Case", "No duplicates", "Smallest and largest", "Grid total", "Safe division", "Price tags", "Sort by length", "Top scorer", "Shopping trip"]}, "advanced": {"lessons": [{"title": "Analysing text", "ex": [1, 2, 3]}, {"title": "Ciphers and recursion", "ex": [4, 5, 6]}, {"title": "Classic algorithms", "ex": [7, 8, 9]}, {"title": "Sort keys, sets and comprehensions", "ex": [10, 11, 12]}, {"title": "Grouping and compression", "ex": [13, 14, 15]}, {"title": "Validation and Roman numerals", "ex": [16, 17, 18]}, {"title": "Text statistics and classes", "ex": [19, 20, 21]}, {"title": "Inheritance and generators", "ex": [22, 23, 24]}, {"title": "Flexible functions and game logic", "ex": [25, 26, 27]}, {"title": "Efficient algorithms and a final project", "ex": [28, 29, 30]}], "q": ["Character counter", "Anagrams", "Secret code: Caesar cipher", "Cracking the code", "Flatten it", "Recursive power", "Binary search", "Bubble sort", "Transpose", "Leaderboard", "Things in common", "Flip the dictionary", "Group by length", "Squash the letters", "Unsquash", "Strong password", "Roman numerals → numbers", "Numbers → Roman numerals", "Most common word", "Your first class", "Bank account", "Rectangles", "Inheritance", "Generators", "Any number of numbers", "Clock to minutes", "Tic-tac-toe judge", "Pascal's triangle", "Super-fast Fibonacci", "Quiz marker"]}};
+const PATH_NAMES = {beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced"};
+const HOUSE_EVERY = {beginner:15, intermediate:10, advanced:5};
+const $ = id => document.getElementById(id);
+const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"}[c]));
+function store(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+function load(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+const slug = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
+const fmtDate = ms => ms ? new Date(ms).toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}) : "–";
+const fmtMins = ms => { const m = Math.round((ms || 0) / 60000); return m < 1 ? "<1 min" : m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; };
+const fmtAvg = ms => { if (!ms) return "–"; const s = Math.round(ms / 1000); return s < 60 ? s + " s" : Math.floor(s / 60) + " min " + (s % 60) + " s"; };
+
+/* ---------------- Admin password (stored only on this computer) ---------------- */
+function h(pw){ let x = 5381; for (const ch of "sisd-admin|" + pw) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(36); }
+const PW_KEY = "pyl_admin_pw";
+function showGate(){
+  const has = !!load(PW_KEY, null);
+  $("gate").classList.remove("hidden"); $("app").classList.add("hidden"); $("lockBtn").classList.add("hidden");
+  $("gateTitle").textContent = has ? "Admin sign in" : "Set up admin access";
+  $("gateMsg").textContent = has ? "Enter the admin password for this computer." : "First time on this computer: choose an admin password (at least 6 characters).";
+  $("pw2wrap").classList.toggle("hidden", has); $("pw1").value = ""; $("pw2").value = ""; $("gateErr").textContent = "";
+  setTimeout(() => $("pw1").focus(), 50);
+}
+$("gateBtn").onclick = () => {
+  const has = load(PW_KEY, null), p = $("pw1").value;
+  if (!has){
+    if (p.length < 6){ $("gateErr").textContent = "Use at least 6 characters."; return; }
+    if (p !== $("pw2").value){ $("gateErr").textContent = "The passwords don't match."; return; }
+    store(PW_KEY, h(p));
+  } else if (h(p) !== has){ $("gateErr").textContent = "Wrong password."; return; }
+  $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden");
+};
+$("pw1").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
+$("pw2").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
+$("lockBtn").onclick = () => { STUDENTS = {}; render(); showGate(); };
+
+/* ---------------- Loading data ---------------- */
+let STUDENTS = {};  // key -> student
+function parseCSV(text){
+  const rows = []; let row = [], f = "", q = false;
+  text = text.replace(/^﻿/, "");
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"'){ if (text[i + 1] === '"'){ f += '"'; i++; } else q = false; } else f += c; }
+    else if (c === '"') q = true;
+    else if (c === ","){ row.push(f); f = ""; }
+    else if (c === "\n" || c === "\r"){ if (c === "\r" && text[i + 1] === "\n") i++; row.push(f); rows.push(row); row = []; f = ""; }
+    else f += c;
+  }
+  if (f !== "" || row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim() !== ""));
+}
+function keyOf(a){ return (a.email || "").toLowerCase() || slug(a.name); }
+function upsert(acct, snap, pin, when){
+  const k = keyOf(acct); if (!k) return;
+  const st = STUDENTS[k] || (STUDENTS[k] = {acct:{}, snap:null, snapAt:0, pin:null, pinAt:0, lastActive:0});
+  const t = when || 0;
+  if (snap && t >= st.snapAt){ st.snap = snap; st.snapAt = t; st.acct = Object.assign({}, st.acct, acct); }
+  else st.acct = Object.assign({}, acct, st.acct);
+  if (pin && t >= st.pinAt){ st.pin = pin; st.pinAt = t; }
+  st.lastActive = Math.max(st.lastActive, t);
+}
+function fromProgressFile(d){
+  // convert a student's progress file into the same snapshot shape
+  const a = d.account, paths = {};
+  Object.keys(d.progress || {}).forEach(p => {
+    const pr = d.progress[p], lessons = {}; let solved = 0;
+    Object.keys(pr.lessons || {}).forEach(n => {
+      const s = pr.lessons[n], T = TITLES[p] && TITLES[p].lessons[n - 1]; if (!T) return;
+      const ms = s.ms || {}, at = s.solvedAt || {};
+      const core = T.ex.map(q => ({t:TITLES[p].q[q - 1], ok:!!(s.solved || {})[q], h:(s.hints || {})[q] || 0, c:(s.tries || {})[q] || 0, ms:ms[q] || 0, at:at[q] || 0}));
+      const prac = (((s.prac || {}).done) || []).filter(x => x.ok).map(x => ({t:x.title, h:x.hints || 0, c:x.checks || 0, ms:x.ms || 0, at:x.at || 0}));
+      solved += core.filter(x => x.ok).length + prac.length;
+      const days = {}; Object.keys(s.days || {}).forEach(dd => days[dd] = s.days[dd].activeMs || 0);
+      const errs = {}; Object.keys(s.errs || {}).forEach(q => Object.keys(s.errs[q]).forEach(k => errs[k] = (errs[k] || 0) + s.errs[q][k]));
+      lessons[n] = {title:T.title, core, prac, skipped:(s.prac || {}).skipped || 0, days, errs, subs:(s.submissions || []).filter(x => x.complete).length};
+    });
+    paths[p] = {solved, points:solved * 10 - (pr.spent || 0), spent:pr.spent || 0, house:Math.floor(solved / HOUSE_EVERY[p]), lessons};
+  });
+  const latest = Math.max(0, ...Object.values(paths).flatMap(P => Object.values(P.lessons).flatMap(L => L.core.map(x => x.at).concat(L.prac.map(x => x.at)))));
+  return {acct:{name:a.name, email:a.email || "", grade:a.grade, cls:a.cls, teacher:a.teacher, path:a.path, created:a.created}, snap:{v:1, type:"file", at:new Date(latest || Date.now()).toISOString(), acct:a, paths}, at:latest || Date.now()};
+}
+async function loadFiles(list){
+  let rows = 0, files = 0, bad = 0;
+  for (const f of list){
+    const text = await f.text();
+    try {
+      if (/\.csv$/i.test(f.name) || text.slice(0, 200).toLowerCase().indexOf("timestamp") >= 0){
+        const R = parseCSV(text); if (!R.length) continue;
+        const head = R[0].map(x => x.trim().toLowerCase());
+        const col = name => head.findIndex(x => x === name || x.indexOf(name) === 0);
+        const ci = {ts:col("timestamp"), type:col("type"), student:col("student"), email:col("email"), teacher:col("teacher"), data:col("data")};
+        R.slice(1).forEach(r => {
+          let snap = null; try { snap = JSON.parse(r[ci.data] || ""); } catch(e){ bad++; return; }
+          if (!snap || !snap.acct) { bad++; return; }
+          const when = Date.parse(snap.at) || Date.parse(r[ci.ts]) || 0;
+          upsert(snap.acct, snap, snap.pin || null, when); rows++;
+        });
+      } else {
+        const d = JSON.parse(text);
+        if (!d.account) throw new Error("not a progress file");
+        const c = fromProgressFile(d); upsert(c.acct, c.snap, null, c.at); files++;
+      }
+    } catch(e){ bad++; }
+  }
+  const n = Object.keys(STUDENTS).length;
+  $("loadMsg").className = n ? "ok" : "note";
+  $("loadMsg").textContent = n ? "✅ Loaded " + rows + " log rows" + (files ? " and " + files + " progress files" : "") + ": " + n + " students." + (bad ? " (" + bad + " rows skipped)" : "") : "⚠️ No student data found. Check you chose the Google Sheet CSV or a progress file.";
+  buildFilters(); render();
+}
+$("pickBtn").onclick = () => $("files").click();
+$("files").onchange = e => { loadFiles([...e.target.files]); e.target.value = ""; };
+const drop = $("drop");
+["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+drop.addEventListener("drop", e => loadFiles([...e.dataTransfer.files]));
+$("clearBtn").onclick = () => { STUDENTS = {}; $("loadMsg").textContent = ""; $("loadMsg").className = ""; render(); };
+
+/* ---------------- Analysis ---------------- */
+function analyse(st){
+  const snap = st.snap || {paths:{}}, a = st.acct;
+  const path = (a.path && snap.paths[a.path]) ? a.path : Object.keys(snap.paths)[0] || a.path || "beginner";
+  const P = snap.paths[path] || {solved:0, points:0, house:0, lessons:{}};
+  const rows = [], done = [], dayMs = {}, errs = {};
+  let timeAll = 0, taskMs = 0, taskN = 0, hints = 0, skipped = 0, coreDone = 0, lessonsComplete = 0, lastAt = 0;
+  Object.keys(P.lessons).sort((x, y) => x - y).forEach(n => {
+    const L = P.lessons[n];
+    const okCore = L.core.filter(x => x.ok), lt = Object.values(L.days || {}).reduce((p, q) => p + q, 0);
+    Object.keys(L.days || {}).forEach(d => dayMs[d] = (dayMs[d] || 0) + L.days[d]);
+    Object.keys(L.errs || {}).forEach(k => errs[k] = (errs[k] || 0) + L.errs[k]);
+    const solvedItems = okCore.concat(L.prac);
+    solvedItems.forEach(x => { if (x.ms) { taskMs += x.ms; taskN++; } hints += x.h || 0; lastAt = Math.max(lastAt, x.at || 0); done.push({lesson:+n, title:x.t, at:x.at, ms:x.ms, h:x.h, kind:L.core.indexOf(x) >= 0 ? "Exercise" : "Practice"}); });
+    L.core.filter(x => !x.ok).forEach(x => hints += x.h || 0);
+    timeAll += lt; skipped += L.skipped || 0; coreDone += okCore.length; if (okCore.length === 3) lessonsComplete++;
+    const avg = solvedItems.filter(x => x.ms).length ? solvedItems.reduce((p, x) => p + (x.ms || 0), 0) / solvedItems.filter(x => x.ms).length : 0;
+    rows.push({n:+n, title:L.title, core:okCore.length, prac:L.prac.length, time:lt, avg, hints:solvedItems.reduce((p, x) => p + (x.h || 0), 0), status:okCore.length === 3 ? (L.prac.length >= 3 ? "Mastered" : "Complete") : okCore.length + L.prac.length ? "In progress" : "Started", errs:L.errs || {}});
+  });
+  const solved = done.length, avgTask = taskN ? taskMs / taskN : 0;
+  const every = HOUSE_EVERY[path] || 15;
+  // strengths & development
+  const S = [], Dv = [];
+  if (lessonsComplete) S.push("Completed all lesson exercises in " + lessonsComplete + " lesson" + (lessonsComplete > 1 ? "s" : "") + ": " + rows.filter(r => r.core === 3).map(r => r.title).slice(0, 4).join(", ") + ".");
+  const indep = done.filter(x => !x.h).length;
+  if (solved >= 3 && indep / solved >= 0.8) S.push("Works independently: " + indep + " of " + solved + " tasks solved without buying advice.");
+  if (avgTask && avgTask < 3 * 60000 && solved >= 3) S.push("Works at a strong pace: an average of " + fmtAvg(avgTask) + " per task.");
+  const pracTotal = rows.reduce((p, r) => p + r.prac, 0);
+  if (pracTotal >= 5) S.push("Shows perseverance with " + pracTotal + " extra practice questions completed.");
+  if (P.house) S.push("Earned " + P.house + " House Point" + (P.house > 1 ? "s" : "") + " through consistent effort.");
+  const mastered = rows.filter(r => r.status === "Mastered");
+  if (mastered.length) S.push("Mastered: " + mastered.map(r => r.title).slice(0, 3).join(", ") + ".");
+  const unfinished = rows.filter(r => r.core < 3);
+  if (unfinished.length) Dv.push("Finish the lesson exercises in: " + unfinished.map(r => "Lesson " + r.n + " (" + r.title + ")").slice(0, 3).join(", ") + ".");
+  if (solved && hints / Math.max(1, solved) > 1) Dv.push("Try each task independently for a few minutes before buying advice (" + hints + " pieces of advice used).");
+  if (avgTask > 10 * 60000) Dv.push("Build speed and confidence: tasks are taking " + fmtAvg(avgTask) + " on average. Re-read the worked example first.");
+  const topErr = Object.keys(errs).sort((x, y) => errs[y] - errs[x])[0];
+  const errTip = {SyntaxError:"Check syntax carefully: colons, brackets and quotation marks", IndentationError:"Indent code inside if, for, while and def by 4 spaces", NameError:"Check variable names are spelled the same each time, and put text in quotes", TypeError:"Convert between text and numbers with int() and str()", Timeout:"Make sure loops always finish", ValueError:"Check values before converting them with int()", IndexError:"Remember list positions start at 0"};
+  if (topErr && errs[topErr] >= 3) Dv.push(errTip[topErr] + " (" + errs[topErr] + " " + topErr + "s).");
+  if (skipped >= 3) Dv.push("Have a proper go at practice questions before swapping them (" + skipped + " swapped).");
+  const daysSince = lastAt ? (Date.now() - lastAt) / 86400000 : 99;
+  if (solved && daysSince > 10) Dv.push("Keep momentum: no tasks completed in the last " + Math.floor(daysSince) + " days.");
+  if (!solved) Dv.push("Get started: complete the first lesson's exercises.");
+  if (!S.length) S.push(solved ? "Has made a start, completing " + solved + " task" + (solved > 1 ? "s" : "") + "." : "Has signed up and is ready to begin.");
+  if (!Dv.length) Dv.push("Keep stretching: move on to the next lesson" + (path !== "advanced" ? " or try the next level up." : "."));
+  return {path, P, rows, done:done.sort((x, y) => (x.at || 0) - (y.at || 0)), solved, coreDone, lessonsComplete, timeAll, avgTask, hints, skipped, dayMs, every, into:solved % every, house:P.house || 0, points:P.points || 0, lastAt:Math.max(lastAt, st.lastActive || 0), strengths:S.slice(0, 5), dev:Dv.slice(0, 5)};
+}
+
+/* ---------------- Dashboard ---------------- */
+let showPins = false;
+function list(){
+  const q = slug($("q").value), t = $("fTeacher").value, g = $("fGrade").value, c = $("fClass").value, lv = $("fLevel").value;
+  return Object.values(STUDENTS).filter(st => {
+    const a = st.acct;
+    return (!q || slug(a.name).indexOf(q) >= 0 || (a.email || "").indexOf(q) >= 0) && (!t || a.teacher === t) && (!g || String(a.grade) === g) && (!c || a.cls === c) && (!lv || a.path === lv);
+  }).sort((x, y) => (x.acct.cls || "").localeCompare(y.acct.cls || "") || (x.acct.name || "").localeCompare(y.acct.name || ""));
+}
+function opts(sel, label, values){
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">' + label + '</option>' + values.map(v => '<option value="' + esc(v[0]) + '">' + esc(v[1]) + '</option>').join("");
+  sel.value = values.some(v => v[0] === cur) ? cur : "";
+}
+function buildFilters(){
+  const all = Object.values(STUDENTS).map(s => s.acct);
+  const uniq = f => [...new Set(all.map(f).filter(Boolean))].sort();
+  opts($("fTeacher"), "All teachers", uniq(a => a.teacher).map(x => [x, x]));
+  opts($("fGrade"), "All grades", uniq(a => String(a.grade || "")).map(x => [x, "Grade " + x]));
+  opts($("fClass"), "All classes", uniq(a => a.cls).map(x => [x, x]));
+  opts($("fLevel"), "All levels", uniq(a => a.path).map(x => [x, PATH_NAMES[x] || x]));
+}
+["q", "fTeacher", "fGrade", "fClass", "fLevel"].forEach(id => $(id).addEventListener("input", render));
+$("mailMode").value = load("pyl_admin_mail", "gmail");
+$("mailMode").onchange = e => store("pyl_admin_mail", e.target.value);
+$("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = showPins ? "🙈 Hide PINs" : "👁 Show all PINs"; render(); };
+function render(){
+  const L = list();
+  $("dash").classList.toggle("hidden", !Object.keys(STUDENTS).length);
+  const A = L.map(analyse);
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const activeWeek = A.filter(x => x.lastAt && Date.now() - x.lastAt < 7 * 86400000).length;
+  const tasks = A.reduce((p, x) => p + x.solved, 0), hp = A.reduce((p, x) => p + x.house, 0);
+  const avgs = A.filter(x => x.avgTask); const avgAll = avgs.length ? avgs.reduce((p, x) => p + x.avgTask, 0) / avgs.length : 0;
+  $("stats").innerHTML = [["Students", L.length], ["Active this week", activeWeek], ["Tasks completed", tasks], ["House Points earned", hp], ["Average time per task", fmtAvg(avgAll)]]
+    .map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("");
+  let html = '<tr><th>Student</th><th>Grade / Class</th><th>Teacher</th><th>Level</th><th>PIN</th><th>Tasks</th><th>House Points</th><th>Avg time / task</th><th>Last active</th><th>Actions</th></tr>';
+  L.forEach((st, i) => {
+    const a = st.acct, x = A[i], p = a.path || x.path;
+    html += '<tr><td><b>' + esc(a.name) + '</b><div class="em">' + esc(a.email || "no email") + '</div></td>' +
+      '<td>' + esc(a.grade ? "G" + a.grade : "") + ' · ' + esc(a.cls || "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
+      '<td><span class="tag ' + (p || "b")[0] + '">' + esc(PATH_NAMES[p] || p || "") + '</span></td>' +
+      '<td>' + (st.pin ? '<button class="pin" data-pin="' + i + '" title="Click to show">' + (showPins ? esc(st.pin) : "••••") + '</button>' : '<span class="muted small">not logged</span>') + '</td>' +
+      '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' practice)</span></td>' +
+      '<td><b>' + x.house + '</b><div class="bar" title="' + x.into + ' / ' + x.every + ' to next"><i style="width:' + Math.round(x.into / x.every * 100) + '%"></i></div></td>' +
+      '<td>' + fmtAvg(x.avgTask) + '</td><td>' + fmtDate(x.lastAt) + '</td>' +
+      '<td><div class="acts"><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
+  });
+  if (!L.length) html += '<tr><td colspan="10" class="muted">No students match these filters.</td></tr>';
+  $("tbl").innerHTML = html;
+  $("tbl").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => { const st = L[+b.dataset.pin]; b.textContent = b.textContent === "••••" ? st.pin : "••••"; });
+  $("tbl").querySelectorAll("[data-view]").forEach(b => b.onclick = () => viewStudent(L[+b.dataset.view]));
+  $("tbl").querySelectorAll("[data-pdf]").forEach(b => b.onclick = () => downloadPdf(L[+b.dataset.pdf]));
+  $("tbl").querySelectorAll("[data-mail]").forEach(b => b.onclick = () => emailProgress(L[+b.dataset.mail]));
+  $("tbl").querySelectorAll("[data-pinmail]").forEach(b => b.onclick = () => emailPin(L[+b.dataset.pinmail]));
+}
+function viewStudent(st){
+  const a = st.acct, x = analyse(st);
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = '<div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h1>' + esc(a.name) + '</h1><p class="muted">' + esc(a.email || "") + ' · Grade ' + esc(a.grade) + ' · ' + esc(a.cls) + ' · ' + esc(a.teacher) + ' · ' + esc(PATH_NAMES[x.path]) + '</p></div><button class="btn ghost" id="mClose">✕ Close</button></div>' +
+    '<div class="stats">' + [["Tasks completed", x.solved], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time per task", fmtAvg(x.avgTask)], ["House Points", x.house], ["Points", x.points]].map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("") + '</div>' +
+    '<h2>Progress by lesson</h2><div class="tblwrap"><table><tr><th>Lesson</th><th>Exercises</th><th>Practice</th><th>Time</th><th>Avg / task</th><th>Status</th></tr>' +
+    (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / 3</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
+    '<div class="two" style="margin-top:14px"><div class="box g"><b>🌟 Strengths</b><ul>' + x.strengths.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div><div class="box a"><b>🚀 Areas for development</b><ul>' + x.dev.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div></div>' +
+    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="mPdf">📄 Download PDF</button><button class="btn red" id="mMail"' + (a.email ? "" : " disabled") + '>📧 Email progress</button></div></div>';
+  document.body.appendChild(bg);
+  bg.querySelector("#mClose").onclick = () => bg.remove();
+  bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
+  bg.querySelector("#mPdf").onclick = () => downloadPdf(st);
+  bg.querySelector("#mMail").onclick = () => emailProgress(st);
+}
+
+/* ---------------- Emails ---------------- */
+function openMail(to, subject, body){
+  if ($("mailMode").value === "gmail") window.open("https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(to) + "&su=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body), "_blank");
+  else window.location.href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+}
+function first(n){ return String(n || "").split(" ")[0]; }
+function emailProgress(st){
+  const a = st.acct, x = analyse(st);
+  downloadPdf(st);
+  const body = "Dear " + first(a.name) + ",\n\nHere is your latest Python Pathways progress update (" + PATH_NAMES[x.path] + " level).\n\n" +
+    "• Tasks completed: " + x.solved + " (" + x.coreDone + " lesson exercises, " + (x.solved - x.coreDone) + " practice questions)\n" +
+    "• Lessons fully completed: " + x.lessonsComplete + " of 10\n" +
+    "• Time spent on lessons: " + fmtMins(x.timeAll) + "\n" +
+    "• Average time per task: " + fmtAvg(x.avgTask) + "\n" +
+    "• House Points earned: " + x.house + " (" + x.into + " of " + x.every + " tasks towards your next one)\n\n" +
+    "Strengths:\n" + x.strengths.map(s => "• " + s).join("\n") + "\n\n" +
+    "Areas for development:\n" + x.dev.map(s => "• " + s).join("\n") + "\n\n" +
+    "Your full progress report is attached as a PDF.\n\nKeep up the effort!\n" + (a.teacher || "Your teacher");
+  openMail(a.email, "Your Python Pathways progress – " + fmtDate(Date.now()), body);
+}
+function emailPin(st){
+  const a = st.acct;
+  const body = "Dear " + first(a.name) + ",\n\nYou asked for a reminder of your Python Pathways PIN.\n\nName: " + a.name + "\nPIN: " + st.pin + "\n\nPlease keep your PIN secret and don't share it with anyone.\n\n" + (a.teacher || "Your teacher");
+  openMail(a.email, "Your Python Pathways PIN", body);
+}
+
+/* ---------------- Minimal PDF writer (no internet needed) ---------------- */
+const HW = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+function clean(t){
+  return String(t == null ? "" : t).replace(/[–—]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/→/g, "->").replace(/…/g, "...")
+    .replace(/•/g, "\u0095").replace(/[^\x20-\x7E\u0095 -ÿ]/g, "");
+}
+function tw(t, size, bold){ let w = 0; for (const ch of clean(t)){ const c = ch.charCodeAt(0); w += (c >= 32 && c <= 126 ? HW[c - 32] : 556); } return w * size / 1000 * (bold ? 1.06 : 1); }
+function wrap(t, size, maxW, bold){
+  const out = []; String(t).split("\n").forEach(par => {
+    let line = ""; par.split(" ").forEach(w => { const test = line ? line + " " + w : w; if (tw(test, size, bold) > maxW && line){ out.push(line); line = w; } else line = test; });
+    out.push(line);
+  }); return out;
+}
+function PDF(){ this.pages = []; this.page(); }
+PDF.prototype.page = function(){ this.ops = []; this.pages.push(this.ops); this.y = 40; };
+PDF.prototype.rgb = function(hex){ const n = parseInt(hex.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255].map(v => v.toFixed(3)).join(" "); };
+PDF.prototype.rect = function(x, y, w, h, hex){ this.ops.push(this.rgb(hex) + " rg " + x.toFixed(1) + " " + (842 - y - h).toFixed(1) + " " + w.toFixed(1) + " " + h.toFixed(1) + " re f"); };
+PDF.prototype.text = function(x, y, t, size, bold, hex){
+  const s = clean(t).replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  this.ops.push("BT /" + (bold ? "F2" : "F1") + " " + size + " Tf " + this.rgb(hex || "#1B2D4E") + " rg " + x.toFixed(1) + " " + (842 - y).toFixed(1) + " Td (" + s + ") Tj ET");
+};
+PDF.prototype.need = function(h){ if (this.y + h > 800){ this.footer(); this.page(); this.header(true); } };
+PDF.prototype.bytes = function(){
+  const objs = [];
+  objs.push("<< /Type /Catalog /Pages 2 0 R >>");
+  objs.push(null); // pages placeholder
+  objs.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+  objs.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+  const kids = [];
+  this.pages.forEach(ops => {
+    const content = ops.join("\n");
+    objs.push("<< /Length " + content.length + " >>\nstream\n" + content + "\nendstream");
+    const cid = objs.length;
+    objs.push("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents " + cid + " 0 R >>");
+    kids.push(objs.length + " 0 R");
+  });
+  objs[1] = "<< /Type /Pages /Kids [" + kids.join(" ") + "] /Count " + kids.length + " >>";
+  let out = "%PDF-1.4\n%âãÏÓ\n"; const offs = [];
+  objs.forEach((o, i) => { offs.push(out.length); out += (i + 1) + " 0 obj\n" + o + "\nendobj\n"; });
+  const xref = out.length;
+  out += "xref\n0 " + (objs.length + 1) + "\n0000000000 65535 f \n" + offs.map(o => String(o).padStart(10, "0") + " 00000 n \n").join("");
+  out += "trailer\n<< /Size " + (objs.length + 1) + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF";
+  const b = new Uint8Array(out.length); for (let i = 0; i < out.length; i++) b[i] = out.charCodeAt(i) & 255; return b;
+};
+function makePdf(st){
+  const a = st.acct, x = analyse(st), d = new PDF(), W = 595, M = 40;
+  d.header = function(cont){
+    this.rect(0, 0, W, 64, "#1B2D4E"); this.rect(0, 64, W, 5, "#DC2B3E");
+    this.rect(M, 20, 44, 20, "#DC2B3E"); this.text(M + 7, 34, "SISD", 11, true, "#FFFFFF");
+    this.text(M + 56, 35, "Python Pathways - Progress Report" + (cont ? " (continued)" : ""), 16, true, "#FFFFFF");
+    this.text(M + 56, 51, clean(a.name) + "  |  " + fmtDate(Date.now()), 10, false, "#C9D3E6");
+    this.y = 92;
+  };
+  d.footer = function(){ this.text(M, 825, "Swiss International Scientific School Dubai  |  Python Pathways  |  Generated " + fmtDate(Date.now()), 8, false, "#6B7590"); };
+  d.header(false);
+  // student details
+  d.text(M, d.y, a.name, 18, true); d.y += 18;
+  d.text(M, d.y, [a.email, "Grade " + a.grade, "Class " + a.cls, a.teacher, (PATH_NAMES[x.path] || "") + " level"].filter(Boolean).join("   |   "), 10, false, "#3D4D6B"); d.y += 20;
+  // summary tiles
+  const tiles = [["Tasks completed", String(x.solved)], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time / task", fmtAvg(x.avgTask)], ["House Points", String(x.house)]];
+  const tw5 = (W - 2 * M - 4 * 8) / 5;
+  tiles.forEach((t, i) => { const tx = M + i * (tw5 + 8); d.rect(tx, d.y, tw5, 50, "#EEF1F7"); d.rect(tx, d.y, 4, 50, i % 2 ? "#DC2B3E" : "#1B2D4E"); d.text(tx + 10, d.y + 24, t[1], 15, true); d.text(tx + 10, d.y + 40, t[0], 8, false, "#6B7590"); });
+  d.y += 64;
+  // house point progress
+  d.text(M, d.y, "Progress to next House Point: " + x.into + " / " + x.every + " tasks", 10, true); d.y += 8;
+  d.rect(M, d.y, W - 2 * M, 8, "#E0E5EE"); d.rect(M, d.y, (W - 2 * M) * x.into / x.every, 8, "#DC2B3E"); d.y += 24;
+  // lesson table
+  d.text(M, d.y, "Progress against tasks", 13, true); d.y += 10;
+  const cols = [[M, "Lesson", 190], [M + 200, "Exercises", 60], [M + 262, "Practice", 55], [M + 320, "Time", 70], [M + 392, "Avg / task", 70], [M + 465, "Status", 50]];
+  d.rect(M, d.y, W - 2 * M, 18, "#1B2D4E"); cols.forEach(c => d.text(c[0] + 4, d.y + 12.5, c[1], 8.5, true, "#FFFFFF")); d.y += 18;
+  if (!x.rows.length){ d.text(M + 4, d.y + 14, "No lessons started yet.", 9, false, "#6B7590"); d.y += 20; }
+  x.rows.forEach((r, i) => {
+    d.need(18);
+    if (i % 2) d.rect(M, d.y, W - 2 * M, 17, "#F7F8FB");
+    const t = r.n + ". " + r.title, tt = tw(t, 8.5) > 185 ? t.slice(0, 40) + "..." : t;
+    [tt, r.core + " / 3", String(r.prac), fmtMins(r.time), fmtAvg(r.avg), r.status].forEach((v, j) => d.text(cols[j][0] + 4, d.y + 12, v, 8.5, j === 5, j === 5 && r.status === "Mastered" ? "#0C6B3B" : "#1B2D4E"));
+    d.y += 17;
+  });
+  d.y += 14;
+  // strengths & development
+  const section = (title, items, color, bg) => {
+    const lines = items.flatMap(s => wrap(s, 9.5, W - 2 * M - 30).map((l, k) => [k === 0, l]));
+    const hgt = 26 + lines.length * 13 + 6;
+    d.need(hgt + 6);
+    d.rect(M, d.y, W - 2 * M, hgt, bg); d.rect(M, d.y, 4, hgt, color);
+    d.text(M + 12, d.y + 17, title, 11, true, color); let yy = d.y + 33;
+    lines.forEach(([firstLine, l]) => { if (firstLine) d.text(M + 14, yy, "\u0095", 9.5, true, color); d.text(M + 24, yy, l, 9.5); yy += 13; });
+    d.y += hgt + 10;
+  };
+  section("Strengths", x.strengths, "#0C6B3B", "#E4F6EC");
+  section("Areas for development", x.dev, "#A01A2B", "#FDECEE");
+  // completed tasks list
+  d.need(40); d.text(M, d.y + 6, "Completed tasks", 13, true); d.y += 16;
+  if (!x.done.length){ d.text(M, d.y + 8, "No tasks completed yet.", 9, false, "#6B7590"); d.y += 16; }
+  x.done.forEach(t => {
+    d.need(14);
+    d.text(M, d.y + 9, fmtDate(t.at), 8.5, false, "#6B7590");
+    d.text(M + 80, d.y + 9, "L" + t.lesson + " " + t.kind, 8.5, true);
+    const ttl = tw(t.title, 8.5) > 250 ? t.title.slice(0, 55) + "..." : t.title;
+    d.text(M + 170, d.y + 9, ttl, 8.5);
+    d.text(M + 440, d.y + 9, fmtAvg(t.ms) + (t.h ? "  (" + t.h + " advice)" : ""), 8.5, false, "#3D4D6B");
+    d.y += 13;
+  });
+  d.footer();
+  return d.bytes();
+}
+function fileName(st){ return "Python-Progress-" + String(st.acct.name || "student").replace(/[^A-Za-z0-9]+/g, "-") + ".pdf"; }
+function saveBlob(bytes, name, type){
+  const blob = new Blob([bytes], {type}); const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function downloadPdf(st){ saveBlob(makePdf(st), fileName(st), "application/pdf"); }
+
+/* ---------------- Minimal ZIP writer ---------------- */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++){ let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b){ let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files){
+  const parts = [], central = []; let off = 0;
+  const now = new Date(), dt = ((now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1)), dd = (((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate());
+  files.forEach(f => {
+    const name = new TextEncoder().encode(f.name), data = f.data, crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dt, true); lh.setUint16(12, dd, true); lh.setUint32(14, crc, true); lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true);
+    lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dt, true); ch.setUint16(14, dd, true); ch.setUint32(16, crc, true); ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true);
+    ch.setUint16(28, name.length, true); ch.setUint32(42, off, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    off += 30 + name.length + data.length;
+  });
+  const csize = central.reduce((p, x) => p + x.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true); end.setUint32(12, csize, true); end.setUint32(16, off, true);
+  const all = parts.concat(central, [new Uint8Array(end.buffer)]);
+  const out = new Uint8Array(all.reduce((p, x) => p + x.length, 0)); let o = 0; all.forEach(x => { out.set(x, o); o += x.length; });
+  return out;
+}
+$("allPdf").onclick = () => {
+  const L = list(); if (!L.length) return;
+  const used = {};
+  const files = L.map(st => { let n = (st.acct.cls ? st.acct.cls + "-" : "") + fileName(st); while (used[n]) n = n.replace(/\.pdf$/, "-2.pdf"); used[n] = 1; return {name:n, data:makePdf(st)}; });
+  saveBlob(zip(files), "Python-Progress-Reports-" + new Date().toISOString().slice(0, 10) + ".zip", "application/zip");
+};
+
+/* ---------------- Attendance & progress tracker (opens in Excel) ---------------- */
+$("trackerBtn").onclick = () => {
+  const L = list(); if (!L.length) return;
+  const A = L.map(analyse);
+  const dates = [...new Set(A.flatMap(x => Object.keys(x.dayMs)))].sort();
+  const byClass = {}; L.forEach((st, i) => { const c = st.acct.cls || "?"; (byClass[c] = byClass[c] || new Set()); Object.keys(A[i].dayMs).forEach(d => byClass[c].add(d)); });
+  const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
+  const head = ["Student", "Email", "Grade", "Class", "Teacher", "Level", "PIN", "Tasks completed", "Lessons complete", "House Points", "Time on lessons", "Avg time per task", "Last active"].concat(dates.map(d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", {day:"2-digit", month:"short", year:"numeric"}))).concat(["Strengths", "Areas for development"]);
+  const lines = [head.map(q).join(",")];
+  L.forEach((st, i) => {
+    const a = st.acct, x = A[i];
+    const perDay = d => {
+      if (x.dayMs[d]){ const n = x.done.filter(t => t.at && new Date(t.at).toISOString().slice(0, 10) === d).length; return "Present (" + n + " task" + (n === 1 ? "" : "s") + ", " + fmtMins(x.dayMs[d]) + ")"; }
+      return (byClass[a.cls || "?"] || new Set()).has(d) ? "Absent" : "";
+    };
+    lines.push([a.name, a.email, a.grade, a.cls, a.teacher, PATH_NAMES[x.path], st.pin || "", x.solved, x.lessonsComplete, x.house, fmtMins(x.timeAll), fmtAvg(x.avgTask), fmtDate(x.lastAt)].concat(dates.map(perDay)).concat([x.strengths.join(" | "), x.dev.join(" | ")]).map(q).join(","));
+  });
+  saveBlob(new TextEncoder().encode("﻿" + lines.join("\r\n")), "Python-Tracker-" + new Date().toISOString().slice(0, 10) + ".csv", "text/csv");
+};
+
+window.__admin = {loadFiles, makePdf, analyse, zip, get students(){ return STUDENTS; }};
+showGate();
+})();
+</script>
+</body>
+</html>
