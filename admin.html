@@ -83,12 +83,12 @@ td .em{color:var(--muted);font-size:.82rem}
 <div class="wrap hidden" id="app">
   <div class="card">
     <h1>Student progress</h1>
-    <p class="muted" style="margin-top:4px">Load the responses from your private Google Sheet (<b>File → Download → Comma-separated values (.csv)</b>). You can also add students' <b>progress files</b>. Everything is processed on this computer only and never uploaded.</p>
+    <p class="muted" style="margin-top:4px">Load your student data: in your Google Form open <b>Responses → ⋮ → Download responses (.csv)</b>, then drop the downloaded file here as it is. You can also add students' <b>progress files</b>. Everything is processed on this computer only and never uploaded.</p>
     <div class="drop" id="drop">
-      <p style="font-weight:700">Drop the .csv (and any progress .txt files) here</p>
+      <p style="font-weight:700">Drop the responses file here (.zip or .csv), plus any student progress .txt files</p>
       <p class="muted small" style="margin:6px 0 12px">or</p>
       <button class="btn red" id="pickBtn">📂 Choose files</button>
-      <input type="file" id="files" multiple accept=".csv,.txt,.json" class="hidden">
+      <input type="file" id="files" multiple accept=".csv,.zip,.txt,.json" class="hidden">
     </div>
     <div id="loadMsg"></div>
   </div>
@@ -201,9 +201,45 @@ function fromProgressFile(d){
   const latest = Math.max(0, ...Object.values(paths).flatMap(P => Object.values(P.lessons).flatMap(L => L.core.map(x => x.at).concat(L.prac.map(x => x.at)))));
   return {acct:{name:a.name, email:a.email || "", grade:a.grade, cls:a.cls, teacher:a.teacher, path:a.path, created:a.created}, snap:{v:1, type:"file", at:new Date(latest || Date.now()).toISOString(), acct:a, paths}, at:latest || Date.now()};
 }
+/* Google Forms "Download responses" gives a .zip containing the .csv: open it here */
+async function unzipCsvs(buf){
+  const u8 = new Uint8Array(buf), dv = new DataView(buf), out = [];
+  let i = 0;
+  while (i + 30 <= u8.length && dv.getUint32(i, true) === 0x04034b50){
+    const flags = dv.getUint16(i + 6, true), method = dv.getUint16(i + 8, true);
+    let csize = dv.getUint32(i + 18, true);
+    const nlen = dv.getUint16(i + 26, true), xlen = dv.getUint16(i + 28, true);
+    const name = new TextDecoder().decode(u8.subarray(i + 30, i + 30 + nlen));
+    const start = i + 30 + nlen + xlen;
+    if (flags & 8 && csize === 0){
+      // size stored after the data: find the central directory entry for it
+      let j = u8.length - 22; while (j > 0 && dv.getUint32(j, true) !== 0x06054b50) j--;
+      let c = dv.getUint32(j + 16, true);
+      while (dv.getUint32(c, true) === 0x02014b50){
+        const cn = dv.getUint16(c + 28, true), cx = dv.getUint16(c + 30, true), cc = dv.getUint16(c + 32, true);
+        if (dv.getUint32(c + 42, true) === i){ csize = dv.getUint32(c + 20, true); break; }
+        c += 46 + cn + cx + cc;
+      }
+    }
+    const data = u8.subarray(start, start + csize);
+    if (/\.csv$/i.test(name)){
+      let text;
+      if (method === 0) text = new TextDecoder().decode(data);
+      else if (method === 8 && typeof DecompressionStream !== "undefined") text = await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+      if (text) out.push({name, text});
+    }
+    i = start + csize + ((flags & 8) ? (dv.getUint32(start + csize, true) === 0x08074b50 ? 16 : 12) : 0);
+  }
+  return out;
+}
 async function loadFiles(list){
   let rows = 0, files = 0, bad = 0;
+  const expanded = [];
   for (const f of list){
+    if (/\.zip$/i.test(f.name)){ try { (await unzipCsvs(await f.arrayBuffer())).forEach(x => expanded.push({name:x.name, text:async () => x.text})); } catch(e){ bad++; } }
+    else expanded.push(f);
+  }
+  for (const f of expanded){
     const text = await f.text();
     try {
       if (/\.csv$/i.test(f.name) || text.slice(0, 200).toLowerCase().indexOf("timestamp") >= 0){
