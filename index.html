@@ -300,17 +300,17 @@ const ST = "# Write your code below\n";
 const FN = (sig) => "def " + sig + ":\n    # your code here\n    pass\n";
 
 const WORDS = ["apple", "rocket", "pizza", "dragon", "planet", "guitar", "tiger", "laptop", "garden", "window", "pencil", "castle", "banana", "falcon", "jungle", "camera", "orange", "puzzle", "school", "summer"];
-const NAMES = ["Ali", "Sara", "Omar", "Mia", "Leo", "Ava", "Zain", "Noor", "Adam", "Lina", "Yusuf", "Hana", "Sam", "Ella", "Rami", "Tia"];
+const NAMES = ["Ali", "Sara", "Omar", "Mia", "Leo", "Ava", "Zain", "Noor", "Adam", "Lina", "Yusuf", "Hana", "Sam", "Ella", "Rami", "Tia", "Fatima", "Ahmed", "Layla", "Hamza", "Maya", "Karim", "Aisha", "Ethan", "Sofia", "Ibrahim", "Chloe", "Rayan", "Amira", "Lucas", "Zara", "Daniel", "Mariam", "Nikhil", "Priya", "Jonas", "Elena", "Tariq", "Yara", "Mateo", "Huda", "Kai", "Salma", "Arjun", "Nadia", "Felix", "Reem", "Oscar", "Dana", "Hugo"];
 const PHRASES = ["Coding is cool", "I love Python", "Today is a great day", "Practice makes progress", "Hello from Dubai", "Robots are awesome", "Never give up", "Learning every day", "Keep calm and code on", "Maths is magic"];
 /* Grade themes: practice questions use words and phrases suited to each grade, and number sizes grow with the grade. */
 let LV = 1;
 const THEMES = {
-  "6": {words: ["puppy", "kitten", "banana", "mango", "football", "rocket", "pizza", "dragon", "robot", "unicorn", "pencil", "rainbow", "castle", "dolphin", "panda", "cookie", "comic", "balloon", "jungle", "pirate"],
-        phrases: ["I love coding", "Pandas are cute", "Robots can dance", "Pizza is yummy", "Coding is fun", "Dragons can fly", "My cat can code", "Rainbows are bright", "Let's go on an adventure", "Cookies make me happy"]},
-  "7": {words: ["planet", "galaxy", "comet", "guitar", "stadium", "trophy", "volcano", "satellite", "drummer", "marathon", "penalty", "orbit", "asteroid", "referee", "festival", "tennis", "cricket", "piano", "meteor", "league"],
-        phrases: ["Reach for the stars", "Teamwork wins games", "Practice makes progress", "Music moves me", "Space is endless", "Every goal counts", "Volcanoes are powerful", "Keep your eye on the ball", "The crowd goes wild", "Explore the galaxy"]},
-  "8": {words: ["algorithm", "network", "database", "sensor", "drone", "circuit", "startup", "podcast", "firewall", "pixel", "bandwidth", "browser", "keyboard", "server", "robotics", "encryption", "gadget", "hologram", "console", "download"],
-        phrases: ["Code the future", "Data tells a story", "Think like an engineer", "Debugging builds patience", "Innovation starts here", "Secure your passwords", "Build it, test it, ship it", "Technology changes the world", "Logic beats luck", "Design with users in mind"]}
+  "6": {words: ["puppy", "kitten", "banana", "mango", "football", "rocket", "pizza", "dragon", "robot", "unicorn", "pencil", "rainbow", "castle", "dolphin", "panda", "cookie", "comic", "balloon", "jungle", "pirate", "parrot", "tractor", "cupcake", "penguin", "sandcastle", "spaceship", "teddy", "waffle", "scooter", "popcorn", "koala", "jellyfish", "treehouse", "lollipop", "dinosaur", "firework", "kangaroo", "pancake", "snowman", "volcano", "octopus", "hamster", "bicycle", "giraffe", "sunflower", "lemonade", "crayon", "hedgehog", "marble", "starfish", "pickle", "tiger", "camel", "falcon", "rabbit", "dragonfly", "notebook", "sneaker", "pumpkin", "bubble"],
+        phrases: ["I love coding", "Pandas are cute", "Robots can dance", "Pizza is yummy", "Coding is fun", "Dragons can fly", "My cat can code", "Rainbows are bright", "Let's go on an adventure", "Cookies make me happy", "Penguins love ice", "My dog likes to dance", "Camels walk in the desert", "I can ride a scooter", "Pancakes are tasty", "Dinosaurs were huge", "Koalas sleep a lot", "Snowmen melt in Dubai", "Giraffes have long necks", "My robot loves pizza", "The moon is shining", "I built a sandcastle", "Octopuses have eight arms", "Sunflowers love sunshine", "Falcons fly very fast", "Bubbles float away", "Popcorn goes pop", "Rabbits hop around", "Our class is awesome", "Unicorns love rainbows", "Hamsters run on wheels", "I drew a dragon", "Lemonade is sweet", "The jungle is noisy", "Starfish live in the sea", "Pirates hide treasure", "Fireworks light the sky", "Pumpkins are orange", "Treehouses are fun", "My teddy is brave"]},
+  "7": {words: ["planet", "galaxy", "comet", "guitar", "stadium", "trophy", "volcano", "satellite", "drummer", "marathon", "penalty", "orbit", "asteroid", "referee", "festival", "tennis", "cricket", "piano", "meteor", "league", "skateboard", "telescope", "nebula", "quarterback", "dribble", "stopwatch", "goalkeeper", "spaceport", "eclipse", "marathoner", "drumbeat", "headphones", "rollercoaster", "lighthouse", "snowboard", "basketball", "astronaut", "glacier", "hurricane", "jetpack", "racetrack", "captain", "medal", "rover", "playlist", "volleyball", "sprinter", "trumpet", "meteorite", "lunar", "pitch", "tournament", "sunset", "safari", "canyon", "rapids", "summit", "harbour"],
+        phrases: ["Reach for the stars", "Teamwork wins games", "Practice makes progress", "Music moves me", "Space is endless", "Every goal counts", "Volcanoes are powerful", "Keep your eye on the ball", "The crowd goes wild", "Explore the galaxy", "Astronauts float in space", "Champions never quit", "The rover explores Mars", "Train hard and play fair", "The final whistle blows", "Sprinters run like wind", "Music fills the stadium", "Mountains are worth climbing", "Every match is a lesson", "Comets have icy tails", "Skaters love the ramp", "The captain leads the team", "Gold medals take effort", "Rockets need fuel", "The band plays tonight", "Snowboarding is thrilling", "Eclipses are rare", "Safaris are exciting", "The goalkeeper saves it", "Headphones on, world off", "Lighthouses guide ships", "The summit is close", "Hurricanes are powerful", "Practice beats talent", "Basketball needs teamwork", "Telescopes see far", "Jetpacks would be cool", "The race starts now", "Glaciers move slowly", "Sunsets in the desert"]},
+  "8": {words: ["algorithm", "network", "database", "sensor", "drone", "circuit", "startup", "podcast", "firewall", "pixel", "bandwidth", "browser", "keyboard", "server", "robotics", "encryption", "gadget", "hologram", "console", "download", "compiler", "protocol", "dataset", "prototype", "blockchain", "interface", "variable", "pipeline", "satellite", "cybersecurity", "analytics", "automation", "framework", "processor", "spreadsheet", "wireless", "sandbox", "password", "username", "bluetooth", "microchip", "terminal", "emulator", "dashboard", "smartwatch", "augmented", "virtual", "bitrate", "cache", "cloud", "router", "widget", "sprint", "backlog", "debugger", "interpreter", "metadata", "prompt", "syntax", "upload"],
+        phrases: ["Code the future", "Data tells a story", "Think like an engineer", "Debugging builds patience", "Innovation starts here", "Secure your passwords", "Build it, test it, ship it", "Technology changes the world", "Logic beats luck", "Design with users in mind", "Clean code is kind code", "Test before you trust", "Data needs context", "Every bug teaches something", "Privacy matters online", "Automate the boring stuff", "Simple beats clever", "Measure twice, code once", "Think in algorithms", "The cloud is just computers", "Errors are clues", "Users come first", "Iterate and improve", "Code is a team sport", "Strong passwords save accounts", "Comments help future you", "Small steps, big projects", "Version control saves time", "Logic is a superpower", "Ideas need prototypes", "Read the error message", "Security is everyone's job", "Learn by building", "Sensors collect data", "Robots follow instructions", "Good design is invisible", "Keep your software updated", "Questions lead to answers", "Data can change minds", "Build things that matter"]}
 };
 function setGradeTheme(g){
   const t = THEMES[String(g)] || THEMES["7"];
@@ -695,6 +695,45 @@ function lessonState(n){
   return s;
 }
 const qOf = (path, num) => DATA.questions[path][num - 1];
+
+/* Give each student their own function name (e.g. product_fox27) so copied code fails the checks. */
+const NAME_TAGS = ["fox", "owl", "jet", "sky", "ace", "neo", "zen", "max", "pro", "bee", "elk", "orb", "ray", "sun", "gem", "kit", "cub", "fin", "oak", "ion"];
+function personalise(Q){
+  if (!Q || !Q.starter || /\bclass\s/.test(Q.starter)) return Q;
+  const m = /def\s+([A-Za-z_]\w*)\s*\(/.exec(Q.starter);
+  if (!m || m[1].startsWith("__")) return Q;
+  const old = m[1], nu = old + "_" + R.pick(NAME_TAGS) + R.int(10, 99);
+  const re1 = new RegExp("\\b" + old + "(?=\\s*\\()", "g"), re2 = new RegExp('"' + old + '"', "g");
+  const fix = v => typeof v === "string" ? v.replace(re1, nu).replace(re2, '"' + nu + '"') : Array.isArray(v) ? v.map(fix) : (v && typeof v === "object") ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, fix(x)])) : v;
+  const out = fix(Q);
+  if (Q.title === old) out.title = nu;
+  out.fname = nu;
+  return out;
+}
+/* Personal exercises: every student gets their own randomised version of each lesson exercise
+   (different exercise type order, numbers and words), so no two students have the same task. */
+function exQ(s, q){
+  const n = cur.lesson, path = profile.path, base = qOf(path, q);
+  s.exq = s.exq || {};
+  if (s.exq[q]) return s.exq[q];
+  const started = s.solved[q] || s.tries[q] || (s.code[q] && s.code[q].trim() && s.code[q] !== base.starter);
+  if (started) return base;
+  const gens = (GEN[path] || [])[n - 1];
+  if (!gens || !gens.length) return base;
+  const L = DATA.lessons[path][n - 1], k = Math.max(0, L.ex.indexOf(q));
+  if (!s.exOrder || s.exOrder.length !== gens.length) s.exOrder = R.shuffle(gens.map((g, i) => i));
+  const g = gens[s.exOrder[k % gens.length]];
+  prog.seen = prog.seen || [];
+  const used = Object.values(s.exq).map(x => x.task);
+  let Qn = null, guard = 0;
+  do { try { Qn = g.q(g.make()); } catch(e){ Qn = null; } guard++; }
+  while ((!Qn || used.indexOf(Qn.task) >= 0 || prog.seen.indexOf(g.id + "|" + Qn.task) >= 0) && guard < 40);
+  if (!Qn) return base;
+  prog.seen.push(g.id + "|" + Qn.task);
+  s.exq[q] = Object.assign({gid:g.id, personal:true}, personalise(Qn));
+  saveProg();
+  return s.exq[q];
+}
 /* Mastery rule: all 3 lesson exercises + a minimum number of practice questions before Submit unlocks */
 const MIN_PRACTICE = {beginner:3, intermediate:2, advanced:1};
 function mastery(L, s){
@@ -720,7 +759,7 @@ function newPractice(n, s){
   prog.seen.push(key); if (prog.seen.length > 3000) prog.seen.shift();
   if (s.prac.cur && !s.solved[s.prac.cur.id]){ delete s.code[s.prac.cur.id]; }
   s.prac.count++;
-  s.prac.cur = Object.assign({gid:g.id, id:"p" + s.prac.count}, q);
+  s.prac.cur = Object.assign({gid:g.id, id:"p" + s.prac.count}, personalise(q));
   saveProg();
   return s.prac.cur;
 }
@@ -1006,7 +1045,7 @@ function renderStep(){
   else if (cur.step >= 2 && cur.step <= PRACTICE){
     const isP = cur.step === PRACTICE;
     if (isP && !s.prac.cur) newPractice(cur.lesson, s);
-    const k = cur.step - 2, Q = isP ? s.prac.cur : qOf(profile.path, L.ex[k]), qn = isP ? Q.id : L.ex[k];
+    const k = cur.step - 2, Q = isP ? s.prac.cur : exQ(s, L.ex[k]), qn = isP ? Q.id : L.ex[k];
     const m0 = mastery(L, s);
     const head = isP ? 'PRACTICE QUESTION ' + s.prac.count + ' • ' + m0.prac + ' solved' + (m0.prac < m0.need ? ' (' + m0.need + ' needed to submit)' : ' ✓') : 'EXERCISE ' + (k + 1) + ' OF 3';
     body.innerHTML = '<div class="muted" style="font-weight:800">' + head + '</div><h2>' + Q.title + '</h2>' + (isP ? '<p class="muted" style="margin-top:4px">Unlimited practice: every question is new, with different numbers and words.</p>' : '') + '<div class="task" style="margin-top:8px">' + Q.task + '</div>';
@@ -1115,7 +1154,7 @@ function popPoints(p){ const d = el("div", "pts", "+" + p + " points ⭐"); docu
 /* ---------------- Feedback ---------------- */
 function buildFeedback(L, s){
   const well = [], next = [];
-  const titles = L.ex.map(q => qOf(profile.path, q).title);
+  const titles = L.ex.map(q => exQ(s, q).title);
   const solved = L.ex.filter(q => s.solved[q]);
   const errTotals = {};
   Object.keys(s.errs).forEach(q => { const e = s.errs[q] || {}; Object.keys(e).forEach(k => errTotals[k] = (errTotals[k] || 0) + e[k]); });
@@ -1173,7 +1212,7 @@ function renderSubmit(body, L, s){
   }
   let rows = '<table class="sumtable"><tr><th>Work</th><th>Result</th><th>Hints</th><th>Checks</th></tr>';
   L.ex.forEach((q, i) => {
-    const Q = qOf(profile.path, q);
+    const Q = exQ(s, q);
     rows += '<tr><td><b>' + (i + 1) + '.</b> ' + Q.title + '</td><td>' + (s.solved[q] ? "✅ Solved" : s.tries[q] ? "🟡 Not yet" : "⬜ Not tried") + '</td><td>' + (s.hints[q] || 0) + '</td><td>' + (s.tries[q] || 0) + '</td></tr>';
   });
   const ph = s.prac.done.filter(x => x.ok).reduce((a, x) => a + (x.hints || 0), 0);
@@ -1212,7 +1251,7 @@ async function submitLesson(L, s, kind, st, complete){
   const pts = L.ex.reduce((a, q) => a + (s.solved[q] ? pointsFor(s, q) : 0), 0) + pracOk.reduce((a, x) => a + pointsFor(s, x.id), 0);
   const P = PATHS[profile.path].name;
   const n = cur.lesson;
-  const exLines = L.ex.map((q, i) => { const Q = qOf(profile.path, q); return "Exercise " + (i + 1) + " – " + Q.title + ": " + (s.solved[q] ? "✅ Solved" : s.tries[q] ? "❌ Not solved" : "⬜ Not attempted") + " (" + (s.hints[q] || 0) + " hints, " + (s.tries[q] || 0) + " checks)"; });
+  const exLines = L.ex.map((q, i) => { const Q = exQ(s, q); return "Exercise " + (i + 1) + " – " + Q.title + ": " + (s.solved[q] ? "✅ Solved" : s.tries[q] ? "❌ Not solved" : "⬜ Not attempted") + " (" + (s.hints[q] || 0) + " hints, " + (s.tries[q] || 0) + " checks)"; });
   const pracLines = pracOk.length ? pracOk.map((x, i) => "Practice " + (i + 1) + " – " + x.title + ": ✅ (" + (x.hints || 0) + " hints, " + (x.checks || 0) + " checks)") : ["No practice questions solved"];
   if (s.prac.skipped) pracLines.push("Questions swapped without solving: " + s.prac.skipped);
   const status = complete ? "House Point earned" : "Incomplete";
@@ -1222,7 +1261,7 @@ async function submitLesson(L, s, kind, st, complete){
     submitted:new Date().toISOString(), kind:kind, status:status, level:m.level, sinceLast:since.length, core:m.core, practice:m.prac, practiceNeeded:m.need, skipped:s.prac.skipped,
     points:pts, mins:Math.round(day.activeMs / 60000),
     ex:L.ex.map(q => ({q:q, ok:!!s.solved[q], hints:s.hints[q] || 0, checks:s.tries[q] || 0})), well:fbk.well, next:fbk.next};
-  const codeTxt = L.ex.map((q, i) => { const c = s.code[q]; return "===== Exercise " + (i + 1) + ": " + qOf(profile.path, q).title + " =====\n" + (c && c.trim() ? c.slice(0, 1500) : "(no code)"); })
+  const codeTxt = L.ex.map((q, i) => { const c = s.code[q]; return "===== Exercise " + (i + 1) + ": " + exQ(s, q).title + " =====\n" + (c && c.trim() ? c.slice(0, 1500) : "(no code)"); })
     .concat(pracOk.slice(-5).map(x => "===== Practice: " + x.title + " =====\n" + (x.code || "(no code)"))).join("\n\n");
   const report = {
     "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",

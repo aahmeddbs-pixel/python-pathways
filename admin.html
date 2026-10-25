@@ -61,6 +61,21 @@ td .em{color:var(--muted);font-size:.82rem}
 .box.g{background:var(--green-l)} .box.a{background:var(--amber-l)}
 .box ul{padding-left:20px;margin-top:6px}
 .small{font-size:.85rem}
+
+.vtabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.vtab{border:2px solid var(--line);background:#fff;color:var(--navy);border-radius:10px;padding:9px 16px;font-weight:800}
+.vtab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.ansgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+@media (max-width:700px){.ansgrid{grid-template-columns:1fr}}
+.anscard{border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:14px;background:#fff;break-inside:avoid}
+.anscard h3{margin:0 0 2px;font-size:1.05rem}
+.anstag{display:inline-block;background:var(--red);color:#fff;font-weight:800;font-size:.75rem;border-radius:6px;padding:2px 8px;margin-bottom:8px}
+.anstask{background:#f7f8fb;border-radius:10px;padding:10px 12px;margin:8px 0;line-height:1.5}
+.anstask pre,.anscode{white-space:pre-wrap;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem}
+.anscode{background:#0f1b30;color:#e8eefb;border-radius:10px;padding:12px 14px;margin:6px 0 0;overflow-x:auto}
+.anstask code{background:#e6ebf5;border-radius:4px;padding:0 4px}
+.anshints{margin:8px 0 0 18px;color:var(--ink2,#3d4d6b)}
+@media print{.top,.vtabs,#ansControls,.ansbtns,#lockBtn{display:none!important}.anscard{box-shadow:none}.anscode{background:#f2f4f8;color:#111;border:1px solid #ccd}body{background:#fff}}
 </style>
 </head>
 <body>
@@ -81,7 +96,22 @@ td .em{color:var(--muted);font-size:.82rem}
 
 <!-- APP -->
 <div class="wrap hidden" id="app">
-  <div class="card">
+  <div class="vtabs"><button class="vtab on" id="vProg">📊 Student progress</button><button class="vtab" id="vAns">📘 Answers (staff only)</button></div>
+  <div id="ansView" class="hidden">
+    <div class="card" id="ansControls">
+      <h1>Exercise answers</h1>
+      <p class="muted" style="margin-top:4px">Every student gets their own version of each exercise (different numbers, words and order), so pick the lesson and use these worked answers to talk a student through theirs. Press 🎲 to make a fresh example.</p>
+      <p class="muted small" style="margin-top:6px"><b>Function names:</b> students see their own function name, e.g. <code>product_fox27</code> instead of <code>product</code>. The answer is the same; the student just keeps the name on their screen.</p>
+      <div class="ansgrid">
+        <div><label class="small" style="font-weight:700">Level</label><select class="t" id="ansLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
+        <div><label class="small" style="font-weight:700">Lesson</label><select class="t" id="ansLesson"></select></div>
+        <div><label class="small" style="font-weight:700">Grade (words used)</label><select class="t" id="ansGrade"><option value="6">Grade 6</option><option value="7" selected>Grade 7</option><option value="8">Grade 8</option></select></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" id="ansNew">🎲 New examples for this lesson</button><button class="btn ghost" id="ansPrint">🖨 Print / save this lesson's answers as PDF</button></div>
+    </div>
+    <div id="ansOut"></div>
+  </div>
+  <div class="card" id="progCard">
     <h1>Student progress</h1>
     <p class="muted" style="margin-top:4px">Load your student data: in your Google Form open <b>Responses → ⋮ → Download responses (.csv)</b>, then drop the downloaded file here as it is. You can also add students' <b>progress files</b>. Everything is processed on this computer only and never uploaded.</p>
     <div style="background:#f7f8fb;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:14px">
@@ -126,6 +156,7 @@ td .em{color:var(--muted);font-size:.82rem}
   </div>
 </div>
 
+<script src="answers.js"></script>
 <script>
 (function(){
 "use strict";
@@ -646,6 +677,58 @@ $("trackerBtn").onclick = () => {
 };
 
 window.__admin = {loadFiles, makePdf, analyse, zip, get students(){ return STUDENTS; }};
+/* ---------------- Answers (staff only) ---------------- */
+(function(){
+  const A = window.PPAnswers; if (!A) return;
+  const app = $("app"), keep = new Map();
+  function view(ans){
+    $("vProg").classList.toggle("on", !ans); $("vAns").classList.toggle("on", ans);
+    [...app.children].forEach(ch => {
+      if (ch.classList.contains("vtabs") || ch.id === "ansView") return;
+      if (ans){ keep.set(ch, ch.classList.contains("hidden")); ch.classList.add("hidden"); }
+      else if (keep.has(ch)) ch.classList.toggle("hidden", keep.get(ch));
+    });
+    $("ansView").classList.toggle("hidden", !ans);
+    if (ans) render();
+  }
+  $("vProg").onclick = () => view(false);
+  $("vAns").onclick = () => view(true);
+  const h = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  function fillLessons(){
+    const lv = $("ansLevel").value, sel = $("ansLesson"), was = sel.value;
+    sel.innerHTML = A.LESSONS[lv].map((L, i) => '<option value="' + (i + 1) + '">Lesson ' + (i + 1) + ': ' + h(L.title) + '</option>').join("");
+    if (was && +was <= A.LESSONS[lv].length) sel.value = was;
+  }
+  function card(g, k){
+    A.setGradeTheme($("ansGrade").value);
+    let P, Q, code;
+    try { P = g.make(); Q = g.q(P); code = A.answerFor(g, P, Q); } catch(e){ code = null; }
+    const d = document.createElement("div"); d.className = "anscard";
+    if (!Q){ d.textContent = "This example could not be made. Press New example."; return d; }
+    const hints = (Q.hints || []).map(x => "<li>" + x + "</li>").join("");
+    d.innerHTML = '<span class="anstag">Exercise type ' + String.fromCharCode(65 + k) + '</span><h3>' + h(Q.title) + '</h3>' +
+      '<div class="anstask">' + Q.task + '</div>' +
+      '<b class="small">Model answer</b><pre class="anscode"></pre>' +
+      (hints ? '<details style="margin-top:8px"><summary class="small" style="font-weight:700;cursor:pointer">Hints the student can buy</summary><ul class="anshints small">' + hints + '</ul></details>' : '') +
+      '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm ghost" data-a="new">🎲 New example</button><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
+    d.querySelector(".anscode").textContent = code || "(answer not available)";
+    d.querySelector('[data-a=new]').onclick = () => d.replaceWith(card(g, k));
+    d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(code || ""); e.target.textContent = "✅ Copied"; } catch(x){} };
+    return d;
+  }
+  function render(){
+    const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, gens = A.GEN[lv][n - 1] || [], L = A.LESSONS[lv][n - 1];
+    const out = $("ansOut"); out.innerHTML = "";
+    const head = document.createElement("div"); head.className = "card"; head.style.marginTop = "14px";
+    head.innerHTML = '<h2 style="margin:0">' + ({beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced"})[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + ' Students\' lesson exercises and practice questions are made from these ' + gens.length + ' exercise types.</p>';
+    out.appendChild(head);
+    gens.forEach((g, k) => out.appendChild(card(g, k)));
+  }
+  $("ansLevel").onchange = () => { fillLessons(); render(); };
+  $("ansLesson").onchange = render; $("ansGrade").onchange = render; $("ansNew").onclick = render;
+  $("ansPrint").onclick = () => window.print();
+  fillLessons();
+})();
 showGate();
 })();
 </script>
