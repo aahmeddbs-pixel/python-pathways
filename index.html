@@ -1266,7 +1266,7 @@ setTimeout(flushOutbox, 2500);
 /* ---------------- Private teacher log (Google Form → Google Sheet) ----------------
    Every sign-up, completed exercise and submission sends one row to the teacher's private Google Form.
    The Admin page reads the downloaded Sheet. Nothing is shown publicly. */
-const FORM = {"url": "", "entries": {"type": "", "student": "", "email": "", "teacher": "", "data": ""}};
+const FORM = {"url": "https://docs.google.com/forms/d/e/1FAIpQLSfFnVZORF6176gPE9a2zGNpivDuklLFF5cHzdQz1YxfAxThRA/formResponse", "entries": {"type": "entry.1355322393", "student": "entry.1753714859", "email": "entry.1091945433", "teacher": "entry.1559320258", "data": "entry.145790134"}};
 function formReady(){ return FORM && FORM.url && FORM.url.indexOf("docs.google.com/forms") >= 0; }
 function snapshot(type, extra){
   const acct = {name:profile.name, email:profile.email || "", grade:profile.grade, cls:profile.cls, teacher:profile.teacher, path:profile.path, created:profile.created};
