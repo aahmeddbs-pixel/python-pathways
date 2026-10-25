@@ -126,6 +126,7 @@ const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"}[c]));
 function store(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 function load(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e){ return d; } }
+const grp = a => "Grade " + (a.grade || "?") + " – " + (a.teacher || "?");
 const slug = s => String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
 const fmtDate = ms => ms ? new Date(ms).toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}) : "–";
 const fmtMins = ms => { const m = Math.round((ms || 0) / 60000); return m < 1 ? "<1 min" : m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; };
@@ -327,8 +328,8 @@ function list(){
   const q = slug($("q").value), t = $("fTeacher").value, g = $("fGrade").value, c = $("fClass").value, lv = $("fLevel").value;
   return Object.values(STUDENTS).filter(st => {
     const a = st.acct;
-    return (!q || slug(a.name).indexOf(q) >= 0 || (a.email || "").indexOf(q) >= 0) && (!t || a.teacher === t) && (!g || String(a.grade) === g) && (!c || a.cls === c) && (!lv || a.path === lv);
-  }).sort((x, y) => (x.acct.cls || "").localeCompare(y.acct.cls || "") || (x.acct.name || "").localeCompare(y.acct.name || ""));
+    return (!q || slug(a.name).indexOf(q) >= 0 || (a.email || "").indexOf(q) >= 0) && (!t || a.teacher === t) && (!g || String(a.grade) === g) && (!c || grp(a) === c) && (!lv || a.path === lv);
+  }).sort((x, y) => grp(x.acct).localeCompare(grp(y.acct)) || (x.acct.name || "").localeCompare(y.acct.name || ""));
 }
 function opts(sel, label, values){
   const cur = sel.value;
@@ -340,7 +341,7 @@ function buildFilters(){
   const uniq = f => [...new Set(all.map(f).filter(Boolean))].sort();
   opts($("fTeacher"), "All teachers", uniq(a => a.teacher).map(x => [x, x]));
   opts($("fGrade"), "All grades", uniq(a => String(a.grade || "")).map(x => [x, "Grade " + x]));
-  opts($("fClass"), "All classes", uniq(a => a.cls).map(x => [x, x]));
+  opts($("fClass"), "All groups", uniq(a => grp(a)).map(x => [x, x]));
   opts($("fLevel"), "All levels", uniq(a => a.path).map(x => [x, PATH_NAMES[x] || x]));
 }
 ["q", "fTeacher", "fGrade", "fClass", "fLevel"].forEach(id => $(id).addEventListener("input", render));
@@ -357,11 +358,11 @@ function render(){
   const avgs = A.filter(x => x.avgTask); const avgAll = avgs.length ? avgs.reduce((p, x) => p + x.avgTask, 0) / avgs.length : 0;
   $("stats").innerHTML = [["Students", L.length], ["Active this week", activeWeek], ["Tasks completed", tasks], ["House Points earned", hp], ["Average time per task", fmtAvg(avgAll)]]
     .map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("");
-  let html = '<tr><th>Student</th><th>Grade / Class</th><th>Teacher</th><th>Level</th><th>PIN</th><th>Tasks</th><th>House Points</th><th>Avg time / task</th><th>Last active</th><th>Actions</th></tr>';
+  let html = '<tr><th>Student</th><th>Grade</th><th>Teacher</th><th>Level</th><th>PIN</th><th>Tasks</th><th>House Points</th><th>Avg time / task</th><th>Last active</th><th>Actions</th></tr>';
   L.forEach((st, i) => {
     const a = st.acct, x = A[i], p = a.path || x.path;
     html += '<tr><td><b>' + esc(a.name) + '</b><div class="em">' + esc(a.email || "no email") + '</div></td>' +
-      '<td>' + esc(a.grade ? "G" + a.grade : "") + ' · ' + esc(a.cls || "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
+      '<td>' + esc(a.grade ? "Grade " + a.grade : "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
       '<td><span class="tag ' + (p || "b")[0] + '">' + esc(PATH_NAMES[p] || p || "") + '</span></td>' +
       '<td>' + (st.pin ? '<button class="pin" data-pin="' + i + '" title="Click to show">' + (showPins ? esc(st.pin) : "••••") + '</button>' : '<span class="muted small">not logged</span>') + '</td>' +
       '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' practice)</span></td>' +
@@ -380,7 +381,7 @@ function render(){
 function viewStudent(st){
   const a = st.acct, x = analyse(st);
   const bg = document.createElement("div"); bg.className = "modal-bg";
-  bg.innerHTML = '<div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h1>' + esc(a.name) + '</h1><p class="muted">' + esc(a.email || "") + ' · Grade ' + esc(a.grade) + ' · ' + esc(a.cls) + ' · ' + esc(a.teacher) + ' · ' + esc(PATH_NAMES[x.path]) + '</p></div><button class="btn ghost" id="mClose">✕ Close</button></div>' +
+  bg.innerHTML = '<div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h1>' + esc(a.name) + '</h1><p class="muted">' + esc(a.email || "") + ' · Grade ' + esc(a.grade) + ' · ' + esc(a.teacher) + ' · ' + esc(PATH_NAMES[x.path]) + '</p></div><button class="btn ghost" id="mClose">✕ Close</button></div>' +
     '<div class="stats">' + [["Tasks completed", x.solved], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time per task", fmtAvg(x.avgTask)], ["House Points", x.house], ["Points", x.points]].map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("") + '</div>' +
     '<h2>Progress by lesson</h2><div class="tblwrap"><table><tr><th>Lesson</th><th>Exercises</th><th>Practice</th><th>Time</th><th>Avg / task</th><th>Status</th></tr>' +
     (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / 3</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
@@ -476,7 +477,7 @@ function makePdf(st){
   d.header(false);
   // student details
   d.text(M, d.y, a.name, 18, true); d.y += 18;
-  d.text(M, d.y, [a.email, "Grade " + a.grade, "Class " + a.cls, a.teacher, (PATH_NAMES[x.path] || "") + " level"].filter(Boolean).join("   |   "), 10, false, "#3D4D6B"); d.y += 20;
+  d.text(M, d.y, [a.email, "Grade " + a.grade, a.teacher, (PATH_NAMES[x.path] || "") + " level"].filter(Boolean).join("   |   "), 10, false, "#3D4D6B"); d.y += 20;
   // summary tiles
   const tiles = [["Tasks completed", String(x.solved)], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time / task", fmtAvg(x.avgTask)], ["House Points", String(x.house)]];
   const tw5 = (W - 2 * M - 4 * 8) / 5;
@@ -563,7 +564,7 @@ function zip(files){
 $("allPdf").onclick = () => {
   const L = list(); if (!L.length) return;
   const used = {};
-  const files = L.map(st => { let n = (st.acct.cls ? st.acct.cls + "-" : "") + fileName(st); while (used[n]) n = n.replace(/\.pdf$/, "-2.pdf"); used[n] = 1; return {name:n, data:makePdf(st)}; });
+  const files = L.map(st => { let n = ("G" + (st.acct.grade || "") + "-") + fileName(st); while (used[n]) n = n.replace(/\.pdf$/, "-2.pdf"); used[n] = 1; return {name:n, data:makePdf(st)}; });
   saveBlob(zip(files), "Python-Progress-Reports-" + new Date().toISOString().slice(0, 10) + ".zip", "application/zip");
 };
 
@@ -572,17 +573,17 @@ $("trackerBtn").onclick = () => {
   const L = list(); if (!L.length) return;
   const A = L.map(analyse);
   const dates = [...new Set(A.flatMap(x => Object.keys(x.dayMs)))].sort();
-  const byClass = {}; L.forEach((st, i) => { const c = st.acct.cls || "?"; (byClass[c] = byClass[c] || new Set()); Object.keys(A[i].dayMs).forEach(d => byClass[c].add(d)); });
+  const byClass = {}; L.forEach((st, i) => { const c = grp(st.acct); (byClass[c] = byClass[c] || new Set()); Object.keys(A[i].dayMs).forEach(d => byClass[c].add(d)); });
   const q = v => '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"';
-  const head = ["Student", "Email", "Grade", "Class", "Teacher", "Level", "PIN", "Tasks completed", "Lessons complete", "House Points", "Time on lessons", "Avg time per task", "Last active"].concat(dates.map(d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", {day:"2-digit", month:"short", year:"numeric"}))).concat(["Strengths", "Areas for development"]);
+  const head = ["Student", "Email", "Grade", "Teacher", "Level", "PIN", "Tasks completed", "Lessons complete", "House Points", "Time on lessons", "Avg time per task", "Last active"].concat(dates.map(d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", {day:"2-digit", month:"short", year:"numeric"}))).concat(["Strengths", "Areas for development"]);
   const lines = [head.map(q).join(",")];
   L.forEach((st, i) => {
     const a = st.acct, x = A[i];
     const perDay = d => {
       if (x.dayMs[d]){ const n = x.done.filter(t => t.at && new Date(t.at).toISOString().slice(0, 10) === d).length; return "Present (" + n + " task" + (n === 1 ? "" : "s") + ", " + fmtMins(x.dayMs[d]) + ")"; }
-      return (byClass[a.cls || "?"] || new Set()).has(d) ? "Absent" : "";
+      return (byClass[grp(a)] || new Set()).has(d) ? "Absent" : "";
     };
-    lines.push([a.name, a.email, a.grade, a.cls, a.teacher, PATH_NAMES[x.path], st.pin || "", x.solved, x.lessonsComplete, x.house, fmtMins(x.timeAll), fmtAvg(x.avgTask), fmtDate(x.lastAt)].concat(dates.map(perDay)).concat([x.strengths.join(" | "), x.dev.join(" | ")]).map(q).join(","));
+    lines.push([a.name, a.email, a.grade, a.teacher, PATH_NAMES[x.path], st.pin || "", x.solved, x.lessonsComplete, x.house, fmtMins(x.timeAll), fmtAvg(x.avgTask), fmtDate(x.lastAt)].concat(dates.map(perDay)).concat([x.strengths.join(" | "), x.dev.join(" | ")]).map(q).join(","));
   });
   saveBlob(new TextEncoder().encode("﻿" + lines.join("\r\n")), "Python-Tracker-" + new Date().toISOString().slice(0, 10) + ".csv", "text/csv");
 };

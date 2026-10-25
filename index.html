@@ -208,8 +208,6 @@ input.pin{letter-spacing:.4em;font-weight:700}
         <input class="t" id="inEmail" type="email" autocomplete="off" maxlength="80" placeholder="e.g. sara.khan@sisd.ae">
         <label class="f">Your grade</label>
         <div class="chips" id="gradeChips"><button class="chip" data-g="6">Grade 6</button><button class="chip" data-g="7">Grade 7</button><button class="chip" data-g="8">Grade 8</button></div>
-        <label class="f" for="inClass">Your class</label>
-        <input class="t" id="inClass" autocomplete="off" maxlength="20" placeholder="e.g. 7B">
         <label class="f" for="inTeacher">Your teacher</label>
         <select class="t" id="inTeacher"><option value="">Choose your teacher…</option><option>Mr. Ahmed</option><option>Mr. French</option><option>Ms. Abdelaziz</option></select>
         <label class="f">Your level</label>
@@ -741,18 +739,17 @@ document.querySelectorAll("#gradeChips .chip").forEach(b => b.onclick = () => { 
 document.querySelectorAll(".path").forEach(b => b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); });
 ["inPin", "inPin2", "loginPin"].forEach(id => $(id).addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); }));
 $("signBtn").onclick = () => {
-  const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), cls = $("inClass").value.trim(), teacher = $("inTeacher").value, pin = $("inPin").value;
+  const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), teacher = $("inTeacher").value, pin = $("inPin").value;
   if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
   const email = $("inEmail").value.trim().toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "Please type your school email address."; return; }
   if (!chosenGrade){ err.textContent = "Please choose your grade."; return; }
-  if (!cls){ err.textContent = "Please type your class."; return; }
   if (!teacher){ err.textContent = "Please choose your teacher from the list."; return; }
   if (!chosen){ err.textContent = "Please choose your level."; return; }
   if (!/^\d{4}$/.test(pin)){ err.textContent = "Your PIN must be exactly 4 numbers."; return; }
   if (pin !== $("inPin2").value){ err.textContent = "The two PINs don't match. Please type them again."; return; }
   if (accounts()[slug(name)]){ err.textContent = "There is already an account called " + niceName(name) + " on this computer. Please use Sign in instead."; return; }
-  profile = {name:niceName(name), email:email, cls:cls.toUpperCase(), grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
+  profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
   saveAccount(profile); store("pyl_lastName", profile.name);
   prog = load(progKey(), {lessons:{}});
   syncTeacher("signup", {pin:pin});
@@ -771,7 +768,7 @@ $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("login
 $("switchBtn").onclick = () => {
   saveCode(); rememberPos(); stopClock(); if (prog) syncTeacher("progress"); profile = null; prog = null; cur = {lesson:null, step:0};
   $("loginName").value = load("pyl_lastName", ""); $("loginPin").value = "";
-  ["inName", "inEmail", "inClass", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
+  ["inName", "inEmail", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
   chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on"));
   document.querySelector('.tab[data-tab="in"]').click();
   show("signin");
@@ -837,11 +834,11 @@ function openMap(){
   const P = PATHS[profile.path];
   setGradeTheme(profile.grade || "7");
   $("levelSel").value = profile.path;
-  $("whoPill").textContent = "👤 " + profile.name + " • " + profile.cls + " • " + (profile.teacher || "");
+  $("whoPill").textContent = "👤 " + profile.name + " • G" + (profile.grade || "") + " • " + (profile.teacher || "");
   updatePills();
   $("mapBadge").textContent = P.l; $("mapBadge").style.background = P.c;
   $("mapTitle").textContent = "Python: " + P.name;
-  $("mapWho").textContent = profile.name + " • Grade " + (profile.grade || "?") + " • Class " + profile.cls + " • " + (profile.teacher || "");
+  $("mapWho").textContent = profile.name + " • Grade " + (profile.grade || "?") + " • " + (profile.teacher || "");
   const list = $("lessonList"); list.innerHTML = "";
   let solvedAll = 0;
   DATA.lessons[profile.path].forEach((L, i) => {
@@ -1222,9 +1219,9 @@ async function submitLesson(L, s, kind, st, complete){
   const codeTxt = L.ex.map((q, i) => { const c = s.code[q]; return "===== Exercise " + (i + 1) + ": " + qOf(profile.path, q).title + " =====\n" + (c && c.trim() ? c.slice(0, 1500) : "(no code)"); })
     .concat(pracOk.slice(-5).map(x => "===== Practice: " + x.title + " =====\n" + (x.code || "(no code)"))).join("\n\n");
   const report = {
-    "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " (" + profile.cls + ") | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
+    "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
     "_template":"table", "_captcha":"false",
-    "Student":profile.name, "Student email":profile.email || "", "Grade":"Grade " + profile.grade, "Class":profile.cls, "Teacher":profile.teacher, "Pathway":P,
+    "Student":profile.name, "Student email":profile.email || "", "Grade":"Grade " + profile.grade, "Teacher":profile.teacher, "Pathway":P,
     "House points":housePoints() + " in total" + (hpToday ? " (🏠 +" + hpToday + " earned in this lesson, please award!)" : "") + " • " + solvedCount() + " exercises completed • " + totalPoints() + " points to spend",
     "Lesson":"Lesson " + n + ": " + L.title, "Date":d,
     "Status":status + (complete ? "" : " (time ran out before the next House Point was reached)"),
@@ -1326,7 +1323,11 @@ function startClock(){
       if (cur.step >= 2 && cur.step <= PRACTICE){
         const LL = DATA.lessons[profile.path][cur.lesson - 1];
         const qid = cur.step === PRACTICE ? (s.prac.cur ? s.prac.cur.id : null) : LL.ex[cur.step - 2];
-        if (qid != null && !s.solved[qid]){ s.ms = s.ms || {}; s.ms[qid] = (s.ms[qid] || 0) + dt; }
+        if (qid != null && !s.solved[qid]){
+          s.ms = s.ms || {}; s.ms[qid] = (s.ms[qid] || 0) + dt;
+          s.nudges = s.nudges || {}; const n = s.nudges[qid] || 0;
+          if (n < 4 && s.ms[qid] >= (n + 1) * NUDGE_EVERY && !document.querySelector(".modal-bg")){ s.nudges[qid] = n + 1; saveProg(); nudge(n); }
+        }
       }
     }
     lastTick = now;
@@ -1355,6 +1356,42 @@ function startClock(){
 }
 function stopClock(){ if (clockTimer){ clearInterval(clockTimer); clockTimer = null; } if (prog) saveProg(); }
 window.addEventListener("beforeunload", () => { saveCode(); if (prog) saveProg(); });
+
+/* ---------------- Encouragement when a question is taking a while ---------------- */
+const NUDGE_EVERY = 3 * 60000;   // every 3 minutes on the same question (up to 4 times)
+const PERSIST = [
+  "Every great coder gets stuck. The ones who succeed are the ones who keep going.",
+  "It's not that I'm so smart, it's just that I stay with problems longer. Keep at it!",
+  "Struggling means your brain is growing right now. You've got this!",
+  "Difficult roads often lead to beautiful destinations.",
+  "Fall seven times, stand up eight.",
+  "You don't have to see the whole staircase, just take the first step.",
+  "A problem is just a puzzle waiting for you to solve it.",
+  "The expert in anything was once a beginner who didn't give up.",
+  "Slow progress is still progress. Keep going!",
+  "Mistakes are how programmers learn. Read the message, fix one thing, try again.",
+  "Believe you can and you're halfway there.",
+  "Tough questions build strong coders.",
+  "Take a deep breath. Break the problem into small steps.",
+  "Champions keep playing until they get it right.",
+  "Every bug you fix makes you a better programmer."
+];
+const NUDGE_TIPS = [
+  "Re-read the task slowly. What exactly should the output be?",
+  "Press ▶ Run to see what your code does right now, then change one thing at a time.",
+  "Look back at the worked example. The same pattern might help here.",
+  "You can buy advice for 5 points with the 💡 button. It's a smart move when you're stuck!"
+];
+function nudge(n){
+  sfx("unlock");
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal"><div class="big">💪</div><h2 style="margin-top:8px">' + ["Keep going!", "You're nearly there!", "Don't give up!", "Stay strong, coder!"][n % 4] + '</h2>' +
+    '<p class="quote" style="margin-top:12px">💬 ' + esc(PERSIST[Math.floor(Math.random() * PERSIST.length)]) + '</p>' +
+    '<p style="margin-top:12px"><b>Tip:</b> ' + NUDGE_TIPS[n % NUDGE_TIPS.length] + '</p>' +
+    '<button class="btn lg" style="margin-top:16px">I\'ve got this! →</button></div>';
+  bg.querySelector("button").onclick = () => bg.remove();
+  document.body.appendChild(bg);
+}
 
 /* ---------------- Sound, music, quotes, celebrations ---------------- */
 const QUOTES = [
