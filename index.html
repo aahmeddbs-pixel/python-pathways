@@ -162,6 +162,10 @@ input.pin{letter-spacing:.4em;font-weight:700}
 .confetti{position:fixed;top:-12px;width:10px;height:14px;z-index:70;pointer-events:none;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
 .foot{color:var(--muted);text-align:center;font-size:.85rem;margin:26px 0 10px}
+.vidmodal{max-width:900px;width:100%;padding:18px;text-align:left}
+.vidmodal video{width:100%;border-radius:12px;background:#000;display:block}
+.vidbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.howbtn{background:#fff;color:var(--ink);border:none;border-radius:12px;padding:12px 18px;font-weight:700;font-size:1rem;margin-top:18px;display:inline-flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -172,6 +176,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <span class="pill hidden" id="clockPill"></span>
   <span class="pill hidden" id="ptsPill"></span>
   <span class="pill house hidden" id="housePill"></span>
+  <button class="iconbtn" id="howBtn" title="How it works video">▶ How it works</button>
   <button class="iconbtn" id="adminBtn" title="Admin access">🔐 Admin</button>
   <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
   <button class="iconbtn" id="voiceBtn" title="Spoken encouragement">🗣️ Voice on</button>
@@ -187,6 +192,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
       <h1>Learn to code in Python 🐍</h1>
       <p>Each lesson takes about 40 minutes: read, try the example, solve three coding exercises, then practise with unlimited new questions. Every exercise you complete earns 10 points, and enough exercises earn you a <b>House Point</b>! 🏠</p>
       <div class="snip">print("Hello, World!")<br><span style="opacity:.6"># Hello, World!</span></div>
+      <div><button class="howbtn" id="howBtn2">▶ Watch: how it works (1 min)</button></div>
     </div>
     <div class="card">
       <div class="tabs"><button class="tab on" data-tab="in">Sign in</button><button class="tab" data-tab="up">New here? Sign up</button></div>
@@ -796,6 +802,7 @@ $("signBtn").onclick = () => {
   syncTeacher("signup", {pin:pin});
   openMap();
   say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
+  setTimeout(() => showHowTo(true), 2500);
 };
 $("loginBtn").onclick = () => {
   const err = $("loginErr"), name = $("loginName").value, pin = $("loginPin").value;
@@ -1567,6 +1574,48 @@ $("adminBtn").onclick = () => {
   $("adminCode").addEventListener("keydown", e => { if (e.key === "Enter") go(); });
   setTimeout(() => $("adminCode").focus(), 50);
 };
+
+/* ---------------- How it works video ---------------- */
+const HOWTO_CAPS = [
+  [0, "Welcome to Python Pathways! Here's how it works."],
+  [5, "Sign up once: your name, school email, grade, teacher, level and a secret 4-digit PIN."],
+  [14, "Next time, just type your name and PIN. You carry on exactly where you stopped."],
+  [21, "Every lesson: Learn, try the Example, solve 3 Exercises, then Practice."],
+  [28, "Write your code and press Check. Every exercise you complete earns 10 points!"],
+  [37, "Stuck? Buy advice for 5 points. Use your points wisely!"],
+  [44, "Exercises earn House Points: Beginner 15, Intermediate 10, Advanced 5."],
+  [54, "Earn a House Point and Submit unlocks. Send your work to your teacher!"],
+  [61, "Good to know: finished exercises can't be redone, lessons last 40 minutes, and keep your PIN secret."],
+  [70, "Now you're ready. Let's code!"]
+];
+function showHowTo(firstTime){
+  if (document.querySelector(".vidmodal")) return;
+  let readAloud = load("pyl_readaloud", false), lastCap = -1;
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal vidmodal"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2>' + (firstTime ? "Welcome! Watch this first (1 min)" : "How Python Pathways works") + '</h2><button class="btn ghost" id="vidClose">✕ Close</button></div>' +
+    '<video id="howVid" controls playsinline preload="metadata" poster="how-it-works-poster.jpg" src="how-it-works.mp4"></video>' +
+    '<div class="vidbar"><button class="btn ghost" id="vidRead"></button><span class="muted" style="font-size:.9rem">Captions are on the video. Turn on Read it to me to hear them spoken.</span></div></div>';
+  document.body.appendChild(bg);
+  const v = bg.querySelector("#howVid"), rb = bg.querySelector("#vidRead");
+  const paint = () => { rb.textContent = readAloud ? "🔊 Read it to me: on" : "🔈 Read it to me: off"; };
+  const speak = t => { try { if (!("speechSynthesis" in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (voicePick) u.voice = voicePick; u.rate = 1.0; u.pitch = 1.1; speechSynthesis.speak(u); } catch(e){} };
+  paint();
+  rb.onclick = () => { readAloud = !readAloud; store("pyl_readaloud", readAloud); paint(); lastCap = -1; if (!readAloud) try { speechSynthesis.cancel(); } catch(e){} };
+  v.addEventListener("timeupdate", () => {
+    if (!readAloud || v.paused) return;
+    let i = 0; HOWTO_CAPS.forEach((c, k) => { if (v.currentTime >= c[0]) i = k; });
+    if (i !== lastCap){ lastCap = i; speak(HOWTO_CAPS[i][1]); }
+  });
+  v.addEventListener("seeked", () => { lastCap = -1; });
+  v.addEventListener("pause", () => { try { speechSynthesis.cancel(); } catch(e){} });
+  const close = () => { try { v.pause(); speechSynthesis.cancel(); } catch(e){} bg.remove(); };
+  bg.querySelector("#vidClose").onclick = close;
+  bg.addEventListener("click", e => { if (e.target === bg) close(); });
+  if (SND.music) { stopMusic(); SND.music = false; paintSound(); }
+  v.play().catch(() => {});
+}
+$("howBtn").onclick = () => showHowTo(false);
+$("howBtn2").onclick = () => showHowTo(false);
 
 /* ---------------- Boot ---------------- */
 $("loginName").value = load("pyl_lastName", "");
