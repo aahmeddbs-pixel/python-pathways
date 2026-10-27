@@ -1,0 +1,5 @@
+# Staff answer key must never be public: only answers.enc.js (encrypted) is published
+answers.js
+answers-sol.js
+*.before.html
+patch_*.py

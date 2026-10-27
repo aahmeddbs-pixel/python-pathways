@@ -1,5 +1,7 @@
-"""Rebuild answers.js (used by the admin Answers page) from index.html + answers-sol.js.
-Run again whenever the lesson exercises in index.html change:  python3 build_answers.py"""
+"""Rebuild the staff answer key from index.html + answers-sol.js, then encrypt it.
+answers-sol.js and answers.js are private and are NOT stored in this public repo (see .gitignore).
+To get them back:  node decrypt_answers.js "<admin password>"   (recreates answers.js, which contains the SOL code)
+After editing:      python3 build_answers.py  then  node encrypt_answers.js "<admin password>"  and commit only answers.enc.js"""
 import json, re
 s = open("index.html", encoding="utf-8").read()
 # exercise generators live in the first <script> block

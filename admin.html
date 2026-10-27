@@ -86,8 +86,8 @@ td .em{color:var(--muted);font-size:.82rem}
   <div class="card gate">
     <h2 id="gateTitle">Admin sign in</h2>
     <p class="muted small" id="gateMsg"></p>
-    <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin code</label>
-    <input class="t" id="pw1" type="password" inputmode="numeric" autocomplete="off">
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin password</label>
+    <input class="t" id="pw1" type="password" autocomplete="off">
     <div id="pw2wrap" class="hidden"><label style="display:block;font-weight:700;margin:12px 0 6px" for="pw2">Type it again</label><input class="t" id="pw2" type="password" autocomplete="off"></div>
     <div class="err" id="gateErr"></div>
     <button class="btn" id="gateBtn" style="margin-top:14px;width:100%;justify-content:center">Continue</button>
@@ -130,6 +130,11 @@ td .em{color:var(--muted);font-size:.82rem}
     <div id="loadMsg"></div>
   </div>
 
+  <div class="card hidden" id="alertsCard" style="margin-top:14px;border-left:6px solid var(--red)">
+    <h2 id="alertsHead" style="margin:0"></h2>
+    <p class="muted small" style="margin-top:4px">Things students did in Python Pathways that touch staff-only areas: wrong admin passwords, opening the admin page, and repeated wrong PINs on an account.</p>
+    <div class="tblwrap" style="margin-top:10px"><table id="alertsTbl"></table></div>
+  </div>
   <div class="card hidden" id="signupsCard" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="signupsHead" style="margin:0"></h2><div style="display:flex;gap:8px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div></div>
     <div class="tblwrap" style="margin-top:10px"><table id="signupsTbl"></table></div>
@@ -157,7 +162,7 @@ td .em{color:var(--muted);font-size:.82rem}
   </div>
 </div>
 
-<script src="answers.js"></script>
+<script src="answers.enc.js"></script>
 <script>
 (function(){
 "use strict";
@@ -174,29 +179,90 @@ const fmtDate = ms => ms ? new Date(ms).toLocaleDateString("en-GB", {day:"numeri
 const fmtMins = ms => { const m = Math.round((ms || 0) / 60000); return m < 1 ? "<1 min" : m < 60 ? m + " min" : Math.floor(m / 60) + " h " + (m % 60) + " min"; };
 const fmtAvg = ms => { if (!ms) return "–"; const s = Math.round(ms / 1000); return s < 60 ? s + " s" : Math.floor(s / 60) + " min " + (s % 60) + " s"; };
 
-/* ---------------- Admin password (stored only on this computer) ---------------- */
-function h(pw){ let x = 5381; for (const ch of "sisd-admin|" + pw) x = ((x * 33) ^ ch.charCodeAt(0)) >>> 0; return x.toString(36); }
-const ADMIN_HASH = "1fou3y0";
-function showGate(){
-  try { if (sessionStorage.getItem("pyl_admin_ok") === ADMIN_HASH){ openApp(); return; } } catch(e){}
+/* ---------------- Admin password: unlocks the encrypted answer key ----------------
+   No password or hash is stored in this page. The password is checked by trying to decrypt answers.enc.js. */
+const FORM = {"url": "https://docs.google.com/forms/d/e/1FAIpQLSfFnVZORF6176gPE9a2zGNpivDuklLFF5cHzdQz1YxfAxThRA/formResponse", "entries": {"type": "entry.1355322393", "student": "entry.1753714859", "email": "entry.1091945433", "teacher": "entry.1559320258", "data": "entry.145790134"}};
+/* ---------------- Security alerts ----------------
+   Logged to the private Google Form (shown in Admin) and, if NOTIFY is set up, emailed to the teacher
+   through a second private Google Form with email notifications switched on. No email address is in this page. */
+const NOTIFY = {"url": "", "entries": {"type": "", "student": "", "email": "", "teacher": "", "data": ""}};
+function __postTo(cfg, fields){
+  if (!cfg || !cfg.url || cfg.url.indexOf("docs.google.com/forms") < 0) return Promise.resolve(false);
+  const body = new URLSearchParams();
+  Object.keys(fields).forEach(k => { if (cfg.entries[k]) body.append(cfg.entries[k], fields[k]); });
+  return fetch(cfg.url, {method:"POST", mode:"no-cors", body}).then(() => true).catch(() => false);
+}
+function __deviceStudent(){
+  let accs = {}; try { accs = JSON.parse(localStorage.getItem("pyl_accounts") || "{}"); } catch(e){}
+  let last = ""; try { last = JSON.parse(localStorage.getItem("pyl_lastName") || '""'); } catch(e){}
+  const a = accs[String(last || "").trim().toLowerCase().replace(/\s+/g, " ")] || null;
+  return {name:a ? a.name : (last || ""), email:a ? (a.email || "") : "", grade:a ? a.grade : "", teacher:a ? a.teacher : "", path:a ? a.path : "", others:Object.keys(accs).length};
+}
+function securityAlert(kind, detail, who){
+  who = who || __deviceStudent();
+  const at = new Date();
+  const alert = {kind, detail, page:location.pathname.split("/").pop() || "index.html", time:at.toLocaleString("en-GB"), device:navigator.userAgent.slice(0, 140)};
+  const snap = {v:1, type:"alert", at:at.toISOString(), acct:{name:who.name || "Unknown (nobody signed in)", email:who.email || "", grade:who.grade || "", teacher:who.teacher || "", path:who.path || ""}, alert};
+  const fields = {type:"alert", student:snap.acct.name, email:snap.acct.email, teacher:snap.acct.teacher, data:JSON.stringify(snap)};
+  __postTo(FORM, fields);
+  __postTo(NOTIFY, {type:"SECURITY ALERT", student:snap.acct.name, email:snap.acct.email, teacher:snap.acct.teacher,
+    data:"⚠️ " + kind + "\n" + detail + "\nStudent: " + snap.acct.name + (snap.acct.email ? " (" + snap.acct.email + ")" : "") + (snap.acct.grade ? ", Grade " + snap.acct.grade : "") + (snap.acct.teacher ? ", " + snap.acct.teacher : "") + "\nTime: " + alert.time + "\nPage: " + alert.page + "\nDevice: " + alert.device});
+}
+
+const b64u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
+const u8b64 = u => btoa(String.fromCharCode(...u));
+async function unlockWith(rawKey){
+  const E = window.PP_ENC; if (!E) throw new Error("no answers file");
+  const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["decrypt"]);
+  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64u8(E.iv)}, key, b64u8(E.ct));
+  const code = new TextDecoder().decode(plain);
+  if (!window.PPAnswers){ (0, eval)(code); if (window.__initAnswers) window.__initAnswers(); }
+}
+async function keyFromPassword(pw){
+  const E = window.PP_ENC;
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const k = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64u8(E.salt), iterations:E.iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, true, ["decrypt"]);
+  return new Uint8Array(await crypto.subtle.exportKey("raw", k));
+}
+let __fails = 0;
+async function showGate(){
+  try { const k = sessionStorage.getItem("pyl_admin_key"); if (k){ await unlockWith(b64u8(k)); openApp(); return; } } catch(e){ try { sessionStorage.removeItem("pyl_admin_key"); } catch(x){} }
   $("gate").classList.remove("hidden"); $("app").classList.add("hidden"); $("lockBtn").classList.add("hidden");
-  $("gateTitle").textContent = "Admin access"; $("gateMsg").textContent = "Enter the admin code.";
+  $("gateTitle").textContent = "Admin access"; $("gateMsg").textContent = "Staff only. Enter the admin password.";
   $("pw2wrap").classList.add("hidden"); $("pw1").value = ""; $("gateErr").textContent = "";
   setTimeout(() => $("pw1").focus(), 50);
+  // A student account is in use on this computer and the admin page was opened: tell the teacher (once per tab)
+  try {
+    const d = __deviceStudent();
+    if (d.name && !sessionStorage.getItem("pyl_admin_opened")){ sessionStorage.setItem("pyl_admin_opened", "1"); securityAlert("Admin page opened", "The staff admin page was opened on a computer where " + d.name + " uses Python Pathways (no password entered yet).", d); }
+  } catch(e){}
 }
 function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); paintSheet(); restoreCache(); liveLoad(); }
-$("gateBtn").onclick = () => {
-  if (h($("pw1").value.trim()) !== ADMIN_HASH){ $("gateErr").textContent = "Wrong code."; $("pw1").value = ""; return; }
-  try { sessionStorage.setItem("pyl_admin_ok", ADMIN_HASH); } catch(e){}
-  openApp();
+$("gateBtn").onclick = async () => {
+  const pw = $("pw1").value; if (!pw) return;
+  $("gateBtn").disabled = true; $("gateErr").textContent = "Checking…";
+  try {
+    const raw = await keyFromPassword(pw);
+    await unlockWith(raw);
+    try { sessionStorage.setItem("pyl_admin_key", u8b64(raw)); } catch(e){}
+    __fails = 0; $("gateErr").textContent = ""; openApp();
+  } catch(e){
+    __fails++;
+    $("gateErr").textContent = "Wrong password.";
+    $("pw1").value = "";
+    const d = __deviceStudent();
+    securityAlert("Wrong admin password", "Wrong admin password entered (attempt " + __fails + " in this tab)" + (d.name ? " on a computer used by " + d.name + "." : "."), d);
+  }
+  $("gateBtn").disabled = false;
 };
 $("pw1").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
 $("pw2").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
-$("lockBtn").onclick = () => { try { sessionStorage.removeItem("pyl_admin_ok"); } catch(e){} STUDENTS = {}; SIGNUPS = {}; render(); renderSignups(); showGate(); };
+$("lockBtn").onclick = () => { try { sessionStorage.removeItem("pyl_admin_key"); } catch(e){} location.reload(); };
 
 /* ---------------- Loading data ---------------- */
 let STUDENTS = {};  // key -> student
 let SIGNUPS = {};   // email|time -> sign-up record
+let ALERTS = {};    // time|kind -> security alert
 function parseCSV(text){
   const rows = []; let row = [], f = "", q = false;
   text = text.replace(/^﻿/, "");
@@ -290,6 +356,7 @@ async function loadFiles(list, opts){
         R.slice(1).forEach(r => {
           let snap = null; try { snap = JSON.parse(r[ci.data] || ""); } catch(e){ bad++; return; }
           if (!snap || !snap.acct) { bad++; return; }
+          if (snap.type === "alert"){ const w = Date.parse(snap.at) || 0; ALERTS[w + "|" + (snap.alert && snap.alert.kind)] = {when:w, acct:snap.acct, alert:snap.alert || {}}; rows++; return; }
           const when = Date.parse(snap.at) || Date.parse(r[ci.ts]) || 0;
           upsert(snap.acct, snap, snap.pin || null, when); rows++;
           if (snap.type === "signup"){ const A = snap.acct; SIGNUPS[(A.email || slug(A.name)) + "|" + when] = {when, name:A.name, email:A.email || "", grade:A.grade, teacher:A.teacher, path:A.path, pin:snap.pin || ""}; }
@@ -305,17 +372,17 @@ async function loadFiles(list, opts){
   $("loadMsg").className = n ? "ok" : "note";
   $("loadMsg").textContent = n ? (opts && opts.live ? "🔄 Live data updated at " + new Date().toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}) + ". " : "✅ ") + "Loaded " + rows + " log rows" + (files ? " and " + files + " progress files" : "") + ": " + n + " students." + (bad ? " (" + bad + " rows skipped)" : "") : "⚠️ No student data found. Check you chose the Google Sheet CSV or a progress file.";
   if (n) saveCache();
-  buildFilters(); render(); renderSignups();
+  buildFilters(); render(); renderSignups(); renderAlerts();
 }
 /* Remember the last loaded data on this computer only, so it shows as soon as the admin logs in */
 const CACHE_KEY = "pyl_admin_cache";
-function saveCache(){ try { localStorage.setItem(CACHE_KEY, JSON.stringify({at:Date.now(), students:STUDENTS, signups:SIGNUPS})); } catch(e){} }
+function saveCache(){ try { localStorage.setItem(CACHE_KEY, JSON.stringify({at:Date.now(), students:STUDENTS, signups:SIGNUPS, alerts:ALERTS})); } catch(e){} }
 function restoreCache(){
   const c = load(CACHE_KEY, null); if (!c || !c.students) return false;
-  STUDENTS = c.students; SIGNUPS = c.signups || {};
+  STUDENTS = c.students; SIGNUPS = c.signups || {}; ALERTS = c.alerts || {};
   $("loadMsg").className = "ok";
   $("loadMsg").textContent = "💾 Showing " + Object.keys(STUDENTS).length + " students saved on this computer (last updated " + new Date(c.at).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"}) + "). Drop a newer download to add the latest sign-ups.";
-  buildFilters(); render(); renderSignups(); return true;
+  buildFilters(); render(); renderSignups(); renderAlerts(); return true;
 }
 $("pickBtn").onclick = () => $("files").click();
 $("files").onchange = e => { loadFiles([...e.target.files]); e.target.value = ""; };
@@ -323,7 +390,7 @@ const drop = $("drop");
 ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
 drop.addEventListener("drop", e => loadFiles([...e.dataTransfer.files]));
-$("clearBtn").onclick = () => { try { localStorage.removeItem(CACHE_KEY); } catch(e){} STUDENTS = {}; SIGNUPS = {}; $("loadMsg").textContent = ""; $("loadMsg").className = ""; render(); renderSignups(); };
+$("clearBtn").onclick = () => { try { localStorage.removeItem(CACHE_KEY); } catch(e){} STUDENTS = {}; SIGNUPS = {}; ALERTS = {}; $("loadMsg").textContent = ""; $("loadMsg").className = ""; render(); renderSignups(); renderAlerts(); };
 
 /* ---------------- Live data from the Google Sheet linked to the Form ---------------- */
 const SHEET_KEY = "pyl_admin_sheet", SEEN_KEY = "pyl_admin_seen";
@@ -342,7 +409,7 @@ async function liveLoad(){
     try {
       const res = await fetch(u, {cache:"no-store"}); if (!res.ok) continue;
       const text = await res.text(); if (/<html/i.test(text.slice(0, 300))) continue;
-      STUDENTS = {}; SIGNUPS = {};
+      STUDENTS = {}; SIGNUPS = {}; ALERTS = {};
       await loadFiles([{name:"live.csv", text:async () => text}], {live:true});
       return;
     } catch(e){}
@@ -356,6 +423,32 @@ $("saveSheet").onclick = () => {
   store(SHEET_KEY, v); paintSheet(); if (v) liveLoad();
 };
 $("refreshBtn").onclick = liveLoad;
+function renderAlerts(){
+  const list = Object.values(ALERTS).sort((x, y) => y.when - x.when);
+  $("alertsCard").classList.toggle("hidden", !list.length);
+  $("alertsHead").innerHTML = "⚠️ Security alerts <span class='muted small'>(" + list.length + ")</span>";
+  let h = "<tr><th>When</th><th>Student (on that computer)</th><th>What happened</th><th>Details</th></tr>";
+  list.slice(0, 50).forEach(x => {
+    const a = x.acct || {}, al = x.alert || {};
+    h += "<tr><td>" + esc(new Date(x.when).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})) + "</td><td><b>" + esc(a.name || "Unknown") + "</b><div class='em'>" + esc([a.email, a.grade ? "Grade " + a.grade : "", a.teacher].filter(Boolean).join(" · ")) + "</div></td><td><span class='tag i'>" + esc(al.kind || "") + "</span></td><td class='small'>" + esc(al.detail || "") + "<div class='em'>" + esc((al.device || "").slice(0, 90)) + "</div></td></tr>";
+  });
+  $("alertsTbl").innerHTML = h;
+}
+/* Data checks: highlight records that look faked or tampered with */
+function flagsFor(st){
+  const F = [], snap = st.snap; if (!snap || !snap.paths) return F;
+  Object.keys(snap.paths).forEach(p => {
+    const P = snap.paths[p], every = HOUSE_EVERY[p] || 15;
+    let solved = 0, fast = 0, timed = 0;
+    Object.values(P.lessons || {}).forEach(L => { (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; timed++; if ((x.ms || 0) < 2000) fast++; }); });
+    if (P.solved != null && P.solved !== solved) F.push(PATH_NAMES[p] + ": says " + P.solved + " tasks done but only " + solved + " are listed.");
+    if (P.house != null && P.house !== Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") don't match the completed work.");
+    if (P.points != null && P.points > solved * 10) F.push(PATH_NAMES[p] + ": more points than possible for the work done.");
+    if (timed >= 5 && fast / timed > 0.5) F.push(PATH_NAMES[p] + ": " + fast + " of " + timed + " tasks completed in under 2 seconds each (possible copying or faked data).");
+  });
+  if (snap.type !== "file" && !st.pin) F.push("No sign-up record found for this student (data may have been sent from outside the site).");
+  return F;
+}
 function renderSignups(){
   const list = Object.values(SIGNUPS).sort((x, y) => y.when - x.when);
   const seen = load(SEEN_KEY, 0), fresh = list.filter(x => x.when > seen).length;
@@ -371,8 +464,8 @@ function renderSignups(){
   $("moreSignups").textContent = showAllSignups ? "Show fewer" : "Show all " + list.length;
 }
 let showAllSignups = false;
-$("moreSignups").onclick = () => { showAllSignups = !showAllSignups; renderSignups(); };
-$("seenBtn").onclick = () => { store(SEEN_KEY, Date.now()); renderSignups(); };
+$("moreSignups").onclick = () => { showAllSignups = !showAllSignups; renderSignups(); renderAlerts(); };
+$("seenBtn").onclick = () => { store(SEEN_KEY, Date.now()); renderSignups(); renderAlerts(); };
 
 /* ---------------- Analysis ---------------- */
 function analyse(st){
@@ -447,7 +540,7 @@ function buildFilters(){
 ["q", "fTeacher", "fGrade", "fClass", "fLevel"].forEach(id => $(id).addEventListener("input", render));
 $("mailMode").value = load("pyl_admin_mail", "gmail");
 $("mailMode").onchange = e => store("pyl_admin_mail", e.target.value);
-$("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = showPins ? "🙈 Hide PINs" : "👁 Show all PINs"; render(); renderSignups(); };
+$("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = showPins ? "🙈 Hide PINs" : "👁 Show all PINs"; render(); renderSignups(); renderAlerts(); };
 function render(){
   const L = list();
   $("dash").classList.toggle("hidden", !Object.keys(STUDENTS).length);
@@ -461,7 +554,8 @@ function render(){
   let html = '<tr><th>Student</th><th>Grade</th><th>Teacher</th><th>Level</th><th>PIN</th><th>Tasks</th><th>House Points</th><th>Avg time / task</th><th>Last active</th><th>Actions</th></tr>';
   L.forEach((st, i) => {
     const a = st.acct, x = A[i], p = a.path || x.path;
-    html += '<tr><td><b>' + esc(a.name) + '</b><div class="em">' + esc(a.email || "no email") + '</div></td>' +
+    const fl = flagsFor(st);
+    html += '<tr' + (fl.length ? ' style="background:#fff7f8"' : '') + '><td><b>' + esc(a.name) + '</b>' + (fl.length ? ' <span class="tag i" title="' + esc(fl.join("\n")) + '">⚠️ Check data</span>' : '') + '<div class="em">' + esc(a.email || "no email") + '</div></td>' +
       '<td>' + esc(a.grade ? "Grade " + a.grade : "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
       '<td><span class="tag ' + (p || "b")[0] + '">' + esc(PATH_NAMES[p] || p || "") + '</span></td>' +
       '<td>' + (st.pin ? '<button class="pin" data-pin="' + i + '" title="Click to show">' + (showPins ? esc(st.pin) : "••••") + '</button>' : '<span class="muted small">not logged</span>') + '</td>' +
@@ -483,6 +577,7 @@ function viewStudent(st){
   const bg = document.createElement("div"); bg.className = "modal-bg";
   bg.innerHTML = '<div class="modal"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><h1>' + esc(a.name) + '</h1><p class="muted">' + esc(a.email || "") + ' · Grade ' + esc(a.grade) + ' · ' + esc(a.teacher) + ' · ' + esc(PATH_NAMES[x.path]) + '</p></div><button class="btn ghost" id="mClose">✕ Close</button></div>' +
     '<div class="stats">' + [["Tasks completed", x.solved], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time per task", fmtAvg(x.avgTask)], ["House Points", x.house], ["Points", x.points]].map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("") + '</div>' +
+    (flagsFor(st).length ? '<div class="note" style="margin-bottom:12px">⚠️ <b>Data checks:</b><ul style="margin:6px 0 0 18px">' + flagsFor(st).map(f => "<li>" + esc(f) + "</li>").join("") + '</ul></div>' : '') +
     '<h2>Progress by lesson</h2><div class="tblwrap"><table><tr><th>Lesson</th><th>Exercises</th><th>Practice</th><th>Time</th><th>Avg / task</th><th>Status</th></tr>' +
     (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / 3</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
     '<div class="two" style="margin-top:14px"><div class="box g"><b>🌟 Strengths</b><ul>' + x.strengths.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div><div class="box a"><b>🚀 Areas for development</b><ul>' + x.dev.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div></div>' +
@@ -689,8 +784,8 @@ $("trackerBtn").onclick = () => {
 };
 
 window.__admin = {loadFiles, makePdf, analyse, zip, get students(){ return STUDENTS; }};
-/* ---------------- Answers (staff only) ---------------- */
-(function(){
+/* ---------------- Answers (staff only, decrypted after the password) ---------------- */
+window.__initAnswers = function(){
   const A = window.PPAnswers; if (!A) return;
   const app = $("app"), keep = new Map();
   function view(ans){
@@ -740,7 +835,7 @@ window.__admin = {loadFiles, makePdf, analyse, zip, get students(){ return STUDE
   $("ansLesson").onchange = render; $("ansGrade").onchange = render; $("ansNew").onclick = render;
   $("ansPrint").onclick = () => window.print();
   fillLessons();
-})();
+};
 showGate();
 })();
 </script>
