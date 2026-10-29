@@ -1141,18 +1141,34 @@ $("signBtn").onclick = () => {
   say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
   setTimeout(() => showHowTo(true), 2500);
 };
+/* Teacher PIN resets: these students can sign in with PIN 0000 until the date below.
+   Matched on first name (the only account with that first name on this computer), so a
+   misspelt surname still works. Signing in with 0000 saves 0000 as their PIN. */
+const PIN_RESETS = {until: "2026-11-06", firstNames: ["inara", "dawid", "niilo"]};
+function resetAccount(name, pin){
+  if (pin !== "0000" || Date.now() > new Date(PIN_RESETS.until + "T23:59:59").getTime()) return null;
+  const first = slug(name).split(" ")[0];
+  if (PIN_RESETS.firstNames.indexOf(first) < 0) return null;
+  const all = accounts(), exact = all[slug(name)];
+  if (exact) return exact;
+  const hits = Object.values(all).filter(a => slug(a.name).split(" ")[0] === first);
+  return hits.length === 1 ? hits[0] : null;
+}
 $("loginBtn").onclick = () => {
-  const err = $("loginErr"), name = $("loginName").value, pin = $("loginPin").value;
+  const err = $("loginErr"), pin = $("loginPin").value;
+  const rs = resetAccount($("loginName").value, pin);
+  if (rs){ rs.pin = pinHash(rs.name, "0000"); saveAccount(rs); store("pyl_pinfail_" + slug(rs.name), {n:0, until:0}); $("loginName").value = rs.name; }
+  const name = $("loginName").value;
   const acc = accounts()[slug(name)];
   if (!acc){ err.textContent = "No account with that name on this computer. Check the spelling, sign up, or load your progress file."; return; }
   const lk = "pyl_pinfail_" + slug(name), f = load(lk, {n:0, until:0});
   if (f.until > Date.now()){ err.textContent = "Too many wrong PINs. This account is locked for " + Math.ceil((f.until - Date.now()) / 60000) + " more minute(s). Ask your teacher if you've forgotten your PIN."; $("loginPin").value = ""; return; }
   if (acc.pin !== pinHash(name, pin)){
-    f.n++; if (f.n >= 5){ f.until = Date.now() + 5 * 60000; }
+    f.n++; if (f.n >= 5){ f.until = Date.now() + 60000; }
     store(lk, f);
-    if (f.n === 3 || f.n === 5) securityAlert("Repeated wrong PINs", f.n + " wrong PIN attempts for " + acc.name + "'s account on this computer" + (f.n >= 5 ? " (account locked for 5 minutes)." : ".") + " This may be a forgotten PIN, or someone trying to get into another student's account." + (load("pyl_lastName", "") && slug(load("pyl_lastName", "")) !== slug(acc.name) ? " The last student signed in on this computer was " + load("pyl_lastName", "") + "." : ""),
+    if (f.n === 3 || f.n === 5) securityAlert("Repeated wrong PINs", f.n + " wrong PIN attempts for " + acc.name + "'s account on this computer" + (f.n >= 5 ? " (account locked for 1 minute)." : ".") + " This may be a forgotten PIN, or someone trying to get into another student's account." + (load("pyl_lastName", "") && slug(load("pyl_lastName", "")) !== slug(acc.name) ? " The last student signed in on this computer was " + load("pyl_lastName", "") + "." : ""),
       {name:acc.name, email:acc.email, grade:acc.grade, teacher:acc.teacher, path:acc.path});
-    err.textContent = f.n >= 5 ? "Too many wrong PINs. This account is locked for 5 minutes. Ask your teacher if you've forgotten your PIN." : "That PIN is not right. Try again, or ask your teacher for help.";
+    err.textContent = f.n >= 5 ? "Too many wrong PINs. This account is locked for 1 minute. Ask your teacher if you've forgotten your PIN." : "That PIN is not right. Try again, or ask your teacher for help.";
     $("loginPin").value = ""; return;
   }
   store(lk, {n:0, until:0});
