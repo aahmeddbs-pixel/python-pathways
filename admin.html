@@ -170,6 +170,9 @@ const TITLES = {"beginner": {"lessons": [{"title": "Talking to the computer", "e
 const PATH_NAMES = {beginner:"Beginner", intermediate:"Intermediate", advanced:"Advanced", dp_beginner:"IB DP Beginner", dp_intermediate:"IB DP Intermediate", dp_advanced:"IB DP Advanced (HL)"};
 const tagCls = p => ({beginner:"b", intermediate:"i", advanced:"a", dp_beginner:"b", dp_intermediate:"i", dp_advanced:"a"})[p] || "b";
 const HOUSE_EVERY = {beginner:15, intermediate:10, advanced:5, dp_beginner:15, dp_intermediate:10, dp_advanced:5};
+/* Since Oct 2026: every lesson has 10 exercises (x1..x10). 9 of 10 (90%) = 1 House Point, max one per day. */
+const XK = Array.from({length: 10}, (_, i) => "x" + (i + 1)), HP_NEED = 9;
+const fullAt = L => ((L.core || []).length >= 10 ? HP_NEED : 3);
 const $ = id => document.getElementById(id);
 const esc = t => String(t == null ? "" : t).replace(/[&<>"]/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"}[c]));
 function store(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
@@ -296,17 +299,21 @@ function fromProgressFile(d){
     Object.keys(pr.lessons || {}).forEach(n => {
       const s = pr.lessons[n], T = TITLES[p] && TITLES[p].lessons[n - 1]; if (!T) return;
       const ms = s.ms || {}, at = s.solvedAt || {};
-      const core = T.ex.map(q => ({t:TITLES[p].q[q - 1], ok:!!(s.solved || {})[q], h:(s.hints || {})[q] || 0, c:(s.tries || {})[q] || 0, ms:ms[q] || 0, at:at[q] || 0}));
+      const sv = s.solved || {}, isNew = Object.keys(sv).some(q => /^x\d+$/.test(q)) || !!s.exq && Object.keys(s.exq).some(q => /^x/.test(q));
+      const core = isNew ? XK.map((q, i) => ({t:(s.exq && s.exq[q] ? s.exq[q].title : "Exercise " + (i + 1)), ok:!!sv[q], h:(s.hints || {})[q] || 0, c:(s.tries || {})[q] || 0, ms:ms[q] || 0, at:at[q] || 0}))
+                         : T.ex.map(q => ({t:TITLES[p].q[q - 1], ok:!!sv[q], h:(s.hints || {})[q] || 0, c:(s.tries || {})[q] || 0, ms:ms[q] || 0, at:at[q] || 0}));
       const prac = (((s.prac || {}).done) || []).filter(x => x.ok).map(x => ({t:x.title, h:x.hints || 0, c:x.checks || 0, ms:x.ms || 0, at:x.at || 0}));
-      solved += core.filter(x => x.ok).length + prac.length;
+      const old = isNew ? T.ex.filter(q => sv[q]).length : 0;
+      solved += core.filter(x => x.ok).length + prac.length + old;
       const days = {}; Object.keys(s.days || {}).forEach(dd => days[dd] = s.days[dd].activeMs || 0);
       const errs = {}; Object.keys(s.errs || {}).forEach(q => Object.keys(s.errs[q]).forEach(k => errs[k] = (errs[k] || 0) + s.errs[q][k]));
-      lessons[n] = {title:T.title, core, prac, skipped:(s.prac || {}).skipped || 0, days, errs, subs:(s.submissions || []).filter(x => x.complete).length};
+      lessons[n] = {title:T.title, core, prac, old, hp:s.hpAwarded || null, skipped:(s.prac || {}).skipped || 0, days, errs, subs:(s.submissions || []).filter(x => x.complete).length};
     });
-    paths[p] = {solved, points:solved * 10 - (pr.spent || 0), spent:pr.spent || 0, house:Math.floor(solved / HOUSE_EVERY[p]), lessons};
+    const hr = d.hp || null;
+    paths[p] = {solved, points:solved * 10 - (pr.spent || 0), spent:pr.spent || 0, house:hr ? (hr.legacy && hr.legacy[p] || 0) + Object.values(hr.days || {}).filter(x => x.path === p).length : Math.floor(solved / HOUSE_EVERY[p]), lessons};
   });
   const latest = Math.max(0, ...Object.values(paths).flatMap(P => Object.values(P.lessons).flatMap(L => L.core.map(x => x.at).concat(L.prac.map(x => x.at)))));
-  return {acct:{name:a.name, email:a.email || "", grade:a.grade, cls:a.cls, teacher:a.teacher, path:a.path, created:a.created}, snap:{v:1, type:"file", at:new Date(latest || Date.now()).toISOString(), acct:a, paths}, at:latest || Date.now()};
+  return {acct:{name:a.name, email:a.email || "", grade:a.grade, cls:a.cls, teacher:a.teacher, path:a.path, created:a.created}, snap:{v:d.hp ? 2 : 1, type:"file", at:new Date(latest || Date.now()).toISOString(), acct:a, paths, hp:d.hp || undefined}, at:latest || Date.now()};
 }
 /* Google Forms "Download responses" gives a .zip containing the .csv: open it here */
 async function unzipCsvs(buf){
@@ -441,9 +448,13 @@ function flagsFor(st){
   Object.keys(snap.paths).forEach(p => {
     const P = snap.paths[p], every = HOUSE_EVERY[p] || 15;
     let solved = 0, fast = 0, timed = 0;
-    Object.values(P.lessons || {}).forEach(L => { (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; timed++; if ((x.ms || 0) < 2000) fast++; }); });
+    Object.values(P.lessons || {}).forEach(L => { solved += L.old || 0; (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; timed++; if ((x.ms || 0) < 2000) fast++; }); });
     if (P.solved != null && P.solved !== solved) F.push(PATH_NAMES[p] + ": says " + P.solved + " tasks done but only " + solved + " are listed.");
-    if (P.house != null && P.house !== Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") don't match the completed work.");
+    if (snap.hp){
+      const days = Object.entries(snap.hp.days || {}).filter(([d, x]) => x.path === p);
+      days.forEach(([d, x]) => { const L = (P.lessons || {})[x.lesson]; const ok = L ? (L.core || []).filter(c => c.ok).length : 0; if (ok < HP_NEED) F.push(PATH_NAMES[p] + ": House Point on " + d + " for Lesson " + x.lesson + ", but only " + ok + " of 10 exercises are done."); });
+      const perDay = {}; Object.keys(snap.hp.days || {}).forEach(d => perDay[d] = (perDay[d] || 0) + 1);
+    } else if (P.house != null && P.house !== Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") don't match the completed work.");
     if (P.points != null && P.points > solved * 10) F.push(PATH_NAMES[p] + ": more points than possible for the work done.");
     if (timed >= 5 && fast / timed > 0.5) F.push(PATH_NAMES[p] + ": " + fast + " of " + timed + " tasks completed in under 2 seconds each (possible copying or faked data).");
   });
@@ -483,15 +494,21 @@ function analyse(st){
     const solvedItems = okCore.concat(L.prac);
     solvedItems.forEach(x => { if (x.ms) { taskMs += x.ms; taskN++; } hints += x.h || 0; lastAt = Math.max(lastAt, x.at || 0); done.push({lesson:+n, title:x.t, at:x.at, ms:x.ms, h:x.h, kind:L.core.indexOf(x) >= 0 ? "Exercise" : "Practice"}); });
     L.core.filter(x => !x.ok).forEach(x => hints += x.h || 0);
-    timeAll += lt; skipped += L.skipped || 0; coreDone += okCore.length; if (okCore.length === 3) lessonsComplete++;
+    timeAll += lt; skipped += L.skipped || 0; coreDone += okCore.length; if (okCore.length >= fullAt(L)) lessonsComplete++;
     const avg = solvedItems.filter(x => x.ms).length ? solvedItems.reduce((p, x) => p + (x.ms || 0), 0) / solvedItems.filter(x => x.ms).length : 0;
-    rows.push({n:+n, title:L.title, core:okCore.length, prac:L.prac.length, time:lt, avg, hints:solvedItems.reduce((p, x) => p + (x.h || 0), 0), status:okCore.length === 3 ? (L.prac.length >= 3 ? "Mastered" : "Complete") : okCore.length + L.prac.length ? "In progress" : "Started", errs:L.errs || {}});
+    const of = L.core.length, full = fullAt(L);
+    rows.push({n:+n, title:L.title, core:okCore.length, of, prac:L.prac.length, time:lt, avg, hints:solvedItems.reduce((p, x) => p + (x.h || 0), 0), hp:L.hp || null, status:okCore.length >= full ? (of >= 10 ? (okCore.length === of ? "Mastered" : "Complete (90%+)") : (L.prac.length >= 3 ? "Mastered" : "Complete")) : okCore.length + L.prac.length ? "In progress" : "Started", errs:L.errs || {}});
   });
-  const solved = done.length, avgTask = taskN ? taskMs / taskN : 0;
-  const every = HOUSE_EVERY[path] || 15;
+  const oldDone = Object.values(P.lessons).reduce((p, L) => p + (L.old || 0), 0);
+  const solved = done.length + oldDone, avgTask = taskN ? taskMs / taskN : 0;
+  const newRule = !!snap.hp || rows.some(r => r.of >= 10);
+  let every = HOUSE_EVERY[path] || 15, into = solved % every, hpLine = into + " of " + every + " tasks towards the next House Point";
+  if (newRule){ every = HP_NEED; const open = rows.filter(r => r.of >= 10 && r.core < HP_NEED); into = open.length ? Math.max(...open.map(r => r.core)) : 0; hpLine = into + " of " + HP_NEED + " exercises done in the closest unfinished lesson (90% of a lesson = 1 House Point, max 1 per lesson day)"; }
   // strengths & development
   const S = [], Dv = [];
-  if (lessonsComplete) S.push("Completed all lesson exercises in " + lessonsComplete + " lesson" + (lessonsComplete > 1 ? "s" : "") + ": " + rows.filter(r => r.core === 3).map(r => r.title).slice(0, 4).join(", ") + ".");
+  if (lessonsComplete) S.push("Completed " + lessonsComplete + " lesson" + (lessonsComplete > 1 ? "s" : "") + " (90% or more of the exercises): " + rows.filter(r => r.core >= (r.of >= 10 ? HP_NEED : 3)).map(r => r.title).slice(0, 4).join(", ") + ".");
+  const chall = rows.filter(r => r.of >= 10).length ? Object.values(P.lessons).reduce((p, L) => p + ((L.core || []).length >= 10 ? L.core.slice(8).filter(x => x.ok).length : 0), 0) : 0;
+  if (chall >= 2) S.push("Takes on hard problems: " + chall + " Challenge exercises (Exercise 9 and 10) solved.");
   const indep = done.filter(x => !x.h).length;
   if (solved >= 3 && indep / solved >= 0.8) S.push("Works independently: " + indep + " of " + solved + " tasks solved without buying advice.");
   if (avgTask && avgTask < 3 * 60000 && solved >= 3) S.push("Works at a strong pace: an average of " + fmtAvg(avgTask) + " per task.");
@@ -500,8 +517,8 @@ function analyse(st){
   if (P.house) S.push("Earned " + P.house + " House Point" + (P.house > 1 ? "s" : "") + " through consistent effort.");
   const mastered = rows.filter(r => r.status === "Mastered");
   if (mastered.length) S.push("Mastered: " + mastered.map(r => r.title).slice(0, 3).join(", ") + ".");
-  const unfinished = rows.filter(r => r.core < 3);
-  if (unfinished.length) Dv.push("Finish the lesson exercises in: " + unfinished.map(r => "Lesson " + r.n + " (" + r.title + ")").slice(0, 3).join(", ") + ".");
+  const unfinished = rows.filter(r => r.core < (r.of >= 10 ? HP_NEED : 3));
+  if (unfinished.length) Dv.push("Reach 90% in: " + unfinished.map(r => "Lesson " + r.n + " (" + r.title + ", " + r.core + "/" + r.of + ")").slice(0, 3).join(", ") + ".");
   if (solved && hints / Math.max(1, solved) > 1) Dv.push("Try each task independently for a few minutes before buying advice (" + hints + " pieces of advice used).");
   if (avgTask > 10 * 60000) Dv.push("Build speed and confidence: tasks are taking " + fmtAvg(avgTask) + " on average. Re-read the worked example first.");
   const topErr = Object.keys(errs).sort((x, y) => errs[y] - errs[x])[0];
@@ -513,7 +530,7 @@ function analyse(st){
   if (!solved) Dv.push("Get started: complete the first lesson's exercises.");
   if (!S.length) S.push(solved ? "Has made a start, completing " + solved + " task" + (solved > 1 ? "s" : "") + "." : "Has signed up and is ready to begin.");
   if (!Dv.length) Dv.push("Keep stretching: move on to the next lesson" + (path !== "advanced" && path !== "dp_advanced" ? " or try the next level up." : "."));
-  return {path, P, rows, done:done.sort((x, y) => (x.at || 0) - (y.at || 0)), solved, coreDone, lessonsComplete, timeAll, avgTask, hints, skipped, dayMs, every, into:solved % every, house:P.house || 0, points:P.points || 0, lastAt:Math.max(lastAt, st.lastActive || 0), strengths:S.slice(0, 5), dev:Dv.slice(0, 5)};
+  return {path, P, rows, done:done.sort((x, y) => (x.at || 0) - (y.at || 0)), solved, coreDone, lessonsComplete, timeAll, avgTask, hints, skipped, dayMs, every, into, hpLine, house:P.house || 0, points:P.points || 0, lastAt:Math.max(lastAt, st.lastActive || 0), strengths:S.slice(0, 5), dev:Dv.slice(0, 5)};
 }
 
 /* ---------------- Dashboard ---------------- */
@@ -560,8 +577,8 @@ function render(){
       '<td>' + esc(a.grade ? "Grade " + a.grade : "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
       '<td><span class="tag ' + tagCls(p) + '">' + esc(PATH_NAMES[p] || p || "") + '</span></td>' +
       '<td>' + (st.pin ? '<button class="pin" data-pin="' + i + '" title="Click to show">' + (showPins ? esc(st.pin) : "••••") + '</button>' : '<span class="muted small">not logged</span>') + '</td>' +
-      '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' practice)</span></td>' +
-      '<td><b>' + x.house + '</b><div class="bar" title="' + x.into + ' / ' + x.every + ' to next"><i style="width:' + Math.round(x.into / x.every * 100) + '%"></i></div></td>' +
+      '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' other)</span></td>' +
+      '<td><b>' + x.house + '</b><div class="bar" title="' + esc(x.hpLine) + '"><i style="width:' + Math.round(x.into / x.every * 100) + '%"></i></div></td>' +
       '<td>' + fmtAvg(x.avgTask) + '</td><td>' + fmtDate(x.lastAt) + '</td>' +
       '<td><div class="acts"><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
   });
@@ -580,7 +597,7 @@ function viewStudent(st){
     '<div class="stats">' + [["Tasks completed", x.solved], ["Lessons complete", x.lessonsComplete + " / 10"], ["Time on lessons", fmtMins(x.timeAll)], ["Avg time per task", fmtAvg(x.avgTask)], ["House Points", x.house], ["Points", x.points]].map(([l, v]) => '<div class="stat"><b>' + v + '</b><span>' + l + '</span></div>').join("") + '</div>' +
     (flagsFor(st).length ? '<div class="note" style="margin-bottom:12px">⚠️ <b>Data checks:</b><ul style="margin:6px 0 0 18px">' + flagsFor(st).map(f => "<li>" + esc(f) + "</li>").join("") + '</ul></div>' : '') +
     '<h2>Progress by lesson</h2><div class="tblwrap"><table><tr><th>Lesson</th><th>Exercises</th><th>Practice</th><th>Time</th><th>Avg / task</th><th>Status</th></tr>' +
-    (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / 3</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
+    (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / ' + r.of + (r.hp ? ' 🏠' : '') + '</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
     '<div class="two" style="margin-top:14px"><div class="box g"><b>🌟 Strengths</b><ul>' + x.strengths.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div><div class="box a"><b>🚀 Areas for development</b><ul>' + x.dev.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div></div>' +
     '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="mPdf">📄 Download PDF</button><button class="btn red" id="mMail"' + (a.email ? "" : " disabled") + '>📧 Email progress</button></div></div>';
   document.body.appendChild(bg);
@@ -600,11 +617,11 @@ function emailProgress(st){
   const a = st.acct, x = analyse(st);
   downloadPdf(st);
   const body = "Dear " + first(a.name) + ",\n\nHere is your latest Python Pathways progress update (" + PATH_NAMES[x.path] + " level).\n\n" +
-    "• Tasks completed: " + x.solved + " (" + x.coreDone + " lesson exercises, " + (x.solved - x.coreDone) + " practice questions)\n" +
+    "• Tasks completed: " + x.solved + " (" + x.coreDone + " lesson exercises, " + (x.solved - x.coreDone) + " practice and earlier questions)\n" +
     "• Lessons fully completed: " + x.lessonsComplete + " of 10\n" +
     "• Time spent on lessons: " + fmtMins(x.timeAll) + "\n" +
     "• Average time per task: " + fmtAvg(x.avgTask) + "\n" +
-    "• House Points earned: " + x.house + " (" + x.into + " of " + x.every + " tasks towards your next one)\n\n" +
+    "• House Points earned: " + x.house + " (" + x.hpLine + ")\n\n" +
     "Strengths:\n" + x.strengths.map(s => "• " + s).join("\n") + "\n\n" +
     "Areas for development:\n" + x.dev.map(s => "• " + s).join("\n") + "\n\n" +
     "Your full progress report is attached as a PDF.\n\nKeep up the effort!\n" + (a.teacher || "Your teacher");
@@ -680,7 +697,7 @@ function makePdf(st){
   tiles.forEach((t, i) => { const tx = M + i * (tw5 + 8); d.rect(tx, d.y, tw5, 50, "#EEF1F7"); d.rect(tx, d.y, 4, 50, i % 2 ? "#DC2B3E" : "#1B2D4E"); d.text(tx + 10, d.y + 24, t[1], 15, true); d.text(tx + 10, d.y + 40, t[0], 8, false, "#6B7590"); });
   d.y += 64;
   // house point progress
-  d.text(M, d.y, "Progress to next House Point: " + x.into + " / " + x.every + " tasks", 10, true); d.y += 8;
+  d.text(M, d.y, "Progress to next House Point: " + x.into + " / " + x.every + (x.every === HP_NEED ? " exercises in the closest lesson (90% of a lesson = 1 House Point)" : " tasks"), 10, true); d.y += 8;
   d.rect(M, d.y, W - 2 * M, 8, "#E0E5EE"); d.rect(M, d.y, (W - 2 * M) * x.into / x.every, 8, "#DC2B3E"); d.y += 24;
   // lesson table
   d.text(M, d.y, "Progress against tasks", 13, true); d.y += 10;
@@ -691,7 +708,7 @@ function makePdf(st){
     d.need(18);
     if (i % 2) d.rect(M, d.y, W - 2 * M, 17, "#F7F8FB");
     const t = r.n + ". " + r.title, tt = tw(t, 8.5) > 185 ? t.slice(0, 40) + "..." : t;
-    [tt, r.core + " / 3", String(r.prac), fmtMins(r.time), fmtAvg(r.avg), r.status].forEach((v, j) => d.text(cols[j][0] + 4, d.y + 12, v, 8.5, j === 5, j === 5 && r.status === "Mastered" ? "#0C6B3B" : "#1B2D4E"));
+    [tt, r.core + " / " + r.of, String(r.prac), fmtMins(r.time), fmtAvg(r.avg), r.status].forEach((v, j) => d.text(cols[j][0] + 4, d.y + 12, v, 8.5, j === 5, j === 5 && r.status === "Mastered" ? "#0C6B3B" : "#1B2D4E"));
     d.y += 17;
   });
   d.y += 14;
@@ -807,30 +824,32 @@ window.__initAnswers = function(){
     sel.innerHTML = A.LESSONS[lv].map((L, i) => '<option value="' + (i + 1) + '">Lesson ' + (i + 1) + ': ' + h(L.title) + '</option>').join("");
     if (was && +was <= A.LESSONS[lv].length) sel.value = was;
   }
-  function card(g, k){
+  function card(g, k, label){
     A.setGradeTheme($("ansGrade").value);
     let P, Q, code;
     try { P = g.make(); Q = g.q(P); code = A.answerFor(g, P, Q); } catch(e){ code = null; }
     const d = document.createElement("div"); d.className = "anscard";
     if (!Q){ d.textContent = "This example could not be made. Press New example."; return d; }
     const hints = (Q.hints || []).map(x => "<li>" + x + "</li>").join("");
-    d.innerHTML = '<span class="anstag">Exercise type ' + String.fromCharCode(65 + k) + '</span><h3>' + h(Q.title) + '</h3>' +
+    d.innerHTML = '<span class="anstag">' + (label || "Exercise type " + String.fromCharCode(65 + k)) + '</span><h3>' + h(Q.title) + '</h3>' +
       '<div class="anstask">' + Q.task + '</div>' +
       '<b class="small">Model answer</b><pre class="anscode"></pre>' +
       (hints ? '<details style="margin-top:8px"><summary class="small" style="font-weight:700;cursor:pointer">Hints the student can buy</summary><ul class="anshints small">' + hints + '</ul></details>' : '') +
       '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm ghost" data-a="new">🎲 New example</button><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
     d.querySelector(".anscode").textContent = code || "(answer not available)";
-    d.querySelector('[data-a=new]').onclick = () => d.replaceWith(card(g, k));
+    d.querySelector('[data-a=new]').onclick = () => d.replaceWith(card(g, k, label));
     d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(code || ""); e.target.textContent = "✅ Copied"; } catch(x){} };
     return d;
   }
   function render(){
-    const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, gens = A.GEN[lv][n - 1] || [], L = A.LESSONS[lv][n - 1];
+    const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, L = A.LESSONS[lv][n - 1];
+    const lad = A.LADDER && A.LADDER[lv] && A.LADDER[lv][n - 1], gens = lad || A.GEN[lv][n - 1] || [];
+    const ST = A.L_STAGES || [];
     const out = $("ansOut"); out.innerHTML = "";
     const head = document.createElement("div"); head.className = "card"; head.style.marginTop = "14px";
-    head.innerHTML = '<h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + ' Students\' lesson exercises and practice questions are made from these ' + gens.length + ' exercise types.</p>';
+    head.innerHTML = '<h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + (lad ? ' Every student does Exercises 1–10 below, each with their own numbers, words and function names. 9 of 10 (90%) earns the lesson\'s House Point (max one per day).</p>' : ' Students\' lesson exercises and practice questions are made from these ' + gens.length + ' exercise types.</p>');
     out.appendChild(head);
-    gens.forEach((g, k) => out.appendChild(card(g, k)));
+    gens.forEach((g, k) => out.appendChild(card(g, k, lad ? "Exercise " + (k + 1) + (ST[k] ? " · " + ST[k][0] : "") : null)));
   }
   $("ansLevel").onchange = () => { fillLessons(); render(); };
   $("ansLesson").onchange = render; $("ansGrade").onchange = render; $("ansNew").onclick = render;

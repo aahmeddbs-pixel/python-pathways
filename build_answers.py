@@ -11,10 +11,11 @@ gen = gen.replace('if (typeof module !== "undefined") module.exports = {GEN, R, 
 i = s.index("const DATA = ") + len("const DATA = ")
 data, _ = json.JSONDecoder().raw_decode(s[i:])
 lessons = {lv: [{"title": L["title"], "goal": L.get("goal", "")} for L in data["lessons"][lv]] for lv in data["lessons"]}
+lad = open("ladders.js", encoding="utf-8").read()   # public exercise ladders (Exercise 1-10 per lesson)
 sol = open("answers-sol.js", encoding="utf-8").read()
 out = ("/* AUTO-BUILT by build_answers.py - do not edit by hand. Staff answer key for Python Pathways. */\n"
-       "window.PPAnswers = (function(){\n" + gen + "\n" + sol +
+       "window.PPAnswers = (function(){\n" + gen + "\n" + lad + "\n" + sol +
        "\nconst LESSONS = " + json.dumps(lessons) + ";\n"
-       "return {GEN, setGradeTheme, answerFor, LESSONS, SOL};\n})();\n")
+       "return {GEN, LADDER, L_STAGES, setGradeTheme, answerFor, LESSONS, SOL};\n})();\n")
 open("answers.js", "w", encoding="utf-8").write(out)
 print("answers.js", len(out), "bytes")
