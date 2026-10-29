@@ -32,6 +32,12 @@ pre{white-space:pre-wrap}
 .pill.house{background:var(--red)}
 .pill{background:rgba(255,255,255,.12);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;white-space:nowrap}
 .pill.warn{background:var(--amber);color:var(--ink)}
+button.pill.lvlbtn{border:0;color:#fff;cursor:pointer;font-family:inherit;background:rgba(255,255,255,.22)} button.pill.lvlbtn:hover{background:rgba(255,255,255,.35)}
+.lvlpick{display:grid;gap:8px;margin-top:14px;text-align:left}
+.lvlpick button{display:flex;gap:12px;align-items:center;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer;font-family:inherit;text-align:left;color:var(--ink)}
+.lvlpick button:hover{border-color:var(--blue)} .lvlpick button.on{border-color:var(--green);background:var(--green-l)}
+.lvlpick .dot{width:34px;height:34px;border-radius:50%;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none}
+.lvlpick small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
 .pill.late{background:var(--red);color:#fff}
 .linkbtn{background:none;border:none;color:#c9d6f2;font-weight:700;text-decoration:underline;font-size:.9rem}
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:22px}
@@ -196,6 +202,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <button class="iconbtn" id="voiceBtn" title="Spoken encouragement">🗣️ Voice on</button>
   <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
   <span class="pill hidden" id="whoPill"></span>
+  <button class="pill lvlbtn hidden" id="levelBtn" title="Go back to the main page and choose a different course level">🔀 Change level</button>
   <button class="linkbtn hidden" id="switchBtn">Sign out</button>
 </div></div>
 
@@ -1164,6 +1171,34 @@ $("switchBtn").onclick = () => {
   show("signin");
 };
 $("levelSel").onchange = e => { profile.path = e.target.value; saveAccount(profile); openMap(); };
+/* Change level from anywhere: saves work, goes back to the main page (lesson map) of the chosen level. */
+function changeLevel(p){
+  saveCode(); stopClock(); try { speechSynthesis.cancel(); } catch(e){}
+  if (p && p !== profile.path){ profile.path = p; profile.last = null; saveAccount(profile); queueSync(); }
+  cur = {lesson:null, step:0};
+  openMap();
+  if (p) toast("📚 You're now on <b>" + PATHS[profile.path].name + "</b>. Your progress on every level is saved, so you can switch back any time.", "green", 4500);
+}
+$("levelBtn").onclick = () => {
+  if (!profile) return;
+  const opts = pathsForGrade(profile.grade).concat(pathsForGrade(profile.grade).indexOf(profile.path) < 0 ? [profile.path] : []);
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal" style="max-width:520px;max-height:92vh;overflow-y:auto"><div class="big">📚</div><h2 style="margin-top:6px">Change your course level</h2><p class="muted" style="margin-top:6px">Your work is saved on every level. Pick a level to go to its main page.</p><div class="lvlpick"></div>' +
+    '<div style="display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap"><button class="btn ghost" data-a="home">🏠 Main page (stay on ' + esc(PATHS[profile.path].name) + ')</button><button class="btn ghost" data-a="x">Cancel</button></div></div>';
+  const box = bg.querySelector(".lvlpick");
+  opts.forEach(p => {
+    const P = PATHS[p], src = document.querySelector('.path[data-p="' + p + '"] small');
+    const pr = load("pyl_" + p + "_" + slug(profile.name), null);
+    let done = 0; if (pr && pr.lessons) Object.values(pr.lessons).forEach(s => done += doneCount(s));
+    const b = el("button", p === profile.path ? "on" : "", '<span class="dot" style="background:' + P.c + '">' + P.l + '</span><span><b>' + esc(P.name) + (p === profile.path ? " (current)" : "") + '</b><small>' + (src ? esc(src.textContent.replace(/ Finish 90% of a lesson = 1 House Point\./, "")) : "") + '</small><small>' + (done ? "✅ " + done + " exercise" + (done > 1 ? "s" : "") + " done" : "Not started yet") + '</small></span>');
+    b.onclick = () => { bg.remove(); changeLevel(p); };
+    box.appendChild(b);
+  });
+  bg.querySelector('[data-a="home"]').onclick = () => { bg.remove(); changeLevel(null); };
+  bg.querySelector('[data-a="x"]').onclick = () => bg.remove();
+  bg.onclick = e => { if (e.target === bg) bg.remove(); };
+  document.body.appendChild(bg);
+};
 $("exportBtn").onclick = () => {
   const data = {v:1, account:profile, progress:{}};
   Object.keys(PATHS).forEach(p => { const v = load("pyl_" + p + "_" + slug(profile.name), null); if (v) data.progress[p] = v; });
@@ -1193,7 +1228,7 @@ $("importFile").onchange = e => {
 function show(id){
   ["signin", "map", "lesson"].forEach(s => $(s).classList.toggle("hidden", s !== id));
   const inApp = id !== "signin";
-  ["whoPill", "switchBtn", "ptsPill", "housePill"].forEach(x => $(x).classList.toggle("hidden", !inApp));
+  ["whoPill", "switchBtn", "ptsPill", "housePill", "levelBtn"].forEach(x => $(x).classList.toggle("hidden", !inApp));
   if (id !== "lesson") $("clockPill").classList.add("hidden");
   window.scrollTo(0, 0);
 }
