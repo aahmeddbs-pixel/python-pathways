@@ -95,6 +95,7 @@ td .em{color:var(--muted);font-size:.82rem}
     <div class="err" id="gateErr"></div>
     <button class="btn" id="gateBtn" style="margin-top:14px;width:100%;justify-content:center">Continue</button>
     <p class="small" style="text-align:center;margin:14px 0 0"><a href="#" id="forgotLink">Forgot password?</a></p>
+    <p class="small" style="margin:14px 0 0;padding:10px 12px;border-radius:10px;background:#FFF1F0;border:1px solid #F3B7B2;color:#8A1C14"><b>⚠️ Warning:</b> Trying to get into this staff area, or into another person's account or details, is monitored. Every attempt is recorded with the name and computer used and reported to staff, and school consequences will follow.</p>
   </div>
   <div class="card gate hidden" id="forgotCard">
     <h2>Reset the admin password</h2>
@@ -307,7 +308,7 @@ $("gateBtn").onclick = async () => {
   } catch(e){
     __fails++; noteFail();
     const w2 = lockLeft();
-    $("gateErr").textContent = "Wrong password." + (w2 > 0 ? " " + waitMsg(w2) : "");
+    $("gateErr").textContent = "Wrong password. This attempt has been reported to staff." + (w2 > 0 ? " " + waitMsg(w2) : "");
     $("pw1").value = "";
     const d = __deviceStudent();
     securityAlert("Wrong admin password", "Wrong admin password entered (attempt " + __fails + " in this tab)" + (d.name ? " on a computer used by " + d.name + "." : "."), d);
