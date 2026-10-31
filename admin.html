@@ -154,12 +154,26 @@ td .em{color:var(--muted);font-size:.82rem}
     <p class="muted small" style="margin-top:8px">Things students did in Python Pathways that touch staff-only areas: wrong admin passwords, opening the admin page, and repeated wrong PINs on an account.</p>
     <div class="tblwrap" style="margin-top:10px"><table id="alertsTbl"></table></div>
   </details>
-  <div class="card hidden" id="signupsCard" style="margin-top:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="signupsHead" style="margin:0"></h2><div style="display:flex;gap:8px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div></div>
+  <details class="card hidden" id="signupsCard" style="margin-top:14px">
+    <summary style="cursor:pointer;list-style:revert"><h2 id="signupsHead" style="margin:0;display:inline"></h2> <span class="muted small">(click to open)</span></summary>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><input class="t" id="signupsQ" placeholder="🔎 Search sign-ups by name, email, teacher or grade" style="flex:1;min-width:240px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div>
     <div class="tblwrap" style="margin-top:10px"><table id="signupsTbl"></table></div>
-  </div>
+  </details>
   <div id="dash" class="hidden">
     <div class="stats" id="stats"></div>
+    <details style="margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff"><summary style="font-weight:800;cursor:pointer">🔁 Sync tools: reset a PIN on every computer, test sync</summary>
+      <p class="muted small" style="margin:8px 0">Students' progress is saved online (locked with their name and PIN) so they can sign in on any computer. If a student forgets their PIN, set a new one here. It works on every computer and their progress is kept.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <label class="small" style="font-weight:700">Student's full name<br><input class="t" id="rsName" maxlength="40" placeholder="e.g. Sara Khan"></label>
+        <label class="small" style="font-weight:700">New 4-digit PIN<br><input class="t" id="rsPin" inputmode="numeric" maxlength="4" style="width:110px" placeholder="••••"></label>
+        <label class="small" style="font-weight:700">Recovery password<br><input class="t" id="rsAdmin" type="password" autocomplete="off" placeholder="admin password from the Design course"></label>
+        <button class="btn" id="rsBtn">Set new PIN</button>
+        <button class="btn ghost" id="syncTest">Test sync</button>
+      </div>
+      <div id="rsMsg" class="small" style="margin-top:8px;font-weight:700"></div>
+    </details>
+<details class="card" id="studentsBox" style="margin-top:12px">
+    <summary style="cursor:pointer;list-style:revert"><h2 id="studentsHead" style="margin:0;display:inline">👩‍🎓 Students</h2> <span class="muted small">(click to open)</span></summary>
     <div class="filters">
       <input class="t" id="q" placeholder="🔎 Search name or email">
       <select class="t" id="fTeacher"></select>
@@ -176,19 +190,10 @@ td .em{color:var(--muted);font-size:.82rem}
       <button class="btn ghost" id="pinsBtn">👁 Show all PINs</button>
       <button class="btn ghost" id="clearBtn">🧹 Clear loaded data</button>
     </div>
-    <details style="margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff"><summary style="font-weight:800;cursor:pointer">🔁 Sync tools: reset a PIN on every computer, test sync</summary>
-      <p class="muted small" style="margin:8px 0">Students' progress is saved online (locked with their name and PIN) so they can sign in on any computer. If a student forgets their PIN, set a new one here. It works on every computer and their progress is kept.</p>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-        <label class="small" style="font-weight:700">Student's full name<br><input class="t" id="rsName" maxlength="40" placeholder="e.g. Sara Khan"></label>
-        <label class="small" style="font-weight:700">New 4-digit PIN<br><input class="t" id="rsPin" inputmode="numeric" maxlength="4" style="width:110px" placeholder="••••"></label>
-        <label class="small" style="font-weight:700">Recovery password<br><input class="t" id="rsAdmin" type="password" autocomplete="off" placeholder="admin password from the Design course"></label>
-        <button class="btn" id="rsBtn">Set new PIN</button>
-        <button class="btn ghost" id="syncTest">Test sync</button>
-      </div>
-      <div id="rsMsg" class="small" style="margin-top:8px;font-weight:700"></div>
-    </details>
     <div class="tblwrap"><table id="tbl"></table></div>
     <p class="muted small" style="margin-top:10px">📧 <b>Email</b> opens a ready-written email to the student and downloads their PDF report so you can attach it. 🔑 <b>PIN</b> emails a student their PIN if they've forgotten it.</p>
+    </details>
+
   </div>
 </div>
 
@@ -525,6 +530,7 @@ $("saveSheet").onclick = () => {
   store(SHEET_KEY, v); paintSheet(); if (v) liveLoad();
 };
 $("refreshBtn").onclick = liveLoad;
+$("q").addEventListener("input", () => { $("studentsBox").open = true; });
 function renderAlerts(){
   const list = Object.values(ALERTS).sort((x, y) => y.when - x.when);
   $("alertsCard").classList.toggle("hidden", !list.length);
@@ -552,10 +558,12 @@ function flagsFor(st){
   return F;
 }
 function renderSignups(){
-  const list = Object.values(SIGNUPS).sort((x, y) => y.when - x.when);
-  const seen = load(SEEN_KEY, 0), fresh = list.filter(x => x.when > seen).length;
-  $("signupsCard").classList.toggle("hidden", !list.length);
-  $("signupsHead").innerHTML = "🆕 Sign-ups <span class='muted small'>(" + list.length + " total" + (fresh ? ", <b style='color:var(--red)'>" + fresh + " new since your last visit</b>" : "") + ")</span>";
+  const all = Object.values(SIGNUPS).sort((x, y) => y.when - x.when);
+  const sq = ($("signupsQ").value || "").trim().toLowerCase();
+  const list = sq ? all.filter(x => [x.name, x.email, x.teacher, x.grade ? "grade " + x.grade : "", x.path].join(" ").toLowerCase().includes(sq)) : all;
+  const seen = load(SEEN_KEY, 0), fresh = all.filter(x => x.when > seen).length;
+  $("signupsCard").classList.toggle("hidden", !all.length);
+  $("signupsHead").innerHTML = "🆕 Sign-ups <span class='muted small'>(" + all.length + " total" + (sq ? ", " + list.length + " shown" : "") + (fresh ? ", <b style='color:var(--red)'>" + fresh + " new since your last visit</b>" : "") + ")</span>";
   let h = "<tr><th>Signed up</th><th>Student</th><th>School email</th><th>Grade</th><th>Teacher</th><th>Level</th><th>PIN</th></tr>";
   list.slice(0, showAllSignups ? list.length : 15).forEach(x => {
     h += "<tr" + (x.when > seen ? " style='background:#fff7f8'" : "") + "><td>" + (x.when > seen ? "<span class='tag i'>NEW</span> " : "") + esc(new Date(x.when).toLocaleString("en-GB", {day:"numeric", month:"short", hour:"2-digit", minute:"2-digit"})) + "</td><td><b>" + esc(x.name) + "</b></td><td>" + esc(x.email) + "</td><td>" + esc(x.grade ? "Grade " + x.grade : "") + "</td><td>" + esc(x.teacher || "") + "</td><td>" + esc(PATH_NAMES[x.path] || x.path || "") + "</td><td><button class='pin' data-sp='" + x.when + "'>" + (showPins ? esc(x.pin) : "••••") + "</button></td></tr>";
@@ -566,6 +574,7 @@ function renderSignups(){
   $("moreSignups").textContent = showAllSignups ? "Show fewer" : "Show all " + list.length;
 }
 let showAllSignups = false;
+$("signupsQ").addEventListener("input", () => { $("signupsCard").open = true; showAllSignups = false; renderSignups(); });
 $("moreSignups").onclick = () => { showAllSignups = !showAllSignups; renderSignups(); renderAlerts(); };
 $("seenBtn").onclick = () => { store(SEEN_KEY, Date.now()); renderSignups(); renderAlerts(); };
 
@@ -646,6 +655,7 @@ $("pinsBtn").onclick = () => { showPins = !showPins; $("pinsBtn").textContent = 
 function render(){
   const L = list();
   $("dash").classList.toggle("hidden", !Object.keys(STUDENTS).length);
+  $("studentsHead").textContent = "👩‍🎓 Students (" + (L.length === Object.keys(STUDENTS).length ? L.length : L.length + " shown of " + Object.keys(STUDENTS).length) + ")";
   const A = L.map(analyse);
   const todayKey = new Date().toISOString().slice(0, 10);
   const activeWeek = A.filter(x => x.lastAt && Date.now() - x.lastAt < 7 * 86400000).length;
