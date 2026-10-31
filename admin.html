@@ -548,7 +548,7 @@ function flagsFor(st){
   Object.keys(snap.paths).forEach(p => {
     const P = snap.paths[p], every = HOUSE_EVERY[p] || 15;
     let solved = 0, fast = 0, timed = 0;
-    Object.values(P.lessons || {}).forEach(L => { (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; timed++; if ((x.ms || 0) < 2000) fast++; }); });
+    Object.values(P.lessons || {}).forEach(L => { (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; if ((x.ms || 0) > 0){ timed++; if (x.ms < 2000) fast++; } }); });  // tasks with no recorded time (older accounts) are not judged
     if (P.solved != null && P.solved !== solved) F.push(PATH_NAMES[p] + ": says " + P.solved + " tasks done but only " + solved + " are listed.");
     if (P.house != null && P.house !== Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") don't match the completed work.");
     if (P.points != null && P.points > solved * 10) F.push(PATH_NAMES[p] + ": more points than possible for the work done.");
@@ -667,7 +667,7 @@ function render(){
   L.forEach((st, i) => {
     const a = st.acct, x = A[i], p = a.path || x.path;
     const fl = flagsFor(st);
-    html += '<tr' + (fl.length ? ' style="background:#fff7f8"' : '') + '><td><b>' + esc(a.name) + '</b>' + (fl.length ? ' <span class="tag i" title="' + esc(fl.join("\n")) + '">⚠️ Check data</span>' : '') + '<div class="em">' + esc(a.email || "no email") + '</div></td>' +
+    html += '<tr' + (fl.length ? ' style="background:#fff7f8"' : '') + '><td><b>' + esc(a.name) + '</b>' + (fl.length ? ' <span class="tag i" title="' + esc(fl.join("\n")) + '">⚠️ Check data</span>' : '') + '<div class="em">' + esc(a.email || "no email") + '</div>' + (fl.length ? '<div class="small" style="color:#8A1C14;margin-top:4px">' + fl.map(esc).join('<br>') + '</div>' : '') + '</td>' +
       '<td>' + esc(a.grade ? "Grade " + a.grade : "") + '</td><td>' + esc(a.teacher || "") + '</td>' +
       '<td><span class="tag ' + tagCls(p) + '">' + esc(PATH_NAMES[p] || p || "") + '</span></td>' +
       '<td>' + (st.pin ? '<button class="pin" data-pin="' + i + '" title="Click to show">' + (showPins ? esc(st.pin) : "••••") + '</button>' : '<span class="muted small">not logged</span>') + '</td>' +
