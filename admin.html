@@ -148,11 +148,11 @@ td .em{color:var(--muted);font-size:.82rem}
     <div id="loadMsg"></div>
   </div>
 
-  <div class="card hidden" id="alertsCard" style="margin-top:14px;border-left:6px solid var(--red)">
-    <h2 id="alertsHead" style="margin:0"></h2>
-    <p class="muted small" style="margin-top:4px">Things students did in Python Pathways that touch staff-only areas: wrong admin passwords, opening the admin page, and repeated wrong PINs on an account.</p>
+  <details class="card hidden" id="alertsCard" style="margin-top:14px;border-left:6px solid var(--red)">
+    <summary style="cursor:pointer;list-style:revert"><h2 id="alertsHead" style="margin:0;display:inline"></h2> <span class="muted small">(click to open)</span></summary>
+    <p class="muted small" style="margin-top:8px">Things students did in Python Pathways that touch staff-only areas: wrong admin passwords, opening the admin page, and repeated wrong PINs on an account.</p>
     <div class="tblwrap" style="margin-top:10px"><table id="alertsTbl"></table></div>
-  </div>
+  </details>
   <div class="card hidden" id="signupsCard" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2 id="signupsHead" style="margin:0"></h2><div style="display:flex;gap:8px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div></div>
     <div class="tblwrap" style="margin-top:10px"><table id="signupsTbl"></table></div>
