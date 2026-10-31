@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <title>Python Pathways Admin</title>
@@ -86,7 +86,7 @@ td .em{color:var(--muted);font-size:.82rem}
 
 <!-- GATE -->
 <div class="wrap hidden" id="gate">
-  <div class="card gate">
+  <div class="card gate" id="gateCard">
     <h2 id="gateTitle">Admin sign in</h2>
     <p class="muted small" id="gateMsg"></p>
     <label style="display:block;font-weight:700;margin:12px 0 6px" for="pw1">Admin password</label>
@@ -94,6 +94,21 @@ td .em{color:var(--muted);font-size:.82rem}
     <div id="pw2wrap" class="hidden"><label style="display:block;font-weight:700;margin:12px 0 6px" for="pw2">Type it again</label><input class="t" id="pw2" type="password" autocomplete="off"></div>
     <div class="err" id="gateErr"></div>
     <button class="btn" id="gateBtn" style="margin-top:14px;width:100%;justify-content:center">Continue</button>
+    <p class="small" style="text-align:center;margin:14px 0 0"><a href="#" id="forgotLink">Forgot password?</a></p>
+  </div>
+  <div class="card gate hidden" id="forgotCard">
+    <h2>Reset the admin password</h2>
+    <p class="muted small">Type the <b>recovery code</b> you were given when this admin page was set up (5 groups of 5 letters and numbers), then choose a new password.</p>
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="rc">Recovery code</label>
+    <input class="t" id="rc" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXXX-XXXXX-XXXXX-XXXXX-XXXXX">
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="np1">New password</label>
+    <input class="t" id="np1" type="password" autocomplete="new-password">
+    <label style="display:block;font-weight:700;margin:12px 0 6px" for="np2">Type the new password again</label>
+    <input class="t" id="np2" type="password" autocomplete="new-password">
+    <p class="muted small" style="margin-top:6px">At least 12 characters, mixing 3 of: small letters, CAPITALS, numbers, symbols.</p>
+    <div class="err" id="rcErr"></div>
+    <button class="btn" id="rcBtn" style="margin-top:14px;width:100%;justify-content:center">Set new password</button>
+    <p class="small" style="text-align:center;margin:14px 0 0"><a href="#" id="forgotBack">← Back to sign in</a></p>
   </div>
 </div>
 
@@ -226,19 +241,45 @@ function securityAlert(kind, detail, who){
 }
 
 const b64u8 = b => Uint8Array.from(atob(b), c => c.charCodeAt(0));
-const u8b64 = u => btoa(String.fromCharCode(...u));
-async function unlockWith(rawKey){
-  const E = window.PP_ENC; if (!E) throw new Error("no answers file");
-  const key = await crypto.subtle.importKey("raw", rawKey, "AES-GCM", false, ["decrypt"]);
-  const plain = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64u8(E.iv)}, key, b64u8(E.ct));
-  const code = new TextDecoder().decode(plain);
+const u8b64 = u => { let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode.apply(null, u.subarray(i, i + 8192)); return btoa(s); };
+/* The answer key (answers.enc.js) is a "vault": one random key locks the answers, and that key is itself locked twice:
+   once by the admin password and once by the one-time recovery code (used by "Forgot password?"). */
+const AADf = t => new TextEncoder().encode("pp-vault-v2|" + t);
+const normCode = s => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+function vault(){ // newest copy; a password reset made on this computer counts until the new file is uploaded to GitHub
+  let E = window.PP_ENC, L = null;
+  try { L = JSON.parse(localStorage.getItem("pyl_vault") || "null"); } catch(e){}
+  if (L && L.v === 2 && L.pw && L.rc && L.ct && (!E || (L.gen || 0) > (E.gen || 0))) E = L;
+  return E;
+}
+async function kekFrom(secret, w, usage){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2", salt:b64u8(w.salt), iterations:w.iter, hash:"SHA-512"}, base, {name:"AES-GCM", length:256}, false, usage);
+}
+async function unwrapKey(secret, tag){
+  const E = vault(); if (!E) throw new Error("no answers file"); const w = E[tag];
+  return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM", iv:b64u8(w.iv), additionalData:AADf(tag)}, await kekFrom(secret, w, ["decrypt"]), b64u8(w.ct)));
+}
+async function vaultPlain(dk){
+  const E = vault(), key = await crypto.subtle.importKey("raw", dk, "AES-GCM", false, ["decrypt"]);
+  return new Uint8Array(await crypto.subtle.decrypt({name:"AES-GCM", iv:b64u8(E.iv), additionalData:AADf("data")}, key, b64u8(E.ct)));
+}
+async function unlockWith(dk){
+  const code = new TextDecoder().decode(await vaultPlain(dk));
   if (!window.PPAnswers){ (0, eval)(code); if (window.__initAnswers) window.__initAnswers(); }
 }
-async function keyFromPassword(pw){
-  const E = window.PP_ENC;
-  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
-  const k = await crypto.subtle.deriveKey({name:"PBKDF2", salt:b64u8(E.salt), iterations:E.iter, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, true, ["decrypt"]);
-  return new Uint8Array(await crypto.subtle.exportKey("raw", k));
+const keyFromPassword = pw => unwrapKey(pw, "pw");
+/* Slow down repeated wrong guesses on this computer (1st-2nd free, then 30 s, 1 min, 2 min ... up to 15 min) */
+function lockLeft(){ try { const f = JSON.parse(localStorage.getItem("pyl_adm_fail") || "{}"); return Math.max(0, (f.until || 0) - Date.now()); } catch(e){ return 0; } }
+function noteFail(){ try { const f = JSON.parse(localStorage.getItem("pyl_adm_fail") || "{}"); f.n = (f.n || 0) + 1; f.until = f.n >= 3 ? Date.now() + Math.min(900000, 30000 * Math.pow(2, f.n - 3)) : 0; localStorage.setItem("pyl_adm_fail", JSON.stringify(f)); } catch(e){} }
+function clearFails(){ try { localStorage.removeItem("pyl_adm_fail"); } catch(e){} }
+const waitMsg = ms => "Too many wrong tries. Please wait " + (ms > 90000 ? Math.ceil(ms / 60000) + " minutes" : Math.ceil(ms / 1000) + " seconds") + ".";
+function newPwProblem(pw){
+  if (pw.length < 12) return "Use at least 12 characters.";
+  const classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter(r => r.test(pw)).length;
+  if (classes < 3) return "Mix at least 3 of: small letters, CAPITALS, numbers, symbols.";
+  if (/password|python|sisd|12345|qwerty/i.test(pw)) return "That is too easy to guess. Avoid words like password, python or sisd.";
+  return "";
 }
 let __fails = 0;
 async function showGate(){
@@ -256,20 +297,64 @@ async function showGate(){
 function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); paintSheet(); restoreCache(); liveLoad(); }
 $("gateBtn").onclick = async () => {
   const pw = $("pw1").value; if (!pw) return;
-  $("gateBtn").disabled = true; $("gateErr").textContent = "Checking…";
+  const wait = lockLeft(); if (wait > 0){ $("gateErr").textContent = waitMsg(wait); return; }
+  $("gateBtn").disabled = true; $("gateErr").textContent = "Checking… (a few seconds)";
   try {
     const raw = await keyFromPassword(pw);
     await unlockWith(raw);
     try { sessionStorage.setItem("pyl_admin_key", u8b64(raw)); } catch(e){}
-    __fails = 0; $("gateErr").textContent = ""; openApp();
+    __fails = 0; clearFails(); $("gateErr").textContent = ""; openApp();
   } catch(e){
-    __fails++;
-    $("gateErr").textContent = "Wrong password.";
+    __fails++; noteFail();
+    const w2 = lockLeft();
+    $("gateErr").textContent = "Wrong password." + (w2 > 0 ? " " + waitMsg(w2) : "");
     $("pw1").value = "";
     const d = __deviceStudent();
     securityAlert("Wrong admin password", "Wrong admin password entered (attempt " + __fails + " in this tab)" + (d.name ? " on a computer used by " + d.name + "." : "."), d);
   }
   $("gateBtn").disabled = false;
+};
+/* ---- Forgot password: the one-time recovery code unlocks the vault and sets a new password ---- */
+$("forgotLink").onclick = e => { e.preventDefault(); $("gateCard").classList.add("hidden"); $("forgotCard").classList.remove("hidden"); $("rcErr").textContent = ""; setTimeout(() => $("rc").focus(), 50); };
+$("forgotBack").onclick = e => { e.preventDefault(); $("forgotCard").classList.add("hidden"); $("gateCard").classList.remove("hidden"); $("pw1").focus(); };
+function vaultFileText(V){ return "window.PP_ENC = " + JSON.stringify(V) + ";\n"; }
+function showVaultBanner(V){
+  const old = document.getElementById("vaultBanner"); if (old) old.remove();
+  const d = document.createElement("div"); d.id = "vaultBanner"; d.className = "card"; d.style.cssText = "border-left:6px solid var(--green,#1a9a4a);margin-bottom:14px";
+  d.innerHTML = '<h3 style="margin:0 0 6px">✅ New admin password set on this computer</h3><p class="small" style="margin:0 0 8px">To make it work on <b>every</b> computer, put the file that just downloaded (<b>answers.enc.js</b>) on GitHub: open your <b>python-pathways</b> repository → <b>Add file</b> → <b>Upload files</b> → drop <b>answers.enc.js</b> in (replace the old one) → <b>Commit changes</b>. Until then, other computers still need the old password.</p><button class="btn sm" id="vbDl">⬇ Download answers.enc.js again</button> <button class="btn sm ghost" id="vbX">Close</button>';
+  $("app").insertBefore(d, $("app").firstChild);
+  $("vbDl").onclick = () => saveBlob(new TextEncoder().encode(vaultFileText(V)), "answers.enc.js", "text/javascript");
+  $("vbX").onclick = () => d.remove();
+}
+$("rcBtn").onclick = async () => {
+  const code = normCode($("rc").value), p1 = $("np1").value, p2 = $("np2").value, err = t => { $("rcErr").textContent = t; };
+  const wait = lockLeft(); if (wait > 0) return err(waitMsg(wait));
+  if (code.length !== 25) return err("The recovery code has 25 letters and numbers (5 groups of 5).");
+  const pr = newPwProblem(p1); if (pr) return err(pr);
+  if (p1 !== p2) return err("The two new passwords are different.");
+  $("rcBtn").disabled = true; err("Working… (a few seconds)");
+  try {
+    let dk;
+    try { dk = await unwrapKey(code, "rc"); }
+    catch(e){ noteFail(); const d = __deviceStudent(); securityAlert("Wrong recovery code", "A wrong recovery code was entered on the admin 'Forgot password' page" + (d.name ? " on a computer used by " + d.name + "." : "."), d); const w2 = lockLeft(); err("That recovery code is not right." + (w2 > 0 ? " " + waitMsg(w2) : "")); $("rcBtn").disabled = false; return; }
+    const E = vault(), plain = await vaultPlain(dk);
+    const rnd = n => crypto.getRandomValues(new Uint8Array(n)), enc = s => new TextEncoder().encode(s);
+    const wrap = async (secret, iter, tag, what) => { const w = {iter, salt:u8b64(rnd(16)), iv:u8b64(rnd(12))};
+      w.ct = u8b64(new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv:b64u8(w.iv), additionalData:AADf(tag)}, await kekFrom(secret, w, ["encrypt"]), what))); return w; };
+    const dk2 = rnd(32), iv = rnd(12);   // fresh key for the answers, so nothing from the old password carries over
+    const key = await crypto.subtle.importKey("raw", dk2, "AES-GCM", false, ["encrypt"]);
+    const ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv, additionalData:AADf("data")}, key, plain));
+    const V = {v:2, gen:(E.gen || 1) + 1, pw:await wrap(p1, 1000000, "pw", dk2), rc:await wrap(code, E.rc.iter || 300000, "rc", dk2), iv:u8b64(iv), ct:u8b64(ct)};
+    try { localStorage.setItem("pyl_vault", JSON.stringify(V)); } catch(e){}
+    try { sessionStorage.setItem("pyl_admin_key", u8b64(dk2)); } catch(e){}
+    clearFails();
+    await unlockWith(dk2);
+    saveBlob(enc(vaultFileText(V)), "answers.enc.js", "text/javascript");
+    const d = __deviceStudent(); securityAlert("Admin password reset", "The admin password was reset with the recovery code" + (d.name ? " on a computer used by " + d.name + "." : "."), d);
+    $("forgotCard").classList.add("hidden"); $("gateCard").classList.remove("hidden"); $("rc").value = $("np1").value = $("np2").value = ""; err("");
+    openApp(); showVaultBanner(V);
+  } catch(e){ err("Something went wrong: " + e.message); }
+  $("rcBtn").disabled = false;
 };
 $("pw1").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });
 $("pw2").addEventListener("keydown", e => { if (e.key === "Enter") $("gateBtn").click(); });

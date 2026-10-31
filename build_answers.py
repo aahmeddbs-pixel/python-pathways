@@ -1,11 +1,11 @@
 """Rebuild the staff answer key from index.html + answers-sol.js, then encrypt it.
 answers-sol.js and answers.js are private and are NOT stored in this public repo (see .gitignore).
-To get them back:  node decrypt_answers.js "<admin password>"   (recreates answers.js, which contains the SOL code)
-After editing:      python3 build_answers.py  then  node encrypt_answers.js "<admin password>"  and commit only answers.enc.js"""
+To get them back:  node decrypt_answers.js "<admin password or recovery code>"   (recreates answers.js, which contains the SOL code)
+After editing:      python3 build_answers.py  then  node encrypt_answers.js "<admin password>" "<recovery code>"  and commit only answers.enc.js"""
 import json, re
 s = open("index.html", encoding="utf-8").read()
 # exercise generators live in the first <script> block
-a = s.index("<script>") + len("<script>")
+a = s.rindex("<script>", 0, s.index("const GEN = ")) + len("<script>")
 gen = s[a:s.index("</script>", a)]
 gen = gen.replace('if (typeof module !== "undefined") module.exports = {GEN, R, py, setGradeTheme};', "")
 i = s.index("const DATA = ") + len("const DATA = ")
