@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <title>Python Pathways Admin</title>
 <style>
 :root{--navy:#1B2D4E;--red:#DC2B3E;--red-l:#fdecee;--bg:#f4f6fa;--line:#e0e5ee;--muted:#6b7590;--green:#13a05a;--green-l:#e4f6ec;--amber:#f5b000;--amber-l:#fff6dc;--shadow:0 2px 8px rgba(27,45,78,.08)}
@@ -157,12 +160,24 @@ td .em{color:var(--muted);font-size:.82rem}
       <button class="btn ghost" id="pinsBtn">👁 Show all PINs</button>
       <button class="btn ghost" id="clearBtn">🧹 Clear loaded data</button>
     </div>
+    <details style="margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff"><summary style="font-weight:800;cursor:pointer">🔁 Sync tools: reset a PIN on every computer, test sync</summary>
+      <p class="muted small" style="margin:8px 0">Students' progress is saved online (locked with their name and PIN) so they can sign in on any computer. If a student forgets their PIN, set a new one here. It works on every computer and their progress is kept.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+        <label class="small" style="font-weight:700">Student's full name<br><input class="t" id="rsName" maxlength="40" placeholder="e.g. Sara Khan"></label>
+        <label class="small" style="font-weight:700">New 4-digit PIN<br><input class="t" id="rsPin" inputmode="numeric" maxlength="4" style="width:110px" placeholder="••••"></label>
+        <label class="small" style="font-weight:700">Recovery password<br><input class="t" id="rsAdmin" type="password" autocomplete="off" placeholder="admin password from the Design course"></label>
+        <button class="btn" id="rsBtn">Set new PIN</button>
+        <button class="btn ghost" id="syncTest">Test sync</button>
+      </div>
+      <div id="rsMsg" class="small" style="margin-top:8px;font-weight:700"></div>
+    </details>
     <div class="tblwrap"><table id="tbl"></table></div>
     <p class="muted small" style="margin-top:10px">📧 <b>Email</b> opens a ready-written email to the student and downloads their PDF report so you can attach it. 🔑 <b>PIN</b> emails a student their PIN if they've forgotten it.</p>
   </div>
 </div>
 
 <script src="answers.enc.js"></script>
+<script src="pp-sync.js"></script>
 <script>
 (function(){
 "use strict";
@@ -838,6 +853,24 @@ window.__initAnswers = function(){
   fillLessons();
 };
 showGate();
+})();
+
+/* ---------------- Sync tools ---------------- */
+(function(){
+  const msg = (t, ok) => { const m = document.getElementById("rsMsg"); m.textContent = t; m.style.color = ok === true ? "var(--green)" : ok === false ? "var(--red)" : "inherit"; };
+  document.getElementById("rsPin").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); });
+  document.getElementById("rsBtn").onclick = async () => {
+    const name = document.getElementById("rsName").value.trim().replace(/\s+/g, " ").toLowerCase(), pin = document.getElementById("rsPin").value, pw = document.getElementById("rsAdmin").value;
+    if (name.split(" ").length < 2) return msg("Type the student's first and last name.", false);
+    if (!/^\d{4}$/.test(pin)) return msg("The new PIN must be 4 numbers.", false);
+    if (!pw) return msg("Type the recovery password.", false);
+    if (!PPSync.enabled()) return msg("Sync is not connected yet.", false);
+    msg("Working…");
+    try { const ok = await PPSync.adminReset(name, pin, pw);
+      msg(ok ? "Done. " + name + " can now sign in with PIN " + pin + " on any computer, and their progress is kept." : "No saved progress was found for that name. They need to sign in once on their usual computer first, then try again.", ok); }
+    catch(e){ msg(e.message, false); }
+  };
+  document.getElementById("syncTest").onclick = async () => { msg("Sending a test row and reading it back… up to a minute."); try { await PPSync.test(); msg("Sync works: a test row was saved and read back.", true); } catch(e){ msg(e.message, false); } };
 })();
 </script>
 </body>

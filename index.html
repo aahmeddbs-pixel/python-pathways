@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Python Pathways</title>
+<meta name="referrer" content="no-referrer">
+<script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
+<script src="pp-sync.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -252,7 +255,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
     <button class="btn ghost" id="exportBtn">💾 Save my progress file</button><span class="muted" style="font-size:.88rem">Use this to move to another computer.</span></div>
   <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
   <div class="lessons" id="lessonList"></div>
-  <p class="foot">Your work is saved on this device and sent to your teacher when you submit.</p>
+  <p class="foot">Your work is saved automatically every few seconds, on this computer and online, so you can sign in on any computer and carry on. It is sent to your teacher when you submit.</p>
 </div>
 
 <!-- LESSON -->
@@ -924,7 +927,7 @@ const pathsForGrade = g => Object.keys(PATHS).filter(p => !!PATHS[p].dp === isDP
 
 const $ = id => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
-function store(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function store(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} try{ if (typeof syncMark === "function" && (k === "pyl_accounts" || /^pyl_[a-z_]+_/.test(k) && k !== "pyl_pinfail_" && k.indexOf("pyl_pinfail_") !== 0 && k !== "pyl_syncq")) syncMark(); }catch(e){} }
 function load(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
 const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
 const slug = s => s.trim().toLowerCase().replace(/\s+/g, " ");
@@ -1097,7 +1100,7 @@ document.querySelectorAll("#gradeChips .chip").forEach(b => b.onclick = () => { 
 showPathsFor(null);
 document.querySelectorAll(".path").forEach(b => b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); });
 ["inPin", "inPin2", "loginPin"].forEach(id => $(id).addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); }));
-$("signBtn").onclick = () => {
+$("signBtn").onclick = async () => {
   const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), teacher = $("inTeacher").value, pin = $("inPin").value;
   if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
   const email = $("inEmail").value.trim().toLowerCase();
@@ -1108,8 +1111,15 @@ $("signBtn").onclick = () => {
   if (!/^\d{4}$/.test(pin)){ err.textContent = "Your PIN must be exactly 4 numbers."; return; }
   if (pin !== $("inPin2").value){ err.textContent = "The two PINs don't match. Please type them again."; return; }
   if (accounts()[slug(name)]){ err.textContent = "There is already an account called " + niceName(name) + " on this computer. Please use Sign in instead."; return; }
+  if (PPSync.enabled()){
+    $("signBtn").disabled = true; err.textContent = "Checking…";
+    let taken = false; try { taken = await PPSync.emailTaken(slug(name)); } catch(e){}
+    $("signBtn").disabled = false; err.textContent = "";
+    if (taken){ err.textContent = "There is already an account called " + niceName(name) + " on another computer. Use Sign in: type your name and PIN and your progress will load. If you forgot your PIN, ask your teacher."; return; }
+  }
   profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
   saveAccount(profile); store("pyl_lastName", profile.name);
+  ensureSync(profile, pin);
   prog = load(progKey(), {lessons:{}});
   syncTeacher("signup", {pin:pin});
   openMap();
@@ -1129,16 +1139,27 @@ function resetAccount(name, pin){
   const hits = Object.values(all).filter(a => slug(a.name).split(" ")[0] === first);
   return hits.length === 1 ? hits[0] : null;
 }
-$("loginBtn").onclick = () => {
+$("loginBtn").onclick = async () => {
   const err = $("loginErr"), pin = $("loginPin").value;
   const rs = resetAccount($("loginName").value, pin);
   if (rs){ rs.pin = pinHash(rs.name, "0000"); saveAccount(rs); store("pyl_pinfail_" + slug(rs.name), {n:0, until:0}); $("loginName").value = rs.name; }
   const name = $("loginName").value;
-  const acc = accounts()[slug(name)];
-  if (!acc){ err.textContent = "No account with that name on this computer. Check the spelling, sign up, or load your progress file."; return; }
+  let acc = accounts()[slug(name)];
+  if (!acc && PPSync.enabled() && /^\d{4}$/.test(pin) && name.trim()){
+    err.textContent = "Looking for your saved progress…"; $("loginBtn").disabled = true;
+    try { acc = await restoreFromCloud(name, pin); } catch(e){}
+    $("loginBtn").disabled = false; err.textContent = "";
+  }
+  if (!acc){ err.textContent = "No account found for that name and PIN. Check the spelling and your PIN, or sign up if you are new."; return; }
   const lk = "pyl_pinfail_" + slug(name), f = load(lk, {n:0, until:0});
   if (f.until > Date.now()){ err.textContent = "Too many wrong PINs. This account is locked for " + Math.ceil((f.until - Date.now()) / 60000) + " more minute(s). Ask your teacher if you've forgotten your PIN."; $("loginPin").value = ""; return; }
-  if (acc.pin !== pinHash(name, pin)){
+  let pinOk = acc.pin === pinHash(name, pin);
+  if (!pinOk && PPSync.enabled() && /^\d{4}$/.test(pin)){   // the teacher may have reset this PIN on another computer
+    $("loginBtn").disabled = true; err.textContent = "Checking…";
+    try { const dk = await PPSync.findKey(slug(acc.name), pin); if (dk){ acc.pin = pinHash(acc.name, pin); acc.dk = dk; acc.wrapFor = acc.pin; saveAccount(acc); pinOk = true; } } catch(e){}
+    $("loginBtn").disabled = false; err.textContent = "";
+  }
+  if (!pinOk){
     f.n++; if (f.n >= 5){ f.until = Date.now() + 60000; }
     store(lk, f);
     if (f.n === 3 || f.n === 5) securityAlert("Repeated wrong PINs", f.n + " wrong PIN attempts for " + acc.name + "'s account on this computer" + (f.n >= 5 ? " (account locked for 1 minute)." : ".") + " This may be a forgotten PIN, or someone trying to get into another student's account." + (load("pyl_lastName", "") && slug(load("pyl_lastName", "")) !== slug(acc.name) ? " The last student signed in on this computer was " + load("pyl_lastName", "") + "." : ""),
@@ -1147,6 +1168,7 @@ $("loginBtn").onclick = () => {
     $("loginPin").value = ""; return;
   }
   store(lk, {n:0, until:0});
+  await ensureSync(acc, pin);
   profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
   openMap();
   say("Welcome back, " + acc.name.split(" ")[0] + "! Let's keep going. I believe in you!", 300);
@@ -1154,7 +1176,7 @@ $("loginBtn").onclick = () => {
 };
 $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
 $("switchBtn").onclick = () => {
-  saveCode(); rememberPos(); stopClock(); if (prog) syncTeacher("progress"); profile = null; prog = null; cur = {lesson:null, step:0};
+  saveCode(); rememberPos(); stopClock(); if (prog) syncTeacher("progress"); syncNow(true); profile = null; prog = null; cur = {lesson:null, step:0};
   $("loginName").value = load("pyl_lastName", ""); $("loginPin").value = "";
   ["inName", "inEmail", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
   chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on")); showPathsFor(null);
@@ -1185,6 +1207,67 @@ $("importFile").onchange = e => {
   };
   r.readAsText(f);
 };
+
+/* ---------------- Sync: progress follows the student to any computer ---------------- */
+let syncDirty = false, syncBusy = false;
+function syncMark(){ if (profile && profile.dk) syncDirty = true; }
+const SYNC_SKIP = new Set(["activeMs", "ms", "nudges"]);   // timers change every second; they ride along with the next real change
+function bundleNow(){
+  const acct = {}; ["name", "email", "cls", "grade", "teacher", "path", "created", "last"].forEach(k => { if (profile[k] !== undefined) acct[k] = profile[k]; });
+  const progress = {};
+  Object.keys(PATHS).forEach(p => { const v = p === profile.path ? prog : load("pyl_" + p + "_" + slug(profile.name), null); if (v && v.lessons && Object.keys(v.lessons).length) progress[p] = v; });
+  return {acct, progress};
+}
+const hashStr2 = t => { let h = 2166136261; for (let i = 0; i < t.length; i++){ h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36) + "." + t.length; };
+async function syncNow(force){
+  const P = profile; if (!P || !P.dk || !PPSync.enabled() || syncBusy) return;
+  syncBusy = true; syncDirty = false;
+  try {
+    const b = bundleNow(), sig = hashStr2(JSON.stringify(b, (k, v) => SYNC_SKIP.has(k) ? undefined : v));
+    if (force || P.syncSig !== sig){
+      P.syncSig = sig; P.savedAt = Math.max(Date.now(), (P.savedAt || 0) + 1);
+      const all = accounts(); if (all[slug(P.name)]){ all[slug(P.name)].syncSig = P.syncSig; all[slug(P.name)].savedAt = P.savedAt; localStorage.setItem(ACC_KEY, JSON.stringify(all)); }
+      await PPSync.push(P.dk, P.savedAt, b);
+    } else PPSync.flush();
+  } catch(e){ syncDirty = true; }
+  finally { syncBusy = false; }
+}
+setInterval(() => { if (syncDirty && !syncBusy) syncNow(); else if (PPSync.queued()) PPSync.flush(); }, 5000);
+window.addEventListener("pagehide", () => { try { if (profile && profile.dk) { saveCode(); syncNow(true); } } catch(e){} });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { try { if (profile && profile.dk) syncNow(true); } catch(e){} } });
+const solvedN = s => Object.keys(s.solved || {}).filter(k => s.solved[k]).length;
+const lessonScore = s => solvedN(s) * 100 + (((s.prac || {}).done || []).length) + ((s.submissions || []).length) * 50 + Object.keys(s.days || {}).length;
+/* never lose progress: per lesson, keep whichever copy (this computer's or the online one) has more done */
+function mergeProg(a, b){
+  const out = JSON.parse(JSON.stringify(a)); out.lessons = out.lessons || {};
+  Object.keys((b && b.lessons) || {}).forEach(n => { const x = out.lessons[n], y = b.lessons[n]; if (!x || lessonScore(y) > lessonScore(x)) out.lessons[n] = y; });
+  out.spent = Math.max(a.spent || 0, (b && b.spent) || 0); return out;
+}
+function applyBundle(acc, bundle, withAcct){
+  const a = (bundle && bundle.acct) || {}, cap = (v, n) => String(v == null ? "" : v).slice(0, n);
+  acc.name = acc.name || cap(a.name, 60);
+  if (withAcct){ acc.email = cap(a.email, 80); acc.cls = cap(a.cls, 20); acc.grade = cap(a.grade, 4); acc.teacher = cap(a.teacher, 40);
+    if (PATHS[a.path]) acc.path = a.path; if (a.created) acc.created = +a.created || acc.created; if (a.last && typeof a.last === "object") acc.last = a.last; }
+  Object.keys((bundle && bundle.progress) || {}).forEach(p => { if (!PATHS[p] || !bundle.progress[p] || !bundle.progress[p].lessons) return;
+    const k = "pyl_" + p + "_" + slug(acc.name), loc = load(k, null); store(k, loc && loc.lessons ? mergeProg(loc, bundle.progress[p]) : bundle.progress[p]); });
+}
+async function restoreFromCloud(name, pin){
+  const dk = await PPSync.findKey(slug(name), pin); if (!dk) return null;
+  const got = await PPSync.pull(dk); if (!got || !got.bundle || !got.bundle.acct || !got.bundle.acct.name) return null;
+  const acc = {name: niceName(String(got.bundle.acct.name).slice(0, 60)), dk, syncSig: "", savedAt: got.savedAt};
+  acc.pin = pinHash(acc.name, pin); acc.wrapFor = acc.pin; applyBundle(acc, got.bundle, true); saveAccount(acc); return acc;
+}
+async function ensureSync(acc, pin){
+  if (!PPSync.enabled() || !/^\d{4}$/.test(pin)) return;
+  try {
+    if (!acc.dk){ const dk = await PPSync.findKey(slug(acc.name), pin); acc.dk = dk || PPSync.newKey(); acc.wrapFor = ""; }
+    if (acc.wrapFor !== acc.pin){ await PPSync.publishWrap(slug(acc.name), pin, acc.dk); acc.wrapFor = acc.pin; }
+    const got = await PPSync.pull(acc.dk);   // another computer may have newer progress: merge it in, never overwrite
+    if (got){ applyBundle(acc, got.bundle, got.savedAt > (acc.savedAt || 0) && !!acc.savedAt); acc.savedAt = Math.max(acc.savedAt || 0, got.savedAt); }
+    acc.syncSig = ""; saveAccount(acc);
+    setTimeout(() => { if (profile && profile.dk === acc.dk) syncNow(true); }, 2500);
+  } catch(e){ console.warn("sync", e); }
+}
 
 function show(id){
   ["signin", "map", "lesson"].forEach(s => $(s).classList.toggle("hidden", s !== id));
