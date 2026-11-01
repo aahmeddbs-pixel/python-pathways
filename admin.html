@@ -462,6 +462,7 @@ async function loadFiles(list, opts){
         const ci = {ts:col("timestamp"), type:col("type"), student:col("student"), email:col("email"), teacher:col("teacher"), data:col("data")};
         R.slice(1).forEach(r => {
           let snap = null; try { snap = JSON.parse(r[ci.data] || ""); } catch(e){ bad++; return; }
+          if (snap && snap.sdc) return;   // SISD Design and Computing platform rows: shown in the platform admin
           if (!snap || !snap.acct) { bad++; return; }
           if (snap.type === "alert"){ const w = Date.parse(snap.at) || 0; ALERTS[w + "|" + (snap.alert && snap.alert.kind)] = {when:w, acct:snap.acct, alert:snap.alert || {}}; rows++; return; }
           const when = Date.parse(snap.at) || Date.parse(r[ci.ts]) || 0;

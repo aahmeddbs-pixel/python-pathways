@@ -7,6 +7,8 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js"></script>
+<script src="/sisd-design-and-computing/sdc.js"></script>
+<script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -1118,11 +1120,19 @@ $("signBtn").onclick = async () => {
     $("signBtn").disabled = false; err.textContent = "";
     if (taken){ err.textContent = "There is already an account called " + niceName(name) + " on another computer. Use Sign in: type your name and PIN and your progress will load. If you forgot your PIN, ask your teacher."; return; }
   }
+  if (SDCG){
+    if (SDCG.grade && chosenGrade !== SDCG.grade){ err.textContent = "Your grade is set to Grade " + SDCG.grade + ". To choose another grade, go back with Change course."; return; }
+    $("signBtn").disabled = true; err.textContent = "Checking…";
+    let ck = {ok:true}; try { ck = await SDC.canSignUp(email, niceName(name), "cs"); } catch(e){}
+    $("signBtn").disabled = false; err.textContent = "";
+    if (!ck.ok){ err.innerHTML = ck.msg; return; }
+  }
   profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
   saveAccount(profile); store("pyl_lastName", profile.name);
   ensureSync(profile, pin);
   prog = load(progKey(), {lessons:{}});
   syncTeacher("signup", {pin:pin});
+  if (SDCG) SDC.confirm(sdcAcct(profile), true);
   openMap();
   say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
   setTimeout(() => showHowTo(true), 2500);
@@ -1170,6 +1180,13 @@ $("loginBtn").onclick = async () => {
   }
   store(lk, {n:0, until:0});
   await ensureSync(acc, pin);
+  if (SDCG){
+    $("loginBtn").disabled = true; err.textContent = "Checking your course…";
+    let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
+    $("loginBtn").disabled = false; err.textContent = "";
+    if (!ck.ok){ $("loginPin").value = ""; SDC.signedOutNotice(ck.msg); SDC.leave("blocked"); return; }
+    if (ck.assign) applyAssign(acc, ck.assign);
+  }
   profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
   openMap();
   say("Welcome back, " + acc.name.split(" ")[0] + "! Let's keep going. I believe in you!", 300);
@@ -1182,6 +1199,7 @@ $("switchBtn").onclick = () => {
   ["inName", "inEmail", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
   chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on")); showPathsFor(null);
   document.querySelector('.tab[data-tab="in"]').click();
+  if (SDCG) return SDC.leave("out");
   show("signin");
 };
 $("levelSel").onchange = e => { profile.path = e.target.value; saveAccount(profile); openMap(); };
@@ -1529,7 +1547,7 @@ function renderStep(){
         const first = !s.solved[qn];
         s.solved[qn] = true;
         if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); }
-        if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); }
+        if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); sdcTask("L" + cur.lesson + " " + (isP ? "practice" : "exercise") + ": " + Q.title, isP ? "practice" : "exercise"); }
         if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)});
         saveProg();
         fb.className = "fb ok";
@@ -2096,9 +2114,43 @@ function showHowTo(firstTime){
 $("howBtn").onclick = () => showHowTo(false);
 $("howBtn2").onclick = () => showHowTo(false);
 
+/* ---------------- SISD Design and Computing ---------------- */
+// The platform portal decides the course; grade and level can only be changed by the admin.
+const SDCG = window.SDC ? SDC.gate() : null;
+const LEVEL_WEIGHT = {beginner:1, dp_beginner:1, intermediate:1.5, dp_intermediate:1.5, advanced:3, dp_advanced:3};
+function sdcAcct(a){ return {course:"cs", name:a.name, email:a.email || "", grade:a.grade, teacher:a.teacher, level:a.path, cls:a.cls || ""}; }
+function sdcTask(title, kind){ if (SDCG && profile) SDC.task(sdcAcct(profile), title, LEVEL_WEIGHT[profile.path] || 1, kind); }
+function applyAssign(acc, A){
+  let changed = false;
+  if (A.g && String(A.g) !== String(acc.grade)){ acc.grade = String(A.g); changed = true; }
+  if (A.t && A.t !== acc.teacher){ acc.teacher = A.t; changed = true; }
+  if (A.l && PATHS[A.l] && pathsForGrade(acc.grade).indexOf(A.l) >= 0 && A.l !== acc.path){ acc.path = A.l; changed = true; }
+  if (pathsForGrade(acc.grade).indexOf(acc.path) < 0){ acc.path = pathsForGrade(acc.grade)[0]; changed = true; }
+  if (changed){ saveAccount(acc); setTimeout(() => { try { syncTeacher("progress"); } catch(e){} }, 1500); }
+}
+if (SDCG){
+  SDC.strip("cs", () => { if (profile) $("switchBtn").click(); else SDC.leave("out"); });
+  document.querySelector(".brand") && (document.title = "Computer Science · SISD Design and Computing");
+  const lvl = $("levelSel"); lvl.classList.add("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.add("hidden");
+  const tabs = document.querySelector("#signin .tabs");
+  if (SDCG.mode === "signup"){
+    document.querySelector('.tab[data-tab="up"]').click();
+    if (tabs) tabs.classList.add("hidden");
+    const chip = document.querySelector('#gradeChips .chip[data-g="' + SDCG.grade + '"]');
+    document.querySelectorAll("#gradeChips .chip").forEach(b => { if (b !== chip) b.classList.add("hidden"); });
+    if (chip){ chip.click(); chip.disabled = true; }
+    const lab = $("gradeChips").previousElementSibling; if (lab) lab.textContent = "Your grade (chosen on the previous page)";
+    $("tabUp").insertAdjacentHTML("afterbegin", '<p class="small" style="margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#eef1f7;color:#1B2D4E;font-weight:700">Signing up for <b>Computer Science, Grade ' + SDCG.grade + '</b>. Only your teacher can change your course, grade or level later.</p>');
+  } else {
+    document.querySelector('.tab[data-tab="in"]').click();
+    if (tabs) tabs.classList.add("hidden");
+    $("tabIn").insertAdjacentHTML("afterbegin", '<p class="small" style="margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#eef1f7;color:#1B2D4E;font-weight:700">Signing into <b>Computer Science</b>. Your teacher can see which course you sign into. New here? Use <b>Change course / sign out</b> at the top and choose Sign up.</p>');
+  }
+}
+
 /* ---------------- Boot ---------------- */
 $("loginName").value = load("pyl_lastName", "");
-if (!Object.keys(accounts()).length) document.querySelector('.tab[data-tab="up"]').click();
+if (!SDCG && !Object.keys(accounts()).length) document.querySelector('.tab[data-tab="up"]').click();
 show("signin");
 })();
 </script>
