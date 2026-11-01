@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js"></script>
-<script src="/sisd-design-and-computing/sdc.js"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261101c"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -2129,8 +2129,8 @@ function applyAssign(acc, A){
   if (changed){ saveAccount(acc); setTimeout(() => { try { syncTeacher("progress"); } catch(e){} }, 1500); }
 }
 if (SDCG){
-  SDC.strip("cs", () => { if (profile) $("switchBtn").click(); else SDC.leave("out"); }, false, "#signin, #map, #lesson");
-  SDC.listen("#stepBody, .hero-art, #mapHouse, .banner, .goalbox, .task, .hint, .note, .fb, .modal, .housebox");
+  try { SDC.strip("cs", () => { if (profile) $("switchBtn").click(); else SDC.leave("out"); }, false, "#signin, #map, #lesson"); } catch(e){}
+  try { if (SDC.listen) SDC.listen("#stepBody > *, #stepBody .goalbox, .hero-art, #mapHouse, .banner, .lcard, .goalbox, .task, .hint, .note, .fb, .modal, .housebox, .course-head, #tabIn > p, #tabUp > p"); } catch(e){}
   document.querySelector(".brand") && (document.title = "Computer Science · SISD Design and Computing");
   const lvl = $("levelSel"); lvl.classList.add("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.add("hidden");
   const tabs = document.querySelector("#signin .tabs");
