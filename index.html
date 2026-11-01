@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261101h"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261101i"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -47,6 +47,9 @@ h3{font-size:1.1rem;font-weight:800}
 .btn{border:none;border-radius:10px;padding:10px 18px;font-weight:800;font-size:1rem;background:var(--blue);color:#fff;display:inline-flex;align-items:center;gap:8px}
 .btn:hover{background:var(--blue-d)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
+.ack{display:flex;gap:10px;align-items:flex-start;margin:18px 0 0 auto;max-width:560px;padding:10px 14px;border:2px solid var(--line);border-radius:10px;background:#fff;font-weight:700;font-size:.92rem;cursor:pointer;line-height:1.4}
+.ack input{width:20px;height:20px;margin-top:1px;accent-color:var(--red);flex:none;cursor:pointer}
+.ack:has(input:checked){border-color:var(--green);background:var(--green-l)}
 .btn.green{background:var(--green)} .btn.green:hover{background:#008a0b}
 .btn.ghost{background:#fff;color:var(--blue);border:2px solid var(--line)} .btn.ghost:hover{border-color:var(--blue);background:var(--blue-l)}
 .btn.amber{background:var(--amber);color:var(--ink)}
@@ -2113,6 +2116,25 @@ function showHowTo(firstTime){
 }
 $("howBtn").onclick = () => showHowTo(false);
 $("howBtn2").onclick = () => showHowTo(false);
+
+/* ---------------- Tick to continue ----------------
+   The button that moves on to the next activity stays locked until the student ticks that they have
+   read or listened to everything above. Remembered per lesson and step. */
+const ACK_TEXT = "I have read or listened to everything above that explains the task.";
+function gateNext(){
+  const body = $("stepBody"); if (!body || !profile || !cur.lesson) return;
+  body.querySelectorAll(".nav").forEach(nav => {
+    const btn = [...nav.querySelectorAll("button")].filter(b => !/^\s*←/.test(b.textContent) && !/Different question/i.test(b.textContent)).pop();
+    if (!btn || btn.dataset.gated) return; btn.dataset.gated = "1";
+    const s = lessonState(cur.lesson); s.ack = s.ack || {}; const key = String(cur.step);
+    const lab = el("label", "ack sdcNoRead"); lab.innerHTML = '<input type="checkbox"' + (s.ack[key] ? " checked" : "") + '><span>' + esc(ACK_TEXT) + '</span>';
+    nav.parentNode.insertBefore(lab, nav);
+    const box = lab.querySelector("input"), paint = () => { btn.disabled = !box.checked; btn.title = box.checked ? "" : "Tick the box above first"; };
+    box.onchange = () => { s.ack[key] = box.checked; saveProg(); paint(); };
+    paint();
+  });
+}
+new MutationObserver(gateNext).observe($("stepBody"), { childList:true, subtree:true });
 
 /* ---------------- SISD Design and Computing ---------------- */
 // The platform portal decides the course; grade and level can only be changed by the admin.
