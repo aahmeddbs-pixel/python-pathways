@@ -199,6 +199,7 @@ td .em{color:var(--muted);font-size:.82rem}
 
 <script src="answers.enc.js"></script>
 <script src="pp-sync.js"></script>
+<script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
 "use strict";
@@ -694,9 +695,12 @@ function viewStudent(st){
     '<h2>Progress by lesson</h2><div class="tblwrap"><table><tr><th>Lesson</th><th>Exercises</th><th>Practice</th><th>Time</th><th>Avg / task</th><th>Status</th></tr>' +
     (x.rows.map(r => '<tr><td>' + r.n + '. ' + esc(r.title) + '</td><td>' + r.core + ' / 3</td><td>' + r.prac + '</td><td>' + fmtMins(r.time) + '</td><td>' + fmtAvg(r.avg) + '</td><td>' + r.status + '</td></tr>').join("") || '<tr><td colspan="6" class="muted">No lessons started yet.</td></tr>') + '</table></div>' +
     '<div class="two" style="margin-top:14px"><div class="box g"><b>🌟 Strengths</b><ul>' + x.strengths.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div><div class="box a"><b>🚀 Areas for development</b><ul>' + x.dev.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div></div>' +
+    '<h2 style="margin-top:18px">Exercises and exact answers</h2><p class="muted small">Every exercise this student was given, with their own version of the task, their latest code and the exact answer to <b>their</b> version (personal numbers, words and function names included).</p>' +
+    (window.PPAnswerView ? PPAnswerView.render(st.snap, window.PPAnswers) : '') +
     '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="mPdf">📄 Download PDF</button><button class="btn red" id="mMail"' + (a.email ? "" : " disabled") + '>📧 Email progress</button></div></div>';
   document.body.appendChild(bg);
   bg.querySelector("#mClose").onclick = () => bg.remove();
+  if (window.PPAnswerView) PPAnswerView.bind(bg);
   bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
   bg.querySelector("#mPdf").onclick = () => downloadPdf(st);
   bg.querySelector("#mMail").onclick = () => emailProgress(st);
@@ -943,6 +947,19 @@ window.__initAnswers = function(){
     head.innerHTML = '<h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + ' Students\' lesson exercises and practice questions are made from these ' + gens.length + ' exercise types.</p>';
     out.appendChild(head);
     gens.forEach((g, k) => out.appendChild(card(g, k)));
+    // the original fixed exercises for this lesson (seen by students who started the lesson before exercises were personalised)
+    const fx = (L.ex || []).map(q => ({ q, F: ((A.FIXED || {})[lv] || [])[q - 1] })).filter(x => x.F);
+    if (fx.length){
+      const hd = document.createElement("div"); hd.className = "card"; hd.style.marginTop = "14px";
+      hd.innerHTML = '<h3 style="margin:0">Original exercises for this lesson</h3><p class="muted small" style="margin-top:4px">Students who started this lesson before exercises were personalised see these fixed versions. Each answer has been checked against the real marking.</p>';
+      out.appendChild(hd);
+      fx.forEach((x, k) => { const d = document.createElement("div"); d.className = "anscard";
+        d.innerHTML = '<span class="anstag">Original exercise ' + (k + 1) + '</span><h3>' + h(x.F.t) + '</h3><div class="anstask">' + x.F.task + '</div><b class="small">Model answer</b><pre class="anscode"></pre>' +
+          '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
+        d.querySelector(".anscode").textContent = x.F.a;
+        d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(x.F.a); e.target.textContent = "✅ Copied"; } catch(z){} };
+        out.appendChild(d); });
+    }
   }
   $("ansLevel").onchange = () => { fillLessons(); render(); };
   $("ansLesson").onchange = render; $("ansGrade").onchange = render; $("ansNew").onclick = render;

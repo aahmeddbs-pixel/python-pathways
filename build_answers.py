@@ -10,11 +10,11 @@ gen = s[a:s.index("</script>", a)]
 gen = gen.replace('if (typeof module !== "undefined") module.exports = {GEN, R, py, setGradeTheme};', "")
 i = s.index("const DATA = ") + len("const DATA = ")
 data, _ = json.JSONDecoder().raw_decode(s[i:])
-lessons = {lv: [{"title": L["title"], "goal": L.get("goal", "")} for L in data["lessons"][lv]] for lv in data["lessons"]}
+lessons = {lv: [{"title": L["title"], "goal": L.get("goal", ""), "ex": L.get("ex", [])} for L in data["lessons"][lv]] for lv in data["lessons"]}
 sol = open("answers-sol.js", encoding="utf-8").read()
 out = ("/* AUTO-BUILT by build_answers.py - do not edit by hand. Staff answer key for Python Pathways. */\n"
        "window.PPAnswers = (function(){\n" + gen + "\n" + sol +
        "\nconst LESSONS = " + json.dumps(lessons) + ";\n"
-       "return {GEN, setGradeTheme, answerFor, LESSONS, SOL};\n})();\n")
+       "return {GEN, setGradeTheme, answerFor, LESSONS, SOL, FIXED, exactAnswer};\n})();\n")
 open("answers.js", "w", encoding="utf-8").write(out)
 print("answers.js", len(out), "bytes")
