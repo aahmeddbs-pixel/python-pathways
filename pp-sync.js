@@ -141,14 +141,26 @@ async function pull(dk){
 }
 /* admin recovery: new password for a student, works on every device, work kept */
 async function adminReset(email, newPw, adminPw){
-  const c = cfg(); if (!c) throw new Error("Sync is not connected yet.");
   const w = (CFG.adminKeys || {}).wrap; if (!w) throw new Error("No recovery keys in this build.");
   let priv; try {
     const base = await crypto.subtle.importKey("raw", TE.encode(adminPw), "PBKDF2", false, ["deriveKey"]);
     const key = await crypto.subtle.deriveKey({ name:"PBKDF2", salt: d64(w.salt), iterations: w.iter, hash:"SHA-256" }, base, { name:"AES-GCM", length: 256 }, false, ["decrypt"]);
     priv = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name:"AES-GCM", iv: d64(w.iv) }, key, d64(w.ct))));
   } catch(e){ throw new Error("That recovery password is not right."); }
-  const rsa = await crypto.subtle.importKey("jwk", priv.enc, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["decrypt"]);
+  return resetWithKey(email, newPw, priv.enc);
+}
+/* unlock just the PIN reset key with the recovery password (null if wrong) */
+async function recoveryKey(adminPw){
+  const w = (CFG.adminKeys || {}).wrap; if (!w || !adminPw) return null;
+  try { const base = await crypto.subtle.importKey("raw", TE.encode(adminPw), "PBKDF2", false, ["deriveKey"]);
+    const key = await crypto.subtle.deriveKey({ name:"PBKDF2", salt: d64(w.salt), iterations: w.iter, hash:"SHA-256" }, base, { name:"AES-GCM", length: 256 }, false, ["decrypt"]);
+    return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name:"AES-GCM", iv: d64(w.iv) }, key, d64(w.ct)))).enc; } catch(e){ return null; }
+}
+/* the same reset, using the recovery key directly (staff dashboard: unlocked for the super admin, or passed to approved teachers) */
+async function resetWithKey(email, newPw, encJwk){
+  const c = cfg(); if (!c) throw new Error("Sync is not connected yet.");
+  if (!encJwk) throw new Error("The PIN reset key isn't available on this computer yet.");
+  const rsa = await crypto.subtle.importKey("jwk", encJwk, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["decrypt"]);
   const id = await emailId(email), rows = (versions(await cells(c, "E", id + "|", 100)))["E|" + id] || [];
   for (const v of rows){
     let dk; try { dk = e64(new Uint8Array(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsa, d64(v.text)))); } catch(e){ continue; }
@@ -167,5 +179,5 @@ async function test(){
     try { COL = null; await column(c, true); const l = await cells(c, "T", tid + "|", 0); last = null; if (l.some(x => String(x).endsWith(tok))) return true; } catch(e){ last = e; if (/could not be (read|reached)|timeout/i.test(e.message) && !SEEN) break; } }
   throw new Error((last ? last.message + " " : "") + "The test row was sent but could not be found. Check the form's response destination is this sheet, that Accepting responses is on, and the sheet is shared as Anyone with the link: Viewer.");
 }
-return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, test, queued: () => getQ().length };
+return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, queued: () => getQ().length };
 })();

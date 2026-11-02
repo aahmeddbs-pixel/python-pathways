@@ -198,7 +198,7 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js"></script>
+<script src="pp-sync.js?v=20261102e"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -311,6 +311,7 @@ $("gateBtn").onclick = async () => {
     await unlockWith(raw);
     try { sessionStorage.setItem("pyl_admin_key", u8b64(raw)); } catch(e){}
     __fails = 0; clearFails(); $("gateErr").textContent = ""; openApp();
+    PPSync.recoveryKey(pw).then(k => { RESET_KEY = k; }).catch(() => {});   // kept in memory only, for Reset PIN
   } catch(e){
     __fails++; noteFail();
     const w2 = lockLeft();
@@ -676,15 +677,41 @@ function render(){
       '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' practice)</span></td>' +
       '<td><b>' + x.house + '</b><div class="bar" title="' + x.into + ' / ' + x.every + ' to next"><i style="width:' + Math.round(x.into / x.every * 100) + '%"></i></div></td>' +
       '<td>' + fmtAvg(x.avgTask) + '</td><td>' + fmtDate(x.lastAt) + '</td>' +
-      '<td><div class="acts"><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
+      '<td><div class="acts"><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm ghost" data-rpin="' + i + '">🔑 Reset PIN</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
   });
   if (!L.length) html += '<tr><td colspan="10" class="muted">No students match these filters.</td></tr>';
   $("tbl").innerHTML = html;
   $("tbl").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => { const st = L[+b.dataset.pin]; b.textContent = b.textContent === "••••" ? st.pin : "••••"; });
   $("tbl").querySelectorAll("[data-view]").forEach(b => b.onclick = () => viewStudent(L[+b.dataset.view]));
+  $("tbl").querySelectorAll("[data-rpin]").forEach(b => b.onclick = () => resetPinDialog(L[+b.dataset.rpin]));
   $("tbl").querySelectorAll("[data-pdf]").forEach(b => b.onclick = () => downloadPdf(L[+b.dataset.pdf]));
   $("tbl").querySelectorAll("[data-mail]").forEach(b => b.onclick = () => emailProgress(L[+b.dataset.mail]));
   $("tbl").querySelectorAll("[data-pinmail]").forEach(b => b.onclick = () => emailPin(L[+b.dataset.pinmail]));
+}
+/* ---------------- Reset a student's PIN (works on every computer, progress kept) ---------------- */
+let RESET_KEY = null;
+function resetPinDialog(st){
+  const a = st.acct || {}, bg = document.createElement("div"); bg.className = "modal-bg"; bg.style.zIndex = 80;
+  const pin = String(1000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 9000));
+  bg.innerHTML = '<div class="modal" style="max-width:460px"><h2>🔑 Reset PIN: ' + esc(a.name || "") + '</h2><p class="muted small" style="margin-top:6px">The student signs in with the new PIN on any computer. Their progress is kept and their old PIN stops working.</p>' +
+    '<label style="display:block;font-weight:700;margin:12px 0 6px">New 4-digit PIN</label><input class="t" id="rpPin" inputmode="numeric" maxlength="4" value="' + pin + '">' +
+    (RESET_KEY ? '' : '<label style="display:block;font-weight:700;margin:12px 0 6px">Recovery password</label><input class="t" id="rpPw" type="password" autocomplete="off">') +
+    '<p id="rpMsg" class="small" style="margin-top:10px;font-weight:700"></p><div style="display:flex;gap:8px;margin-top:12px"><button class="btn" id="rpGo">Reset PIN</button><button class="btn ghost" id="rpX">Close</button></div></div>';
+  document.body.appendChild(bg);
+  const q = s => bg.querySelector(s), m = (t, ok) => { q("#rpMsg").textContent = t; q("#rpMsg").style.color = ok === true ? "var(--green)" : ok === false ? "var(--red)" : "inherit"; };
+  q("#rpX").onclick = () => bg.remove(); bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
+  q("#rpPin").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); });
+  q("#rpGo").onclick = async () => {
+    const p = q("#rpPin").value; if (!/^\d{4}$/.test(p)) return m("The new PIN must be 4 numbers.", false);
+    if (!PPSync.enabled()) return m("Sync is not connected yet.", false);
+    q("#rpGo").disabled = true; m("Working… (a few seconds)");
+    try {
+      let k = RESET_KEY; if (!k){ k = await PPSync.recoveryKey(q("#rpPw").value); if (!k){ q("#rpGo").disabled = false; return m("That recovery password is not right.", false); } RESET_KEY = k; }
+      const ok = await PPSync.resetWithKey(slug(a.name || ""), p, k);
+      m(ok ? "Done. " + a.name + " can now sign in with PIN " + p + " on any computer. Their progress is kept." : "No saved progress was found for this student yet. Ask them to sign in once on their usual computer, then try again.", ok);
+    } catch(e){ m(e.message, false); }
+    q("#rpGo").disabled = false;
+  };
 }
 function viewStudent(st){
   const a = st.acct, x = analyse(st);
@@ -697,10 +724,11 @@ function viewStudent(st){
     '<div class="two" style="margin-top:14px"><div class="box g"><b>🌟 Strengths</b><ul>' + x.strengths.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div><div class="box a"><b>🚀 Areas for development</b><ul>' + x.dev.map(s => "<li>" + esc(s) + "</li>").join("") + '</ul></div></div>' +
     '<h2 style="margin-top:18px">Exercises and exact answers</h2><p class="muted small">Every exercise this student was given, with their own version of the task, their latest code and the exact answer to <b>their</b> version (personal numbers, words and function names included).</p>' +
     (window.PPAnswerView ? PPAnswerView.render(st.snap, window.PPAnswers) : '') +
-    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="mPdf">📄 Download PDF</button><button class="btn red" id="mMail"' + (a.email ? "" : " disabled") + '>📧 Email progress</button></div></div>';
+    '<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap"><button class="btn" id="mPdf">📄 Download PDF</button><button class="btn ghost" id="mPin">🔑 Reset PIN</button><button class="btn red" id="mMail"' + (a.email ? "" : " disabled") + '>📧 Email progress</button></div></div>';
   document.body.appendChild(bg);
   bg.querySelector("#mClose").onclick = () => bg.remove();
   if (window.PPAnswerView) PPAnswerView.bind(bg);
+  bg.querySelector("#mPin").onclick = () => resetPinDialog(st);
   bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
   bg.querySelector("#mPdf").onclick = () => downloadPdf(st);
   bg.querySelector("#mMail").onclick = () => emailProgress(st);
