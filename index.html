@@ -1899,7 +1899,9 @@ function startClock(){
       const m = Math.floor(left / 60000), sec = Math.floor(left % 60000 / 1000);
       pill.textContent = "⏱ " + m + ":" + String(sec).padStart(2, "0") + " left";
       pill.className = "pill" + (left <= 5 * 60000 ? " warn" : "");
-      $("timeBanner").innerHTML = left <= 5 * 60000 && !doneToday ? '<div class="banner warn">⏰ Less than 5 minutes left. ' + (mastery(L, s).eligible ? "Go to <b>Submit</b> now!" : "Finish the work you need so you can submit!") + '</div>' : "";
+      const mm = mastery(L, s), done = mm.core === 3 && mm.prac >= mm.need;
+      const html = done ? nextLessonBanner(m) : left <= 5 * 60000 && !doneToday ? '<div class="banner warn">⏰ Less than 5 minutes left. ' + (mm.eligible ? "Go to <b>Submit</b> now!" : "Finish the work you need so you can submit!") + '</div>' : "";
+      if ($("timeBanner").dataset.h !== html){ $("timeBanner").dataset.h = html; $("timeBanner").innerHTML = html; }   // only redraw when it changes, so the button stays clickable
     } else {
       pill.textContent = "⏱ Time's up"; pill.className = "pill late";
       if (!doneToday && !day.autoSent){
@@ -1914,6 +1916,16 @@ function startClock(){
   };
   tick(); clockTimer = setInterval(tick, 1000);
 }
+/* Lesson finished early: all 3 exercises and the practice minimum done, with time still left */
+function nextLessonBanner(minsLeft){
+  const list = DATA.lessons[profile.path], n = cur.lesson, nx = list[n];
+  const t = minsLeft >= 1 ? minsLeft + " minute" + (minsLeft === 1 ? "" : "s") + " to spare" : "time to spare";
+  return '<div class="banner" style="background:var(--green-l);border:2px solid var(--green);color:var(--ink);display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between">' +
+    '<span>✅ <b>Lesson ' + n + ' complete</b> with ' + t + '! ' + (nx ? 'Keep practising here, or move on.' : "That's the last lesson for this level: keep practising for points!") + '</span>' +
+    (nx ? '<button class="btn green" data-nextlesson="' + (n + 1) + '">Next lesson: ' + esc(nx.title) + ' →</button>' : '') + '</div>';
+}
+$("timeBanner").addEventListener("click", e => { const b = e.target.closest("[data-nextlesson]"); if (!b) return;
+  const n = +b.dataset.nextlesson; saveCode(); stopClock(); if (prog) syncTeacher("progress"); openLesson(n, 0); window.scrollTo({ top:0, behavior:"smooth" }); });
 function stopClock(){ if (clockTimer){ clearInterval(clockTimer); clockTimer = null; } if (prog) saveProg(); }
 window.addEventListener("beforeunload", () => { saveCode(); if (prog) saveProg(); });
 
