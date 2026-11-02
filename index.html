@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102j"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102j"></script>
+<script src="pp-sync.js?v=20261102k"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102k"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1509,7 +1509,7 @@ function renderSteps(){
   });
   renderMastery();
 }
-function goStep(i){ try { speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
+function goStep(i){ try { if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
 
 let ed = null; // current editor {ta, get, set}
 function makeEditor(initial, label){
@@ -2060,10 +2060,11 @@ function say(text, delay){
   if (!SND.voice || !("speechSynthesis" in window)) return;
   setTimeout(() => {
     try {
+      if (window.SDC && SDC.narrate){ SDC.narrate(text); return; }
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       if (voicePick) u.voice = voicePick;
-      u.rate = 1.02; u.pitch = 1.15; u.volume = 1;
+      u.rate = 0.97; u.pitch = 1; u.volume = 1;
       speechSynthesis.speak(u);
     } catch(e){}
   }, delay || 0);
@@ -2171,7 +2172,7 @@ function renderConceptVideo(body, L, s){
   const src = "videos/" + profile.path + "-" + cur.lesson;
   body.innerHTML = '<h2>🎬 Video explanation</h2><p class="muted" style="margin-top:4px">Watch this short video first. It explains today\'s idea in simple words with an example.</p>' +
     '<video id="conVid" controls playsinline preload="metadata" poster="' + src + '.jpg" src="' + src + '.mp4" style="width:100%;border-radius:12px;background:#000;margin-top:12px;display:block"></video>' +
-    '<div class="vidbar"><button class="btn ghost" id="conRead"></button><span class="muted" style="font-size:.9rem">Prefer reading? The same explanation is written below.</span></div>';
+    '<div class="vidbar"><button class="btn ghost" id="conRead"></button><button class="btn ghost" id="conVoice"></button><span class="muted" style="font-size:.9rem">Prefer reading? The same explanation is written below.</span></div>';
   if (c){
     const ex = el("div", "");
     ex.innerHTML = '<div class="goalbox" style="margin-top:16px">💡 <b>The idea:</b> ' + esc(c.idea) + '</div>' +
@@ -2184,21 +2185,37 @@ function renderConceptVideo(body, L, s){
   const nav = el("div", "nav"); nav.innerHTML = "<span></span>";
   const nx = el("button", "btn", "Next: Learn →"); nx.onclick = () => goStep(0); nav.appendChild(nx); body.appendChild(nav);
   const v = body.querySelector("#conVid"), rb = body.querySelector("#conRead");
-  let readAloud = load("pyl_readaloud", false), lastCap = -1;
-  const paint = () => { rb.textContent = readAloud ? "🔊 Read it to me: on" : "🔈 Read it to me: off"; };
-  const speak = t => { try { if (!("speechSynthesis" in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (voicePick) u.voice = voicePick; u.rate = 1.0; u.pitch = 1.1; speechSynthesis.speak(u); } catch(e){} };
-  paint();
-  rb.onclick = () => { readAloud = !readAloud; store("pyl_readaloud", readAloud); paint(); lastCap = -1; if (!readAloud) try { speechSynthesis.cancel(); } catch(e){} };
-  v.addEventListener("timeupdate", () => {
-    if (!s.watched && v.duration && v.currentTime > v.duration * 0.85){ s.watched = true; saveProg(); renderSteps(); }
-    if (!readAloud || v.paused || !c) return;
-    let i = 0; c.caps.forEach((x, k) => { if (v.currentTime >= x.t) i = k; });
-    if (i !== lastCap){ lastCap = i; speak(c.caps[i].text); }
-  });
+  if (c) videoNarration(v, c.caps.map(x => [x.t, x.text]), rb, body.querySelector("#conVoice")); else { rb.classList.add("hidden"); body.querySelector("#conVoice").classList.add("hidden"); }
+  v.addEventListener("timeupdate", () => { if (!s.watched && v.duration && v.currentTime > v.duration * 0.85){ s.watched = true; saveProg(); renderSteps(); } });
   v.addEventListener("ended", () => { if (!s.watched){ s.watched = true; saveProg(); renderSteps(); } });
-  v.addEventListener("seeked", () => { lastCap = -1; });
-  v.addEventListener("pause", () => { try { speechSynthesis.cancel(); } catch(e){} });
   if (SND.music){ stopMusic(); SND.music = false; paintSound(); }
+}
+
+/* ---------------- spoken narration for the videos ----------------
+   A natural voice reads each caption like a person talking. If a sentence is still being spoken when the
+   next caption arrives, the video waits for it, so nothing is cut off. */
+function videoNarration(v, caps, rb, vb){
+  let on = load("pyl_readaloud2", true), lastCap = -1, talking = false, held = false, pending = -1;
+  const say1 = i => { talking = true; const t = caps[i][1];
+    const end = () => { talking = false; if (pending >= 0 && on){ const p = pending; pending = -1; say1(p); } if (held && !talking){ held = false; v.play().catch(() => {}); } };
+    if (window.SDC && SDC.narrate) SDC.narrate(t, { onend: end }); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (voicePick) u.voice = voicePick; u.rate = 0.97; u.pitch = 1; u.onend = end; u.onerror = end; speechSynthesis.speak(u); } catch(e){ end(); } } };
+  const stop = () => { talking = false; pending = -1; held = false; try { if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} };
+  const paint = () => { rb.textContent = on ? "🔊 Narration: on" : "🔈 Narration: off";
+    if (vb) vb.textContent = "🎙 Voice: " + ((window.SDC && SDC.narrator && SDC.narrator() === "female") ? "Female" : "Male"); };
+  paint();
+  rb.onclick = () => { on = !on; store("pyl_readaloud2", on); paint(); lastCap = -1; if (!on){ stop(); if (held){ held = false; v.play().catch(() => {}); } } };
+  if (vb) vb.onclick = () => { if (window.SDC && SDC.setNarrator) SDC.setNarrator(SDC.narrator() === "female" ? "male" : "female"); paint(); if (on && talking && lastCap >= 0){ say1(lastCap); } };
+  v.addEventListener("timeupdate", () => {
+    if (!on || v.paused) return;
+    let i = 0; caps.forEach((c, k) => { if (v.currentTime >= c[0]) i = k; });
+    if (i === lastCap) return;
+    lastCap = i;
+    if (talking){ pending = i; held = true; v.pause(); } else say1(i);   // let the last sentence finish first
+  });
+  v.addEventListener("seeked", () => { if (!held){ lastCap = -1; stop(); } });
+  v.addEventListener("pause", () => { if (!held) stop(); });
+  v.addEventListener("play", () => { if (!held) lastCap = -1; });
+  return stop;
 }
 
 /* ---------------- How it works video ---------------- */
@@ -2214,27 +2231,29 @@ const HOWTO_CAPS = [
   [61, "Good to know: finished exercises can't be redone, lessons last 40 minutes, and keep your PIN secret."],
   [70, "Now you're ready. Let's code!"]
 ];
+/* what the narrator says over each caption: the same information, said the way a teacher would say it */
+const HOWTO_SAY = [
+  "Hi, and welcome to Python Pathways! Let me show you how it all works.",
+  "First, you sign up once. You'll give your name, your school email, your grade, your teacher and your level, and you'll pick a secret four-digit PIN.",
+  "Next time you come back, just type your name and your PIN, and you'll carry on exactly where you stopped.",
+  "Every lesson follows the same path. Watch the video, read the Learn page, try the example, solve three exercises, and then practise.",
+  "Write your code, then press Check. Every exercise you get right earns you ten points.",
+  "Stuck? You can buy some advice for five points. So use your points wisely.",
+  "Now, House Points. Finish your exercises, that's fifteen on Beginner, ten on Intermediate or five on Advanced, and work for at least thirty minutes. You can earn one each session.",
+  "When you earn a House Point, Submit unlocks, and you can send your work to your teacher.",
+  "A few things to know. Finished exercises can't be redone, each lesson lasts forty minutes, and please keep your PIN to yourself.",
+  "That's it. You're ready. Let's write some code!"
+];
 function showHowTo(firstTime){
   if (document.querySelector(".vidmodal")) return;
-  let readAloud = load("pyl_readaloud", false), lastCap = -1;
   const bg = el("div", "modal-bg");
   bg.innerHTML = '<div class="modal vidmodal"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px"><h2>' + (firstTime ? "Welcome! Watch this first (1 min)" : "How Python Pathways works") + '</h2><button class="btn ghost" id="vidClose">✕ Close</button></div>' +
     '<video id="howVid" controls playsinline preload="metadata" poster="how-it-works-poster.jpg" src="how-it-works.mp4"></video>' +
-    '<div class="vidbar"><button class="btn ghost" id="vidRead"></button><span class="muted" style="font-size:.9rem">Captions are on the video. Turn on Read it to me to hear them spoken.</span></div></div>';
+    '<div class="vidbar"><button class="btn ghost" id="vidRead"></button><button class="btn ghost" id="vidVoice"></button><span class="muted" style="font-size:.9rem">Press play to hear the narration. Captions are on the video too.</span></div></div>';
   document.body.appendChild(bg);
   const v = bg.querySelector("#howVid"), rb = bg.querySelector("#vidRead");
-  const paint = () => { rb.textContent = readAloud ? "🔊 Read it to me: on" : "🔈 Read it to me: off"; };
-  const speak = t => { try { if (!("speechSynthesis" in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (voicePick) u.voice = voicePick; u.rate = 1.0; u.pitch = 1.1; speechSynthesis.speak(u); } catch(e){} };
-  paint();
-  rb.onclick = () => { readAloud = !readAloud; store("pyl_readaloud", readAloud); paint(); lastCap = -1; if (!readAloud) try { speechSynthesis.cancel(); } catch(e){} };
-  v.addEventListener("timeupdate", () => {
-    if (!readAloud || v.paused) return;
-    let i = 0; HOWTO_CAPS.forEach((c, k) => { if (v.currentTime >= c[0]) i = k; });
-    if (i !== lastCap){ lastCap = i; speak(HOWTO_CAPS[i][1]); }
-  });
-  v.addEventListener("seeked", () => { lastCap = -1; });
-  v.addEventListener("pause", () => { try { speechSynthesis.cancel(); } catch(e){} });
-  const close = () => { try { v.pause(); speechSynthesis.cancel(); } catch(e){} bg.remove(); };
+  const stopTalk = videoNarration(v, HOWTO_CAPS.map((c, k) => [c[0], HOWTO_SAY[k] || c[1]]), rb, bg.querySelector("#vidVoice"));
+  const close = () => { try { stopTalk(); v.pause(); speechSynthesis.cancel(); } catch(e){} bg.remove(); };
   bg.querySelector("#vidClose").onclick = close;
   bg.addEventListener("click", e => { if (e.target === bg) close(); });
   if (SND.music) { stopMusic(); SND.music = false; paintSound(); }
