@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102k"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102k"></script>
+<script src="pp-sync.js?v=20261102m"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102m"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1427,6 +1427,7 @@ function updatePills(){
   if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
 }
 function openMap(){
+  try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); } catch(e){}
   prog = load(progKey(), {lessons:{}});
   const P = PATHS[profile.path];
   setGradeTheme(profile.grade || "7");
@@ -1509,7 +1510,7 @@ function renderSteps(){
   });
   renderMastery();
 }
-function goStep(i){ try { if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
+function goStep(i){ try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
 
 let ed = null; // current editor {ta, get, set}
 function makeEditor(initial, label){
@@ -2185,7 +2186,7 @@ function renderConceptVideo(body, L, s){
   const nav = el("div", "nav"); nav.innerHTML = "<span></span>";
   const nx = el("button", "btn", "Next: Learn →"); nx.onclick = () => goStep(0); nav.appendChild(nx); body.appendChild(nav);
   const v = body.querySelector("#conVid"), rb = body.querySelector("#conRead");
-  if (c) videoNarration(v, c.caps.map(x => [x.t, x.text]), rb, body.querySelector("#conVoice")); else { rb.classList.add("hidden"); body.querySelector("#conVoice").classList.add("hidden"); }
+  if (c) videoNarration(v, c.caps.map(x => [x.t, x.text]), rb, body.querySelector("#conVoice"), profile.path + "-" + cur.lesson); else { rb.classList.add("hidden"); body.querySelector("#conVoice").classList.add("hidden"); }
   v.addEventListener("timeupdate", () => { if (!s.watched && v.duration && v.currentTime > v.duration * 0.85){ s.watched = true; saveProg(); renderSteps(); } });
   v.addEventListener("ended", () => { if (!s.watched){ s.watched = true; saveProg(); renderSteps(); } });
   if (SND.music){ stopMusic(); SND.music = false; paintSound(); }
@@ -2194,19 +2195,43 @@ function renderConceptVideo(body, L, s){
 /* ---------------- spoken narration for the videos ----------------
    A natural voice reads each caption like a person talking. If a sentence is still being spoken when the
    next caption arrives, the video waits for it, so nothing is cut off. */
-function videoNarration(v, caps, rb, vb){
-  let on = load("pyl_readaloud2", true), lastCap = -1, talking = false, held = false, pending = -1;
+/* the teacher's own recording for this video, if one has been uploaded to the voice folder (English only) */
+function teacherVoice(name, found){
+  const lang = window.SDC && SDC.getLang ? SDC.getLang() : "en"; if (lang !== "en" || !name) return;
+  const exts = ["webm", "m4a", "mp4", "mp3", "ogg"], a = new Audio(); let k = 0, ok = false;
+  a.preload = "auto";
+  const next = () => { if (ok || k >= exts.length) return; a.src = "voice/" + name + "." + exts[k++]; a.load(); };
+  a.onerror = next; a.onloadedmetadata = () => { if (!ok){ ok = true; found(a); } };
+  next();
+}
+function videoNarration(v, caps, rb, vb, name){
+  let on = load("pyl_readaloud2", true), lastCap = -1, talking = false, held = false, pending = -1, teacher = null;
   const say1 = i => { talking = true; const t = caps[i][1];
     const end = () => { talking = false; if (pending >= 0 && on){ const p = pending; pending = -1; say1(p); } if (held && !talking){ held = false; v.play().catch(() => {}); } };
     if (window.SDC && SDC.narrate) SDC.narrate(t, { onend: end }); else { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); if (voicePick) u.voice = voicePick; u.rate = 0.97; u.pitch = 1; u.onend = end; u.onerror = end; speechSynthesis.speak(u); } catch(e){ end(); } } };
-  const stop = () => { talking = false; pending = -1; held = false; try { if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} };
-  const paint = () => { rb.textContent = on ? "🔊 Narration: on" : "🔈 Narration: off";
+  const stop = () => { if (teacher) try { teacher.pause(); } catch(e){} talking = false; pending = -1; held = false; try { if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} };
+  const paint = () => { rb.textContent = teacher ? (on ? "🔊 Your teacher's voice: on" : "🔈 Your teacher's voice: off") : (on ? "🔊 Narration: on" : "🔈 Narration: off");
+    if (vb) vb.classList.toggle("hidden", !!teacher);
     if (vb) vb.textContent = "🎙 Voice: " + ((window.SDC && SDC.narrator && SDC.narrator() === "female") ? "Female" : "Male"); };
   paint();
-  rb.onclick = () => { on = !on; store("pyl_readaloud2", on); paint(); lastCap = -1; if (!on){ stop(); if (held){ held = false; v.play().catch(() => {}); } } };
+  rb.onclick = () => { on = !on; store("pyl_readaloud2", on); paint(); lastCap = -1;
+    if (teacher){ if (on && !v.paused){ teacher.currentTime = v.currentTime; teacher.play().catch(() => {}); } else teacher.pause(); return; }
+    if (!on){ stop(); if (held){ held = false; v.play().catch(() => {}); } } };
+  /* teacher's recording: plays in step with the video instead of the computer voice */
+  teacherVoice(name, a => {
+    teacher = a; window.__ppTeacherAudio = a; stop(); if (held){ held = false; v.play().catch(() => {}); } paint();
+    const sync = () => { if (!on) return; try { if (Math.abs(a.currentTime - v.currentTime) > 0.35) a.currentTime = v.currentTime; } catch(e){} };
+    v.addEventListener("play", () => { if (on){ sync(); a.play().catch(() => {}); } });
+    v.addEventListener("pause", () => a.pause());
+    v.addEventListener("ended", () => a.pause());
+    v.addEventListener("seeked", sync);
+    v.addEventListener("timeupdate", sync);
+    v.volume = 0.35;   // the video's own sound stays quietly in the background
+    if (!v.paused && on){ sync(); a.play().catch(() => {}); }
+  });
   if (vb) vb.onclick = () => { if (window.SDC && SDC.setNarrator) SDC.setNarrator(SDC.narrator() === "female" ? "male" : "female"); paint(); if (on && talking && lastCap >= 0){ say1(lastCap); } };
   v.addEventListener("timeupdate", () => {
-    if (!on || v.paused) return;
+    if (!on || v.paused || teacher) return;
     let i = 0; caps.forEach((c, k) => { if (v.currentTime >= c[0]) i = k; });
     if (i === lastCap) return;
     lastCap = i;
@@ -2252,7 +2277,7 @@ function showHowTo(firstTime){
     '<div class="vidbar"><button class="btn ghost" id="vidRead"></button><button class="btn ghost" id="vidVoice"></button><span class="muted" style="font-size:.9rem">Press play to hear the narration. Captions are on the video too.</span></div></div>';
   document.body.appendChild(bg);
   const v = bg.querySelector("#howVid"), rb = bg.querySelector("#vidRead");
-  const stopTalk = videoNarration(v, HOWTO_CAPS.map((c, k) => [c[0], HOWTO_SAY[k] || c[1]]), rb, bg.querySelector("#vidVoice"));
+  const stopTalk = videoNarration(v, HOWTO_CAPS.map((c, k) => [c[0], HOWTO_SAY[k] || c[1]]), rb, bg.querySelector("#vidVoice"), "how-it-works");
   const close = () => { try { stopTalk(); v.pause(); speechSynthesis.cancel(); } catch(e){} bg.remove(); };
   bg.querySelector("#vidClose").onclick = close;
   bg.addEventListener("click", e => { if (e.target === bg) close(); });

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <title>Python Pathways Admin</title>
@@ -159,6 +159,7 @@ td .em{color:var(--muted);font-size:.82rem}
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><input class="t" id="signupsQ" placeholder="🔎 Search sign-ups by name, email, teacher or grade" style="flex:1;min-width:240px"><button class="btn ghost sm" id="moreSignups">Show all</button><button class="btn ghost sm" id="seenBtn">✓ Mark all as seen</button></div>
     <div class="tblwrap" style="margin-top:10px"><table id="signupsTbl"></table></div>
   </details>
+  <details id="voiceBox" style="margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff"><summary style="font-weight:800;cursor:pointer">🎙 Record your own voice for the videos</summary><div class="vrBody"></div></details>
   <div id="dash" class="hidden">
     <div class="stats" id="stats"></div>
     <details style="margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff"><summary style="font-weight:800;cursor:pointer">🔁 Sync tools: reset a PIN on every computer, test sync</summary>
@@ -198,7 +199,8 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261102k"></script>
+<script src="pp-sync.js?v=20261102m"></script>
+<script src="voice-recorder.js?v=20261102m"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
