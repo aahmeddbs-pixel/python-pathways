@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102a"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102b"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -198,7 +198,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <div class="hero">
     <div class="hero-art">
       <h1>Learn to code in Python 🐍</h1>
-      <p>Each lesson takes about 40 minutes: read, try the example, solve three coding exercises, then practise with unlimited new questions. Every exercise you complete earns 10 points, and enough exercises earn you a <b>House Point</b>! 🏠</p>
+      <p>Each lesson takes about 40 minutes: read, try the example, solve three coding exercises, then practise with unlimited new questions. Every exercise you complete earns 10 points, and enough exercises plus 30 minutes of real work earn you a <b>House Point</b> (one per session, totals restart every Monday)! 🏠</p>
       <div class="snip">print("Hello, World!")<br><span style="opacity:.6"># Hello, World!</span></div>
       <div><button class="howbtn" id="howBtn2">▶ Watch: how it works (1 min)</button></div>
     </div>
@@ -230,12 +230,12 @@ input.pin{letter-spacing:.4em;font-weight:700}
         <label class="f">Your level</label>
         <div class="muted" id="pathHint" style="font-size:.9rem;margin:-2px 0 8px">Choose your grade first.</div>
         <div class="paths" id="paths">
-          <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never used Python before? Start here: print, variables, decisions, loops. 15 exercises = 1 House Point.</small></span></button>
-          <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles. 10 exercises = 1 House Point.</small></span></button>
-          <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes. 5 exercises = 1 House Point.</small></span></button>
-          <button class="path dpp" data-p="dp_beginner"><span class="dot" style="background:var(--b)">B</span><span><b>IB DP Beginner (SL core)</b><small>New to Python or rusty? Computational thinking, data types, strings, selection, loops, functions, lists, exceptions, debugging and files (B1.1, B2.1–B2.3, B2.5). 15 exercises = 1 House Point.</small></span></button>
-          <button class="path dpp" data-p="dp_intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>IB DP Intermediate (SL)</b><small>2D lists, stacks, queues, searching, bubble and selection sort, Big O, file records, classes and encapsulation (B2.2, B2.4, B2.5, B3.1). 10 exercises = 1 House Point.</small></span></button>
-          <button class="path dpp" data-p="dp_advanced"><span class="dot" style="background:var(--a)">A</span><span><b>IB DP Advanced (HL)</b><small>Recursion, inheritance, polymorphism, abstraction, composition, design patterns, linked lists, BSTs and ADTs (B2.4.4, B3.2, B4.1). 5 exercises = 1 House Point.</small></span></button>
+          <button class="path" data-p="beginner"><span class="dot" style="background:var(--b)">B</span><span><b>Beginner</b><small>Never used Python before? Start here: print, variables, decisions, loops. 15 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
+          <button class="path" data-p="intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>Intermediate</b><small>Know the basics? Functions, lists, dictionaries and puzzles. 10 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
+          <button class="path" data-p="advanced"><span class="dot" style="background:var(--a)">A</span><span><b>Advanced</b><small>Confident coder? Algorithms, recursion and classes. 5 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
+          <button class="path dpp" data-p="dp_beginner"><span class="dot" style="background:var(--b)">B</span><span><b>IB DP Beginner (SL core)</b><small>New to Python or rusty? Computational thinking, data types, strings, selection, loops, functions, lists, exceptions, debugging and files (B1.1, B2.1–B2.3, B2.5). 15 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
+          <button class="path dpp" data-p="dp_intermediate"><span class="dot" style="background:var(--i)">I</span><span><b>IB DP Intermediate (SL)</b><small>2D lists, stacks, queues, searching, bubble and selection sort, Big O, file records, classes and encapsulation (B2.2, B2.4, B2.5, B3.1). 10 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
+          <button class="path dpp" data-p="dp_advanced"><span class="dot" style="background:var(--a)">A</span><span><b>IB DP Advanced (HL)</b><small>Recursion, inheritance, polymorphism, abstraction, composition, design patterns, linked lists, BSTs and ADTs (B2.4.4, B3.2, B4.1). 5 exercises + 30 minutes of active work = 1 House Point (one per session).</small></span></button>
         </div>
         <label class="f" for="inPin">Choose a 4-digit PIN (keep it secret!)</label>
         <div style="display:flex;gap:10px"><input class="t pin" id="inPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="PIN"><input class="t pin" id="inPin2" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Type it again"></div>
@@ -1306,20 +1306,57 @@ const HOUSE_EVERY = {beginner:15, intermediate:10, advanced:5, dp_beginner:15, d
 function solvedCount(){ let c = 0; Object.keys(prog.lessons).forEach(n => { const s = prog.lessons[n]; Object.keys(s.solved).forEach(q => { if (s.solved[q]) c++; }); }); return c; }
 function totalPoints(){ return solvedCount() * POINTS_EACH - (prog.spent || 0); }
 function pointsFor(){ return POINTS_EACH; }
-function housePoints(){ return Math.floor(solvedCount() / HOUSE_EVERY[profile.path]); }
-/* Submit unlocks each time a new House Point is earned (15 / 10 / 5 exercises). */
-function canSubmit(){ return housePoints() > (prog.hpSubmitted || 0); }
+/* ---------------- House Points ----------------
+   A House Point needs BOTH: the exercise target for the level (15 / 10 / 5 new exercises) AND at least 30 minutes of
+   active work in this session (typing, running and checking code, not just being signed in).
+   Only one House Point per session (one sign-in on one day). The total shown resets every Monday. */
+const HP_WORK_MIN = 30;
+function countSolved(pr){ let c = 0; Object.keys((pr && pr.lessons) || {}).forEach(n => { const s = pr.lessons[n]; Object.keys(s.solved || {}).forEach(q => { if (s.solved[q]) c++; }); }); return c; }
+function weekOf(d){ const x = d ? new Date(d) : new Date(); x.setHours(12, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.getFullYear() + "-" + String(x.getMonth() + 1).padStart(2, "0") + "-" + String(x.getDate()).padStart(2, "0"); }
+function hpState(pr, path){
+  if (!pr.hp){ const every = HOUSE_EVERY[path] || 15, legacy = Math.floor(countSolved(pr) / every); pr.hp = { base: legacy * every, legacy, ledger: [] }; }   // earned under the old rules: kept in the total
+  return pr.hp;
+}
+function hpOf(pr, path){ const h = hpState(pr, path), wk = weekOf(); return { total: h.legacy + h.ledger.length, week: h.ledger.filter(x => x.week === wk).length, toward: Math.max(0, countSolved(pr) - h.base) }; }
+let localWork = { sid: Math.random().toString(36).slice(2, 10), ms: 0, last: 0, day: today() };   // only used if the platform script isn't loaded
+["keydown", "input", "pointerdown"].forEach(ev => window.addEventListener(ev, () => { localWork.last = Date.now(); }, true));
+setInterval(() => { if (localWork.day !== today()) localWork = { sid: Math.random().toString(36).slice(2, 10), ms: 0, last: localWork.last, day: today() }; if (profile && !document.hidden && Date.now() - localWork.last < 120000) localWork.ms += 5000; }, 5000);
+function workNow(){ const w = window.SDC && SDC.work ? SDC.work() : null; return w || { sid: localWork.sid, ms: localWork.ms }; }
+function housePoints(){ return hpOf(prog, profile.path).week; }       // this week
+function houseTotal(){ return hpOf(prog, profile.path).total; }       // all time
+function hpStatus(){
+  const every = HOUSE_EVERY[profile.path], h = hpOf(prog, profile.path), w = workNow(), mins = Math.floor(w.ms / 60000);
+  const doneSession = hpState(prog, profile.path).ledger.some(x => x.sid === w.sid);
+  return { every, toward: Math.min(h.toward, every), ready: h.toward >= every, mins, needMins: Math.max(0, HP_WORK_MIN - mins), doneSession, sid: w.sid };
+}
+/* award a House Point if every rule is met; returns true when one was just earned */
+function tryAward(){
+  if (!profile || !prog) return false;
+  const st = hpStatus(); if (!st.ready || st.doneSession || st.needMins > 0) return false;
+  const h = hpState(prog, profile.path), d = today();
+  h.ledger.push({ at: Date.now(), date: d, week: weekOf(), sid: st.sid, lesson: cur.lesson || 0 }); h.base += st.every;
+  prog.houseLog = prog.houseLog || []; prog.houseLog.push({ date: d, lesson: cur.lesson || 0, total: houseTotal() });
+  saveProg(); updatePills(); if (typeof syncTeacher === "function") syncTeacher("progress");
+  setTimeout(() => celebrateHouse(housePoints()), 500); try { cheer("house", 1200); } catch(e){}
+  return true;
+}
+/* Submit unlocks each time a new House Point is earned. */
+function canSubmit(){ return houseTotal() > (prog.hpSubmitted || 0); }
 function houseHTML(){
-  const every = HOUSE_EVERY[profile.path], c = solvedCount(), into = c % every, hp = housePoints();
-  let h = '<div class="mast-top"><b>🏠 House Points: ' + hp + '</b><span>' + into + ' / ' + every + ' exercises to your next House Point</span></div><div class="bar"><i style="width:' + Math.round(into / every * 100) + '%"></i></div>';
-  h += canSubmit() ? '<div class="mast-msg" style="color:var(--red)">🎉 You earned a House Point! <b>Submit</b> is unlocked: send your work to your teacher.</div>'
-                   : '<div class="mast-msg">Reach your next House Point to unlock <b>Submit</b>.</div>';
+  const st = hpStatus(), hp = housePoints();
+  let h = '<div class="mast-top"><b>🏠 House Points this week: ' + hp + '</b><span>' + st.toward + ' / ' + st.every + ' exercises · ' + Math.min(st.mins, HP_WORK_MIN) + ' / ' + HP_WORK_MIN + ' min active work</span></div>' +
+    '<div class="bar"><i style="width:' + Math.round(Math.min(st.toward / st.every, st.mins / HP_WORK_MIN, 1) * 100) + '%"></i></div>';
+  const msg = st.doneSession ? '✅ You have earned this session\'s House Point. You can earn the next one in your next session. Keep practising!'
+    : st.ready && st.needMins ? '⏱ Exercise target reached! Keep working for <b>' + st.needMins + ' more minute' + (st.needMins === 1 ? '' : 's') + '</b> this session to earn your House Point.'
+    : 'To earn a House Point this session: complete <b>' + (st.every - st.toward) + ' more exercise' + (st.every - st.toward === 1 ? '' : 's') + '</b> and work for at least <b>' + HP_WORK_MIN + ' minutes</b>. One House Point per session; the total restarts every Monday.';
+  h += '<div class="mast-msg">' + msg + '</div>';
+  if (canSubmit()) h += '<div class="mast-msg" style="color:var(--red)">🎉 You earned a House Point! <b>Submit</b> is unlocked: send your work to your teacher.</div>';
   return h;
 }
 function updatePills(){
   $("ptsPill").textContent = "⭐ " + totalPoints() + " pts";
   const hp = housePoints();
-  $("housePill").textContent = "🏠 " + hp + " House Point" + (hp === 1 ? "" : "s");
+  $("housePill").textContent = "🏠 " + hp + " this week";
   if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
 }
 function openMap(){
@@ -1545,7 +1582,7 @@ function renderStep(){
       const r = await runJob({mode:"check", code:ed.get(), tests:Q.tests}, 8000);
       chk.disabled = false;
       s.tries[qn] = (s.tries[qn] || 0) + 1;
-      const hpBefore = housePoints(), eligBefore = mastery(L, s).eligible;
+      const hpBefore = houseTotal(), eligBefore = mastery(L, s).eligible;
       if (r.passed){
         const first = !s.solved[qn];
         s.solved[qn] = true;
@@ -1558,11 +1595,11 @@ function renderStep(){
         const qd = el("div", "quote", "💬 " + QUOTES[Math.floor(Math.random() * QUOTES.length)]);
         fb.appendChild(qd);
         sfx("correct");
-        if (!(first && housePoints() > hpBefore) && !(first && !eligBefore && mastery(L, s).eligible)) cheer("correct", 450);
+        const earnedNow = first && tryAward();
+        if (!earnedNow && !(first && !eligBefore && mastery(L, s).eligible)) cheer("correct", 450);
         if (first){
           popPoints(POINTS_EACH); updatePills();
-          const hpAfter = housePoints();
-          if (hpAfter > hpBefore){ prog.houseLog = prog.houseLog || []; prog.houseLog.push({date:today(), lesson:cur.lesson, total:hpAfter}); saveProg(); setTimeout(() => celebrateHouse(hpAfter), 700); cheer("house", 1500); }
+          if (earnedNow){ /* celebrated in tryAward */ }
           else if (!eligBefore && mastery(L, s).eligible){ setTimeout(() => sfx("unlock"), 600); cheer("unlock", 1300); }
         }
         const mm = mastery(L, s);
@@ -1655,12 +1692,13 @@ function renderSubmit(body, L, s){
   const fbk = buildFeedback(L, s);
   const doneToday = submittedToday(s);
   const last = [...s.submissions].reverse().find(x => x.date === d && x.complete);
-  const every = HOUSE_EVERY[profile.path], left = every - (solvedCount() % every);
+  const hst = hpStatus(), every = hst.every, left = Math.max(0, every - hst.toward);
   body.innerHTML = '<h2>' + (m.eligible ? "📨" : "🔒") + ' Submit your work</h2><p class="muted" style="margin-top:6px">' + (m.eligible ? "🏠 You earned a House Point! Check your work below, then submit it to " + esc(profile.teacher || "your teacher") + "." : "Submit unlocks every time you earn a House Point (" + every + " completed exercises).") + '</p>';
   if (!m.eligible){
     body.insertAdjacentHTML("beforeend", '<div class="lockbox"><b>To unlock Submit:</b><ul>' +
-      '<li>⬜ Complete <b>' + left + ' more exercise' + (left > 1 ? "s" : "") + '</b> to earn your next House Point (' + (every - left) + ' / ' + every + ')</li>' +
-      '<li>💡 Lesson exercises and practice questions both count.</li></ul></div>');
+      (left ? '<li>⬜ Complete <b>' + left + ' more exercise' + (left > 1 ? "s" : "") + '</b> (' + (every - left) + ' / ' + every + ')</li>' : '<li>✅ Exercise target reached (' + every + ' / ' + every + ')</li>') +
+      (hst.doneSession ? '<li>✅ You already earned this session\'s House Point: the next one can be earned next session.</li>' : '<li>' + (hst.needMins ? '⬜' : '✅') + ' Work actively for <b>' + HP_WORK_MIN + ' minutes</b> this session (' + Math.min(hst.mins, HP_WORK_MIN) + ' / ' + HP_WORK_MIN + ')</li>') +
+      '<li>💡 Lesson exercises and practice questions both count. One House Point per session.</li></ul></div>');
     const go = el("button", "btn", m.core < 3 ? "Go to Exercise " + (L.ex.findIndex(q => !s.solved[q]) + 1) + " →" : "Go to Practice →");
     go.onclick = () => goStep(m.core < 3 ? 2 + L.ex.findIndex(q => !s.solved[q]) : PRACTICE);
     body.appendChild(go);
@@ -1712,7 +1750,7 @@ async function submitLesson(L, s, kind, st, complete){
   const status = complete ? "House Point earned" : "Incomplete";
   const since = (prog.log || []).filter(x => x.at > (prog.lastSubmitAt || 0));
   const hpToday = (prog.houseLog || []).filter(h => h.date === d && h.lesson === n).length;
-  const tracker = {v:3, name:profile.name, cls:profile.cls, grade:profile.grade, teacher:profile.teacher, path:profile.path, pointsBalance:totalPoints(), exercisesTotal:solvedCount(), housePoints:housePoints(), housePointsThisLesson:hpToday, lesson:n, title:L.title, date:d,
+  const tracker = {v:3, name:profile.name, cls:profile.cls, grade:profile.grade, teacher:profile.teacher, path:profile.path, pointsBalance:totalPoints(), exercisesTotal:solvedCount(), housePoints:houseTotal(), housePointsWeek:housePoints(), housePointsThisLesson:hpToday, lesson:n, title:L.title, date:d,
     submitted:new Date().toISOString(), kind:kind, status:status, level:m.level, sinceLast:since.length, core:m.core, practice:m.prac, practiceNeeded:m.need, skipped:s.prac.skipped,
     points:pts, mins:Math.round(day.activeMs / 60000),
     ex:L.ex.map(q => ({q:q, ok:!!s.solved[q], hints:s.hints[q] || 0, checks:s.tries[q] || 0})), well:fbk.well, next:fbk.next};
@@ -1722,7 +1760,7 @@ async function submitLesson(L, s, kind, st, complete){
     "_subject":(hpToday ? "🏠 HOUSE POINT | " : "") + "Python Lesson: " + profile.name + " | G" + profile.grade + " " + profile.teacher + " | " + P + " L" + n + " | " + status + " | " + m.core + "/3 + " + m.prac + " practice",
     "_template":"table", "_captcha":"false",
     "Student":profile.name, "Student email":profile.email || "", "Grade":"Grade " + profile.grade, "Teacher":profile.teacher, "Pathway":P,
-    "House points":housePoints() + " in total" + (hpToday ? " (🏠 +" + hpToday + " earned in this lesson, please award!)" : "") + " • " + solvedCount() + " exercises completed • " + totalPoints() + " points to spend",
+    "House points":housePoints() + " this week, " + houseTotal() + " in total" + (hpToday ? " (🏠 +" + hpToday + " earned in this lesson, please award!)" : "") + " • " + solvedCount() + " exercises completed • " + totalPoints() + " points to spend",
     "Lesson":"Lesson " + n + ": " + L.title, "Date":d,
     "Status":status + (complete ? "" : " (time ran out before the next House Point was reached)"),
     "Work since last submission":since.length + " exercise" + (since.length === 1 ? "" : "s") + " completed\n" + since.map(x => "Lesson " + x.lesson + " " + (x.kind === "practice" ? "practice" : "exercise") + ": " + x.title).join("\n"),
@@ -1737,7 +1775,7 @@ async function submitLesson(L, s, kind, st, complete){
     "Code":codeTxt,
     "TRACKER DATA (do not edit)":JSON.stringify(tracker)
   };
-  if (complete){ prog.hpSubmitted = housePoints(); prog.lastSubmitAt = Date.now(); }
+  if (complete){ prog.hpSubmitted = houseTotal(); prog.lastSubmitAt = Date.now(); }
   const rec = {date:d, at:Date.now(), kind:kind, complete:!!complete, level:m.level, sent:"pending"};
   s.submissions.push(rec); saveProg();
   if (st) showSent(st, rec);
@@ -1786,7 +1824,8 @@ function snapshot(type, extra){
       const errs = {}; Object.keys(s.errs || {}).forEach(q => Object.keys(s.errs[q]).forEach(k => errs[k] = (errs[k] || 0) + s.errs[q][k]));
       lessons[n] = {title:L.title, core, prac, skipped:(s.prac || {}).skipped || 0, days, errs, subs:(s.submissions || []).filter(x => x.complete).length};
     });
-    paths[p] = {solved, points:solved * POINTS_EACH - (pr.spent || 0), spent:pr.spent || 0, house:Math.floor(solved / HOUSE_EVERY[p]), lessons};
+    const hpx = hpOf(pr, p), wk = workNow();
+    paths[p] = {solved, points:solved * POINTS_EACH - (pr.spent || 0), spent:pr.spent || 0, house:hpx.total, houseWeek:hpx.week, week:weekOf(), workMins:Math.floor(wk.ms / 60000), hpLedger:(pr.hp.ledger || []).slice(-30), lessons};
   });
   return Object.assign({v:1, type, at:new Date().toISOString(), acct, paths}, extra || {});
 }
@@ -1853,7 +1892,7 @@ function startClock(){
           : '<div class="banner late">⏰ The 40 minutes are up. Your teacher can see what you have done so far, but your lesson is <b>not complete</b> yet. Finish the work to unlock Submit.</div>';
       }
     }
-    if (Math.floor(now / 10000) !== Math.floor((now - 1000) / 10000)) saveProg();
+    if (Math.floor(now / 10000) !== Math.floor((now - 1000) / 10000)){ saveProg(); if (tryAward()){ renderSteps(); } else if ($("mapHouse")) updatePills(); }
   };
   tick(); clockTimer = setInterval(tick, 1000);
 }
@@ -2001,7 +2040,7 @@ function confetti(){
 function celebrateHouse(n){
   sfx("house"); confetti();
   const bg = el("div", "modal-bg");
-  bg.innerHTML = '<div class="modal"><div class="big">🏠</div><h2 style="margin-top:8px">House Point earned!</h2><p style="margin-top:8px">Amazing work, ' + esc(profile.name.split(" ")[0]) + '! You now have <b>' + n + ' House Point' + (n === 1 ? "" : "s") + '</b>. Submit is now unlocked, so send your work to ' + esc(profile.teacher || "your teacher") + '!</p><div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn green lg" id="hpSubmit">📨 Submit now</button><button class="btn ghost lg" id="hpLater">Keep going</button></div></div>';
+  bg.innerHTML = '<div class="modal"><div class="big">🏠</div><h2 style="margin-top:8px">House Point earned!</h2><p style="margin-top:8px">Amazing work, ' + esc(profile.name.split(" ")[0]) + '! You now have <b>' + n + ' House Point' + (n === 1 ? "" : "s") + ' this week</b>. That\'s your House Point for this session. Submit is now unlocked, so send your work to ' + esc(profile.teacher || "your teacher") + '!</p><div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn green lg" id="hpSubmit">📨 Submit now</button><button class="btn ghost lg" id="hpLater">Keep going</button></div></div>';
   bg.querySelector("#hpSubmit").onclick = () => { bg.remove(); goStep(SUBMIT); };
   bg.querySelector("#hpLater").onclick = () => { bg.remove(); renderSteps(); };
   document.body.appendChild(bg);
@@ -2083,7 +2122,7 @@ const HOWTO_CAPS = [
   [21, "Every lesson: watch the Video, Learn, try the Example, solve 3 Exercises, then Practice."],
   [28, "Write your code and press Check. Every exercise you complete earns 10 points!"],
   [37, "Stuck? Buy advice for 5 points. Use your points wisely!"],
-  [44, "Exercises earn House Points: Beginner 15, Intermediate 10, Advanced 5."],
+  [44, "House Points: finish your exercises (Beginner 15, Intermediate 10, Advanced 5) and work for 30 minutes. One per session."],
   [54, "Earn a House Point and Submit unlocks. Send your work to your teacher!"],
   [61, "Good to know: finished exercises can't be redone, lessons last 40 minutes, and keep your PIN secret."],
   [70, "Now you're ready. Let's code!"]

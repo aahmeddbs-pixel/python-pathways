@@ -551,7 +551,7 @@ function flagsFor(st){
     let solved = 0, fast = 0, timed = 0;
     Object.values(P.lessons || {}).forEach(L => { (L.core || []).filter(x => x.ok).concat(L.prac || []).forEach(x => { solved++; if ((x.ms || 0) > 0){ timed++; if (x.ms < 2000) fast++; } }); });  // tasks with no recorded time (older accounts) are not judged
     if (P.solved != null && P.solved !== solved) F.push(PATH_NAMES[p] + ": says " + P.solved + " tasks done but only " + solved + " are listed.");
-    if (P.house != null && P.house !== Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") don't match the completed work.");
+    if (P.house != null && P.house > Math.floor(solved / every)) F.push(PATH_NAMES[p] + ": House Points (" + P.house + ") are more than the completed work allows.");
     if (P.points != null && P.points > solved * 10) F.push(PATH_NAMES[p] + ": more points than possible for the work done.");
     if (timed >= 5 && fast / timed > 0.5) F.push(PATH_NAMES[p] + ": " + fast + " of " + timed + " tasks completed in under 2 seconds each (possible copying or faked data).");
   });
