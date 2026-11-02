@@ -38,7 +38,7 @@ const extOf = m => /mp4/.test(m) ? "m4a" : /ogg/.test(m) ? "ogg" : "webm";
 function build(){
   const box = $("voiceBox"); if (!box || box.dataset.ready) return; box.dataset.ready = "1";
   const body = box.querySelector(".vrBody");
-  body.innerHTML = `<p class="muted small" style="margin:8px 0">Students hear <b>your own voice</b> on a video once you've recorded it. Choose a video, press <b>Record</b> and read the script out loud while the video plays: the words to say are highlighted at the right moment. Use a quiet room and a headset if you have one.</p>
+  body.innerHTML = `<p class="small" style="margin:8px 0;padding:8px 12px;border-radius:10px;background:#FFF2DC"><b>New:</b> record all videos for every course in one place, and save them as one file, in the <a href="/sisd-design-and-computing/voice-studio.html" target="_blank" rel="noopener"><b>Voice Studio</b></a>.</p><p class="muted small" style="margin:8px 0">Students hear <b>your own voice</b> on a video once you've recorded it. Choose a video, press <b>Record</b> and read the script out loud while the video plays: the words to say are highlighted at the right moment. Use a quiet room and a headset if you have one.</p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select class="t" id="vrSel" style="max-width:100%;min-width:280px"><option>Loading the videos…</option></select><span id="vrHave" class="small" style="font-weight:700"></span></div>
     <div class="vrGrid" style="display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:14px;margin-top:12px">
       <div><video id="vrVid" playsinline preload="metadata" muted style="width:100%;border-radius:12px;background:#000;display:block"></video>
