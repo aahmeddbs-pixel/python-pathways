@@ -84,7 +84,8 @@ function gvizRaw(c, tq, sheet){
 let COL = null, SEEN = "";
 async function column(c, strict){
   const k = c.id + "|" + c.gid; if (COL && COL.k === k) return COL;
-  const tries = c.gid ? [""] : ["", ...[1,2,3,4,5,6].map(n => "Form responses " + n), "Form Responses 1", "Form Responses 2", "Form Responses 3"], seen = [], found = [], byLabel = []; let lastErr = null;
+  // the linked tab, plus every "Form responses" tab: if the form was ever re-linked, new rows land in a new tab
+  const tries = ["", ...[1,2,3,4,5,6].map(n => "Form responses " + n), "Form Responses 1", "Form Responses 2", "Form Responses 3"], seen = [], found = [], byLabel = []; let lastErr = null;
   for (const sheet of tries){
     let r; try { r = await gvizRaw(c, "select * limit 30", sheet); } catch(e){ lastErr = e; continue; }
     const cols = (r.table && r.table.cols) || [], rows = (r.table && r.table.rows) || [];
@@ -93,7 +94,7 @@ async function column(c, strict){
     const li = cols.findIndex(x => /^\s*data\s*$/i.test(x.label || "")); if (li >= 0) byLabel.push({ col: cols[li].id, time: cols[0].id, sheet });
     if (cols.length) seen.push(`${sheet || "first tab"}: ${cols.map(x => x.label || x.id).join(", ")} (${rows.length} rows)`);
   }
-  SEEN = seen.join(" · "); const locs = found.length ? found : byLabel;
+  SEEN = seen.join(" · "); const locs = found.concat(byLabel.filter(b => !found.some(f => f.sheet === b.sheet)));
   if (locs.length) return (COL = { k, locs });
   if (strict) throw (lastErr && !seen.length) ? lastErr : new Error("No sync rows found. What the sheet shows: " + (SEEN || "nothing"));
   return { k, locs: [{ col: "B", time: "A", sheet: "" }] };
@@ -166,19 +167,38 @@ async function resetWithKey(email, newPw, encJwk){
   for (const v of rows){
     let dk; try { dk = e64(new Uint8Array(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsa, d64(v.text)))); } catch(e){ continue; }
     if (d64(dk).length !== 32 || !(await pull(dk))) continue;
-    const w = await publishWrap(email, newPw, dk); queueRow("R", await dataId(dk), String(w.ver), "x"); await flush(); return true;
+    const w = await publishWrap(email, newPw, dk); queueRow("R", await dataId(dk), String(w.ver), "x"); await flush();
+    // confirm the new PIN is really in the sheet, so it works on every computer straight away
+    for (let i = 0; i < 9; i++){
+      await new Promise(r => setTimeout(r, i ? 4000 : 1500));
+      try { if (await findKey(email, newPw) === dk) return true; } catch(e){}
+    }
+    throw new Error("The new PIN was sent but hasn't reached the Sync sheet, so it won't work on other computers yet. Press Test sync below to see what needs fixing in Google Forms.");
   }
   return false;
 }
 /* admin check: send a test row and read it back */
+/* how many rows each response tab has (to tell whether a test row arrived at all) */
+async function rowCounts(c){
+  const out = {};
+  for (const sheet of ["", ...[1,2,3,4,5,6].map(n => "Form responses " + n), "Form Responses 1", "Form Responses 2", "Form Responses 3"]){
+    try { const r = await gvizRaw(c, "select count(A)", sheet); out[sheet || "linked tab"] = +((((r.table || {}).rows || [])[0] || {}).c || [{}])[0].v || 0; } catch(e){}
+  }
+  return out;
+}
 async function test(){
   const c = cfg(); if (!c) throw new Error("The sync form and sheet links are not set in pp-sync.js yet.");
   const tid = "test" + Date.now().toString(36), tok = Math.random().toString(36).slice(2);
+  let before = {}; try { before = await rowCounts(c); } catch(e){}
+  if (!Object.keys(before).length) throw new Error("The Python Pathways Sync sheet can't be read. In Google Sheets, open it, click Share, and set General access to \"Anyone with the link\" (Viewer).");
   if (!(await postCell(c, ["PPS2", "T", tid, "1", 0, 1, tok].join("|")))) throw new Error("Could not reach Google Forms from here.");
   let last = null;
   for (let i = 0; i < 12; i++){ await new Promise(r => setTimeout(r, 5000));
     try { COL = null; await column(c, true); const l = await cells(c, "T", tid + "|", 0); last = null; if (l.some(x => String(x).endsWith(tok))) return true; } catch(e){ last = e; if (/could not be (read|reached)|timeout/i.test(e.message) && !SEEN) break; } }
-  throw new Error((last ? last.message + " " : "") + "The test row was sent but could not be found. Check the form's response destination is this sheet, that Accepting responses is on, and the sheet is shared as Anyone with the link: Viewer.");
+  let after = {}; try { after = await rowCounts(c); } catch(e){}
+  const grew = Object.keys(after).filter(k => after[k] > (before[k] || 0));
+  if (grew.length) throw new Error("A new row reached the sheet (" + grew.join(", ") + ") but its answer was empty. The Sync form's question has been changed or replaced. Fix: in the Sync form, open ⋮ → Get pre-filled link, type x, click Get link, copy it and send it to Claude.");
+  throw new Error("Nothing new reached the sheet, so Google Forms is not accepting the saves. In the Python Pathways Sync form check: (1) Responses tab: \"Accepting responses\" is ON; (2) Settings → Responses: \"Collect email addresses\" is \"Do not collect\" and \"Limit to 1 response\" is OFF, and Settings → Presentation/Defaults has no sign-in requirement (no \"Restrict to users in your organisation\"); (3) Responses → ⋮ → \"Select response destination\" is the sheet you shared. Then press Test sync again." + (last ? " (" + last.message + ")" : ""));
 }
 return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, queued: () => getQ().length };
 })();
