@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102h"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102h"></script>
+<script src="pp-sync.js?v=20261102i"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102i"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1123,11 +1123,13 @@ $("signBtn").onclick = async () => {
   if (!/^\d{4}$/.test(pin)){ err.textContent = "Your PIN must be exactly 4 numbers."; return; }
   if (pin !== $("inPin2").value){ err.textContent = "The two PINs don't match. Please type them again."; return; }
   if (accounts()[slug(name)]){ err.textContent = "There is already an account called " + niceName(name) + " on this computer. Please use Sign in instead."; return; }
+  let wasDeleted = false;
   if (PPSync.enabled()){
     $("signBtn").disabled = true; err.textContent = "Checking…";
     let taken = false; try { taken = await PPSync.emailTaken(slug(name)); } catch(e){}
     $("signBtn").disabled = false; err.textContent = "";
-    if (taken){ err.textContent = "There is already an account called " + niceName(name) + " on another computer. Use Sign in: type your name and PIN and your progress will load. If you forgot your PIN, ask your teacher."; return; }
+    if (taken && SDCG){ err.textContent = "Checking…"; if (await SDC.isDeleted(email, niceName(name))){ taken = "deleted"; wasDeleted = true; } err.textContent = ""; }
+    if (taken === true){ err.textContent = "There is already an account called " + niceName(name) + " on another computer. Use Sign in: type your name and PIN and your progress will load. If you forgot your PIN, ask your teacher."; return; }
   }
   if (SDCG){
     if (SDCG.grade && chosenGrade !== SDCG.grade){ err.textContent = "Your grade is set to Grade " + SDCG.grade + ". To choose another grade, go back with Change course."; return; }
@@ -1137,6 +1139,7 @@ $("signBtn").onclick = async () => {
     if (!ck.ok){ err.innerHTML = ck.msg; return; }
   }
   profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
+  if (wasDeleted){ profile.dk = PPSync.newKey(); profile.wrapFor = ""; }   // the old, deleted account's online copy is not brought back
   saveAccount(profile); store("pyl_lastName", profile.name);
   ensureSync(profile, pin);
   prog = load(progKey(), {lessons:{}});
@@ -2236,7 +2239,15 @@ new MutationObserver(gateNext).observe($("stepBody"), { childList:true, subtree:
 // The platform portal decides the course; grade and level can only be changed by the admin.
 const SDCG = window.SDC ? SDC.gate() : null;
 const LEVEL_WEIGHT = {beginner:1, dp_beginner:1, intermediate:1.5, dp_intermediate:1.5, advanced:3, dp_advanced:3};
-function sdcAcct(a){ return {course:"cs", name:a.name, email:a.email || "", grade:a.grade, teacher:a.teacher, level:a.path, cls:a.cls || ""}; }
+function sdcAcct(a){ return {course:"cs", name:a.name, email:a.email || "", grade:a.grade, teacher:a.teacher, level:a.path, cls:a.cls || "", created:a.created || 0}; }
+/* the super admin deleted this account (unused for over a month): remove it from this computer */
+window.SDC_forget = a => {
+  const k = slug(a.name || ""), all = accounts(); if (!k) return;
+  delete all[k]; store(ACC_KEY, all);
+  Object.keys(PATHS).forEach(p => { try { localStorage.removeItem("pyl_" + p + "_" + k); } catch(e){} });
+  ["pyl_pinfail_", "pyl_pinreset_done_"].forEach(x => { try { localStorage.removeItem(x + k); } catch(e){} });
+  if (slug(load("pyl_lastName", "")) === k) store("pyl_lastName", "");
+};
 function sdcTask(title, kind){ if (SDCG && profile) SDC.task(sdcAcct(profile), title, LEVEL_WEIGHT[profile.path] || 1, kind); }
 function applyAssign(acc, A){
   let changed = false;
