@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102b"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102c"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1110,7 +1110,7 @@ $("signBtn").onclick = async () => {
   const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), teacher = $("inTeacher").value, pin = $("inPin").value;
   if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
   const email = $("inEmail").value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ err.textContent = "Please type your school email address."; return; }
+  if (!/^[^\s@]+@sisd\.ae$/i.test(email)){ err.textContent = "Please type your SISD school email address (ending in @sisd.ae). Personal emails can't be used."; return; }
   if (!chosenGrade){ err.textContent = "Please choose your grade."; return; }
   if (!teacher){ err.textContent = "Please choose your teacher from the list."; return; }
   if (!chosen){ err.textContent = "Please choose your level."; return; }
@@ -1135,7 +1135,12 @@ $("signBtn").onclick = async () => {
   ensureSync(profile, pin);
   prog = load(progKey(), {lessons:{}});
   syncTeacher("signup", {pin:pin});
-  if (SDCG) SDC.confirm(sdcAcct(profile), true);
+  if (SDCG){
+    $("signBtn").disabled = true; err.textContent = "Checking…";
+    let ck = { ok:true }; try { ck = await SDC.confirm(sdcAcct(profile), true); } catch(e){}
+    $("signBtn").disabled = false; err.textContent = "";
+    if (!ck.ok){ SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return; }   // e.g. must verify their SISD email first
+  }
   openMap();
   say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
   setTimeout(() => showHowTo(true), 2500);
@@ -1187,7 +1192,7 @@ $("loginBtn").onclick = async () => {
     $("loginBtn").disabled = true; err.textContent = "Checking your course…";
     let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
     $("loginBtn").disabled = false; err.textContent = "";
-    if (!ck.ok){ $("loginPin").value = ""; SDC.signedOutNotice(ck.msg); SDC.leave("blocked"); return; }
+    if (!ck.ok){ $("loginPin").value = ""; SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return; }
     if (ck.assign) applyAssign(acc, ck.assign);
   }
   profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
