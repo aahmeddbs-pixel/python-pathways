@@ -73,7 +73,8 @@ function gvizRaw(c, tq, sheet){
     const cb = "__pps" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), sc = document.createElement("script");
     const done = () => { clearTimeout(t); try { delete window[cb]; } catch(e){ window[cb] = undefined; } sc.remove(); };
     const t = setTimeout(() => { done(); rej(new Error("timeout")); }, 20000);
-    window[cb] = r => { done(); if (!r || r.status === "error") return rej(new Error((r && r.errors && r.errors[0] && (r.errors[0].detailed_message || r.errors[0].message)) || "The sync sheet could not be read.")); res(r); };
+    window[cb] = r => { done(); if (!r || r.status === "error"){ const m = (r && r.errors && r.errors[0] && (r.errors[0].detailed_message || r.errors[0].message)) || "";
+      return rej(new Error(/not publicly viewable|OAuth|access_denied|permission/i.test(m) ? "The Python Pathways Sync sheet isn't shared yet. In Google Sheets open the sheet linked to the Python Pathways Sync form, click Share, set General access to \"Anyone with the link\" (Viewer), then try again." : (m || "The sync sheet could not be read."))); } res(r); };
     sc.onerror = () => { done(); rej(new Error("The sync sheet could not be reached.")); };
     const where = sheet ? "sheet=" + encodeURIComponent(sheet) + "&" : c.gid ? "gid=" + c.gid + "&" : "";
     sc.src = `https://docs.google.com/spreadsheets/d/${c.id}/gviz/tq?${where}headers=1&tqx=out:json;responseHandler:${cb}&tq=${encodeURIComponent(tq)}&_=${Date.now()}`;
