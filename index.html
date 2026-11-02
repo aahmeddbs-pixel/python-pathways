@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102i"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102i"></script>
+<script src="pp-sync.js?v=20261102j"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102j"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1111,7 +1111,11 @@ function showPathsFor(g){
 document.querySelectorAll("#gradeChips .chip").forEach(b => b.onclick = () => { chosenGrade = b.dataset.g; document.querySelectorAll("#gradeChips .chip").forEach(x => x.classList.toggle("on", x === b)); showPathsFor(chosenGrade); });
 showPathsFor(null);
 document.querySelectorAll(".path").forEach(b => b.onclick = () => { chosen = b.dataset.p; document.querySelectorAll(".path").forEach(x => x.classList.toggle("on", x === b)); });
-["inPin", "inPin2", "loginPin"].forEach(id => $(id).addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); }));
+const testerName = () => !!(window.SDC && SDC.isTester && SDC.isTester($("loginName").value));   // the teacher's test student signs in with their email and password
+["inPin", "inPin2", "loginPin"].forEach(id => $(id).addEventListener("input", e => { if (id === "loginPin" && testerName()) return; e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4); }));
+$("loginName").addEventListener("input", () => { if (testerName()) $("loginPin").removeAttribute("maxlength"); else $("loginPin").setAttribute("maxlength", "4"); });
+const TEST_NAME = "Test Student";
+const isTesterAcc = a => !!(a && window.SDC && SDC.isTester && SDC.isTester(a.email));
 $("signBtn").onclick = async () => {
   const err = $("signErr"), name = $("inName").value.trim().replace(/\s+/g, " "), teacher = $("inTeacher").value, pin = $("inPin").value;
   if (name.split(" ").length < 2){ err.textContent = "Please type your first and last name."; return; }
@@ -1193,6 +1197,13 @@ function chooseNewPin(acc){
 }
 $("loginBtn").onclick = async () => {
   const err = $("loginErr"); let pin = $("loginPin").value;
+  if (SDCG && testerName()){
+    if (!(await SDC.testerPw($("loginName").value, pin))){ err.textContent = "That password is not right for the test student."; $("loginPin").value = ""; return; }
+    const all = accounts(); let t = all[slug(TEST_NAME)];
+    if (!t) t = {name:TEST_NAME, email:SDC.TESTERS ? SDC.TESTERS[0] : "test@sisd.ae", cls:"", grade:"7", teacher:"Mr. Ahmed", path:"beginner", created:Date.now(), last:null};
+    t.email = $("loginName").value.trim().toLowerCase(); t.pin = pinHash(TEST_NAME, pin); saveAccount(t); store("pyl_pinfail_" + slug(TEST_NAME), {n:0, until:0});
+    $("loginName").value = TEST_NAME;
+  }
   const rs = resetAccount($("loginName").value, pin);
   if (rs){ rs.pin = pinHash(rs.name, "0000"); saveAccount(rs); store("pyl_pinfail_" + slug(rs.name), {n:0, until:0}); store("pyl_pinfail_" + slug($("loginName").value), {n:0, until:0}); $("loginName").value = rs.name; }
   const name = $("loginName").value;
@@ -1246,7 +1257,22 @@ $("switchBtn").onclick = () => {
   if (SDCG) return SDC.leave("out");
   show("signin");
 };
-$("levelSel").onchange = e => { profile.path = e.target.value; saveAccount(profile); openMap(); };
+$("levelSel").onchange = e => { profile.path = e.target.value;
+  if (isTesterAcc(profile) && !!PATHS[profile.path].dp !== isDPGrade(profile.grade)) profile.grade = PATHS[profile.path].dp ? "11" : "7";
+  saveAccount(profile); openMap(); };
+/* test student: choose any grade and any level */
+function testerPickers(){
+  const lvl = $("levelSel"), on = isTesterAcc(profile);
+  let g = $("testGrade");
+  if (!on){ if (g) g.remove(); if (SDCG){ lvl.classList.add("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.add("hidden"); } return; }
+  lvl.classList.remove("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.remove("hidden");
+  lvl.innerHTML = Object.keys(PATHS).map(p => '<option value="' + p + '">' + PATHS[p].name + "</option>").join(""); lvl.value = profile.path;
+  if (!g){ g = document.createElement("select"); g.id = "testGrade"; g.className = "t"; g.title = "Test student: grade"; g.style.marginLeft = "8px";
+    g.innerHTML = ["6", "7", "8", "11", "12"].map(x => '<option value="' + x + '">Grade ' + x + "</option>").join("");
+    lvl.insertAdjacentElement("afterend", g);
+    g.onchange = () => { profile.grade = g.value; if (pathsForGrade(profile.grade).indexOf(profile.path) < 0) profile.path = pathsForGrade(profile.grade)[0]; saveAccount(profile); openMap(); }; }
+  g.value = profile.grade;
+}
 $("exportBtn").onclick = () => {
   const data = {v:1, account:profile, progress:{}};
   Object.keys(PATHS).forEach(p => { const v = load("pyl_" + p + "_" + slug(profile.name), null); if (v) data.progress[p] = v; });
@@ -1406,7 +1432,8 @@ function openMap(){
   setGradeTheme(profile.grade || "7");
   $("levelSel").innerHTML = pathsForGrade(profile.grade).concat(pathsForGrade(profile.grade).indexOf(profile.path) < 0 ? [profile.path] : []).map(p => '<option value="' + p + '">' + PATHS[p].name + "</option>").join("");
   $("levelSel").value = profile.path;
-  $("whoPill").textContent = "👤 " + profile.name + " • G" + (profile.grade || "") + " • " + (profile.teacher || "");
+  testerPickers();
+  $("whoPill").textContent = "👤 " + profile.name + " • G" + (profile.grade || "") + " • " + (profile.teacher || "") + (isTesterAcc(profile) ? " • TEST" : "");
   updatePills();
   $("mapBadge").textContent = P.l; $("mapBadge").style.background = P.c;
   $("mapTitle").textContent = "Python: " + P.name;
