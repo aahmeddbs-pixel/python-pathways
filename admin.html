@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <title>Python Pathways Admin</title>
@@ -198,7 +198,7 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261102g"></script>
+<script src="pp-sync.js?v=20261102h"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -228,7 +228,7 @@ function __postTo(cfg, fields){
   if (!cfg || !cfg.url || cfg.url.indexOf("docs.google.com/forms") < 0) return Promise.resolve(false);
   const body = new URLSearchParams();
   Object.keys(fields).forEach(k => { if (cfg.entries[k]) body.append(cfg.entries[k], fields[k]); });
-  return fetch(cfg.url, {method:"POST", mode:"no-cors", body}).then(() => true).catch(() => false);
+  return gfSend(cfg.url, body);
 }
 function __deviceStudent(){
   let accs = {}; try { accs = JSON.parse(localStorage.getItem("pyl_accounts") || "{}"); } catch(e){}

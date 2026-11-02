@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102g"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102g"></script>
+<script src="pp-sync.js?v=20261102h"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261102h"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1154,20 +1154,44 @@ $("signBtn").onclick = async () => {
 /* Teacher PIN resets: these students can sign in with PIN 0000 until the date below.
    Matched on first name (the only account with that first name on this computer), so a
    misspelt surname still works. Signing in with 0000 saves 0000 as their PIN. */
-const PIN_RESETS = {until: "2026-11-06", firstNames: ["inara", "dawid", "niilo"]};
+const PIN_RESETS = {until: "2026-11-13", firstNames: ["inara", "dawid", "niilo"]};
+const resetLive = () => Date.now() <= new Date(PIN_RESETS.until + "T23:59:59").getTime();
+const resetListed = name => resetLive() && PIN_RESETS.firstNames.indexOf(slug(name).split(" ")[0]) >= 0;
+/* once a student has chosen a new PIN after a reset, 0000 stops working for that account on this computer */
+const resetUsed = acc => !!load("pyl_pinreset_done_" + slug(acc.name), 0);
 function resetAccount(name, pin){
-  if (pin !== "0000" || Date.now() > new Date(PIN_RESETS.until + "T23:59:59").getTime()) return null;
+  if (pin !== "0000" || !resetListed(name)) return null;
   const first = slug(name).split(" ")[0];
-  if (PIN_RESETS.firstNames.indexOf(first) < 0) return null;
   const all = accounts(), exact = all[slug(name)];
-  if (exact) return exact;
-  const hits = Object.values(all).filter(a => slug(a.name).split(" ")[0] === first);
-  return hits.length === 1 ? hits[0] : null;
+  const hits = exact ? [exact] : Object.values(all).filter(a => slug(a.name).split(" ")[0] === first);
+  return hits.length === 1 && !resetUsed(hits[0]) ? hits[0] : null;
+}
+/* after signing in with the reset PIN 0000, the student picks a new PIN of their own */
+function chooseNewPin(acc){
+  return new Promise(done => {
+    const box = document.createElement("div");
+    box.style.cssText = "position:fixed;inset:0;background:rgba(14,26,48,.55);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px";
+    box.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:380px;width:100%;padding:20px 22px;box-shadow:0 10px 40px rgba(0,0,0,.3);font-family:inherit">' +
+      '<h3 style="margin:0 0 6px">Choose your new PIN</h3><p style="margin:0 0 12px;color:#3d4d6b">Your teacher reset your PIN. Pick a new 4-number PIN that only you know, and remember it.</p>' +
+      '<input id="npA" type="password" inputmode="numeric" maxlength="4" placeholder="New PIN" style="width:100%;font-size:1.1rem;padding:9px 11px;border:1px solid #c9d1e0;border-radius:9px;margin-bottom:8px">' +
+      '<input id="npB" type="password" inputmode="numeric" maxlength="4" placeholder="Type it again" style="width:100%;font-size:1.1rem;padding:9px 11px;border:1px solid #c9d1e0;border-radius:9px">' +
+      '<p id="npErr" style="color:#B3261E;min-height:1.3em;margin:8px 0"></p><button id="npOk" type="button" class="btn" style="width:100%">Save my new PIN</button></div>';
+    document.body.appendChild(box);
+    const a = box.querySelector("#npA"), b = box.querySelector("#npB"), e = box.querySelector("#npErr"); a.focus();
+    const go = async () => {
+      if (!/^\d{4}$/.test(a.value)){ e.textContent = "Your PIN must be exactly 4 numbers."; return; }
+      if (a.value === "0000"){ e.textContent = "Please choose a PIN that is not 0000."; return; }
+      if (a.value !== b.value){ e.textContent = "The two PINs don't match. Please type them again."; return; }
+      acc.pin = pinHash(acc.name, a.value); saveAccount(acc); store("pyl_pinreset_done_" + slug(acc.name), Date.now());
+      box.remove(); await ensureSync(acc, a.value); done(a.value);
+    };
+    box.querySelector("#npOk").onclick = go; b.addEventListener("keydown", x => { if (x.key === "Enter") go(); });
+  });
 }
 $("loginBtn").onclick = async () => {
-  const err = $("loginErr"), pin = $("loginPin").value;
+  const err = $("loginErr"); let pin = $("loginPin").value;
   const rs = resetAccount($("loginName").value, pin);
-  if (rs){ rs.pin = pinHash(rs.name, "0000"); saveAccount(rs); store("pyl_pinfail_" + slug(rs.name), {n:0, until:0}); $("loginName").value = rs.name; }
+  if (rs){ rs.pin = pinHash(rs.name, "0000"); saveAccount(rs); store("pyl_pinfail_" + slug(rs.name), {n:0, until:0}); store("pyl_pinfail_" + slug($("loginName").value), {n:0, until:0}); $("loginName").value = rs.name; }
   const name = $("loginName").value;
   let acc = accounts()[slug(name)];
   if (!acc && PPSync.enabled() && /^\d{4}$/.test(pin) && name.trim()){
@@ -1175,7 +1199,9 @@ $("loginBtn").onclick = async () => {
     try { acc = await restoreFromCloud(name, pin); } catch(e){}
     $("loginBtn").disabled = false; err.textContent = "";
   }
-  if (!acc){ err.textContent = "No account found for that name and PIN. Check the spelling and your PIN, or sign up if you are new."; return; }
+  if (!acc){ err.textContent = resetListed(name) && pin === "0000"
+      ? "Your account isn't saved on this computer yet. Sign in once on the computer you used before (type 0000 there), then you can sign in on any computer. If you can't, use Sign up to start on this computer."
+      : "No account found for that name and PIN. Check the spelling and your PIN. If you used a different computer before, sign in there once first so your progress is saved online."; return; }
   const lk = "pyl_pinfail_" + slug(name), f = load(lk, {n:0, until:0});
   if (f.until > Date.now()){ err.textContent = "Too many wrong PINs. This account is locked for " + Math.ceil((f.until - Date.now()) / 60000) + " more minute(s). Ask your teacher if you've forgotten your PIN."; $("loginPin").value = ""; return; }
   let pinOk = acc.pin === pinHash(name, pin);
@@ -1190,10 +1216,11 @@ $("loginBtn").onclick = async () => {
     if (f.n === 3 || f.n === 5) securityAlert("Repeated wrong PINs", f.n + " wrong PIN attempts for " + acc.name + "'s account on this computer" + (f.n >= 5 ? " (account locked for 1 minute)." : ".") + " This may be a forgotten PIN, or someone trying to get into another student's account." + (load("pyl_lastName", "") && slug(load("pyl_lastName", "")) !== slug(acc.name) ? " The last student signed in on this computer was " + load("pyl_lastName", "") + "." : ""),
       {name:acc.name, email:acc.email, grade:acc.grade, teacher:acc.teacher, path:acc.path});
     err.textContent = f.n >= 5 ? "Too many wrong PINs. This account is locked for 1 minute. Ask your teacher if you've forgotten your PIN." : "That PIN is not right. Try again, or ask your teacher for help.";
+    if (resetListed(acc.name) && !resetUsed(acc)) err.textContent += " Your teacher has reset your PIN: type 0000, then choose a new PIN.";
     $("loginPin").value = ""; return;
   }
   store(lk, {n:0, until:0});
-  await ensureSync(acc, pin);
+  if (rs && pin === "0000"){ err.textContent = ""; pin = await chooseNewPin(acc); } else await ensureSync(acc, pin);
   if (SDCG){
     $("loginBtn").disabled = true; err.textContent = "Checking your course…";
     let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
@@ -1850,7 +1877,7 @@ function snapshot(type, extra){
 function postForm(fields){
   const body = new URLSearchParams();
   Object.keys(fields).forEach(k => { if (FORM.entries[k]) body.append(FORM.entries[k], fields[k]); });
-  return fetch(FORM.url, {method:"POST", mode:"no-cors", body}).then(() => true).catch(() => false);
+  return gfSend(FORM.url, body);
 }
 function syncTeacher(type, extra){
   if (!formReady() || !profile) return;
@@ -2088,7 +2115,7 @@ function __postTo(cfg, fields){
   if (!cfg || !cfg.url || cfg.url.indexOf("docs.google.com/forms") < 0) return Promise.resolve(false);
   const body = new URLSearchParams();
   Object.keys(fields).forEach(k => { if (cfg.entries[k]) body.append(cfg.entries[k], fields[k]); });
-  return fetch(cfg.url, {method:"POST", mode:"no-cors", body}).then(() => true).catch(() => false);
+  return gfSend(cfg.url, body);
 }
 function __deviceStudent(){
   let accs = {}; try { accs = JSON.parse(localStorage.getItem("pyl_accounts") || "{}"); } catch(e){}
