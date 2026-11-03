@@ -199,9 +199,9 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261103i"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103i"></script>
-<script src="voice-recorder.js?v=20261103i"></script>
+<script src="pp-sync.js?v=20261103j"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103j"></script>
+<script src="voice-recorder.js?v=20261103j"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -710,7 +710,7 @@ const CS_LEVELS = g => +g >= 11 ? ["dp_beginner","dp_intermediate","dp_advanced"
 function changeCourseDialog(st){
   const a = st.acct || {}, bg = document.createElement("div"); bg.className = "modal-bg"; bg.style.zIndex = 80;
   const teachers = [...new Set(["Mr. Ahmed", "Ms. Abdelaziz", "Mr. French"].concat(Object.values(STUDENTS).map(x => (x.acct || {}).teacher).filter(Boolean)))];
-  bg.innerHTML = '<div class="modal" style="max-width:520px"><h2>✏️ Change course: ' + esc(a.name || "") + '</h2><p class="muted small" style="margin-top:6px">' + esc(a.email || "No email on record") + '. ' + esc((a.name || "").split(" ")[0]) + ' gets this at their next sign-in. If you choose another course, Computer Science closes for them.</p>' +
+  bg.innerHTML = '<div class="modal" style="max-width:520px"><h2>✏️ Change course: ' + esc(a.name || "") + '</h2><p class="muted small" style="margin-top:6px">' + esc(a.email || "No email on record") + '. ' + esc((a.name || "").split(" ")[0]) + ' gets this at their next sign-in. If you choose another course, Computer Science closes for them (Grades 6–8 can keep Computer Science and Design together).</p>' +
     '<div id="ccNow" class="small muted" style="margin-top:8px">Checking current settings…</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">' +
     '<label class="small" style="font-weight:700">Course<select class="t" id="ccC">' + Object.keys(COURSES_C).map(c => '<option value="' + c + '">' + COURSES_C[c].name + '</option>').join("") + '</select></label>' +
