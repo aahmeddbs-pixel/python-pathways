@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261102n"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261102n"></script>
+<script src="pp-sync.js?v=20261103a"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103a"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1142,7 +1142,7 @@ $("signBtn").onclick = async () => {
     $("signBtn").disabled = false; err.textContent = "";
     if (!ck.ok){ err.innerHTML = ck.msg; return; }
   }
-  profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), last:null};
+  profile = {name:niceName(name), email:email, cls:"", grade:chosenGrade, teacher:teacher, path:chosen, pin:pinHash(name, pin), created:Date.now(), yearOf:schoolYear(), last:null};
   if (wasDeleted){ profile.dk = PPSync.newKey(); profile.wrapFor = ""; }   // the old, deleted account's online copy is not brought back
   saveAccount(profile); store("pyl_lastName", profile.name);
   ensureSync(profile, pin);
@@ -1234,7 +1234,9 @@ $("loginBtn").onclick = async () => {
     $("loginPin").value = ""; return;
   }
   store(lk, {n:0, until:0});
+  promotePy(acc);
   if (rs && pin === "0000"){ err.textContent = ""; pin = await chooseNewPin(acc); } else await ensureSync(acc, pin);
+  promotePy(acc);   // the online copy may be from last school year
   if (SDCG){
     $("loginBtn").disabled = true; err.textContent = "Checking your course…";
     let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
@@ -1260,6 +1262,25 @@ $("switchBtn").onclick = () => {
 $("levelSel").onchange = e => { profile.path = e.target.value;
   if (isTesterAcc(profile) && !!PATHS[profile.path].dp !== isDPGrade(profile.grade)) profile.grade = PATHS[profile.path].dp ? "11" : "7";
   saveAccount(profile); openMap(); };
+/* previous years: view only (what they finished at each level), not classwork */
+function historyButton(){
+  let b = $("histBtn"); const H = (profile.history || []).filter(h => PATHS[h.path] && h.path !== profile.path);
+  if (!H.length){ if (b) b.remove(); return; }
+  if (!b){ b = el("button", "btn ghost", "📚 My previous years"); b.id = "histBtn"; b.style.marginLeft = "8px"; $("levelSel").parentNode.appendChild(b); b.onclick = showHistory; }
+}
+function showHistory(){
+  const H = (profile.history || []).filter(h => PATHS[h.path] && h.path !== profile.path).slice().reverse();
+  const bg = el("div", "modal-bg");
+  bg.innerHTML = '<div class="modal"><h2>📚 My previous years</h2><p class="muted" style="margin-top:4px">Your finished work from earlier years. It is kept for you to look back at; your classwork this year is ' + esc(PATHS[profile.path].name) + '.</p>' +
+    H.map(h => { const pr = load("pyl_" + h.path + "_" + slug(profile.name), {lessons:{}}), L = pr.lessons || {}, ns = Object.keys(L).map(Number).sort((a, b) => a - b);
+      const solved = ns.reduce((a, n) => a + solvedN(L[n]), 0);
+      return '<div style="margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px"><b>Grade ' + esc(h.grade) + ' · Python ' + esc(PATHS[h.path].name) + '</b>' + (h.year ? ' <span class="muted">(' + h.year + "–" + String(h.year + 1).slice(2) + ')</span>' : "") +
+        '<div class="muted" style="margin-top:4px">' + solved + ' exercise' + (solved === 1 ? "" : "s") + ' completed in ' + ns.length + ' lesson' + (ns.length === 1 ? "" : "s") + '</div>' +
+        (ns.length ? '<ul style="margin:8px 0 0 18px">' + ns.map(n => { const les = (DATA.lessons[h.path] || [])[n - 1]; return '<li>Lesson ' + n + (les && les.title ? ": " + esc(les.title) : "") + ' · ' + solvedN(L[n]) + ' solved</li>'; }).join("") + '</ul>' : "") + '</div>'; }).join("") +
+    '<button class="btn" style="margin-top:16px">Close</button></div>';
+  bg.querySelector(".modal > .btn").onclick = () => bg.remove(); bg.addEventListener("click", e => { if (e.target === bg) bg.remove(); });
+  document.body.appendChild(bg);
+}
 /* test student: choose any grade and any level */
 function testerPickers(){
   const lvl = $("levelSel"), on = isTesterAcc(profile);
@@ -1302,7 +1323,7 @@ let syncDirty = false, syncBusy = false;
 function syncMark(){ if (profile && profile.dk) syncDirty = true; }
 const SYNC_SKIP = new Set(["activeMs", "ms", "nudges"]);   // timers change every second; they ride along with the next real change
 function bundleNow(){
-  const acct = {}; ["name", "email", "cls", "grade", "teacher", "path", "created", "last"].forEach(k => { if (profile[k] !== undefined) acct[k] = profile[k]; });
+  const acct = {}; ["name", "email", "cls", "grade", "teacher", "path", "created", "last", "yearOf", "history"].forEach(k => { if (profile[k] !== undefined) acct[k] = profile[k]; });
   const progress = {};
   Object.keys(PATHS).forEach(p => { const v = p === profile.path ? prog : load("pyl_" + p + "_" + slug(profile.name), null); if (v && v.lessons && Object.keys(v.lessons).length) progress[p] = v; });
   return {acct, progress};
@@ -1336,7 +1357,8 @@ function applyBundle(acc, bundle, withAcct){
   const a = (bundle && bundle.acct) || {}, cap = (v, n) => String(v == null ? "" : v).slice(0, n);
   acc.name = acc.name || cap(a.name, 60);
   if (withAcct){ acc.email = cap(a.email, 80); acc.cls = cap(a.cls, 20); acc.grade = cap(a.grade, 4); acc.teacher = cap(a.teacher, 40);
-    if (PATHS[a.path]) acc.path = a.path; if (a.created) acc.created = +a.created || acc.created; if (a.last && typeof a.last === "object") acc.last = a.last; }
+    if (PATHS[a.path]) acc.path = a.path; if (a.created) acc.created = +a.created || acc.created; if (a.last && typeof a.last === "object") acc.last = a.last;
+    if (+a.yearOf) acc.yearOf = +a.yearOf; if (Array.isArray(a.history)) acc.history = a.history.slice(0, 12).filter(h => h && PATHS[h.path]).map(h => ({grade:cap(h.grade, 4), path:h.path, year:+h.year || 0})); }
   Object.keys((bundle && bundle.progress) || {}).forEach(p => { if (!PATHS[p] || !bundle.progress[p] || !bundle.progress[p].lessons) return;
     const k = "pyl_" + p + "_" + slug(acc.name), loc = load(k, null); store(k, loc && loc.lessons ? mergeProg(loc, bundle.progress[p]) : bundle.progress[p]); });
 }
@@ -1433,7 +1455,7 @@ function openMap(){
   setGradeTheme(profile.grade || "7");
   $("levelSel").innerHTML = pathsForGrade(profile.grade).concat(pathsForGrade(profile.grade).indexOf(profile.path) < 0 ? [profile.path] : []).map(p => '<option value="' + p + '">' + PATHS[p].name + "</option>").join("");
   $("levelSel").value = profile.path;
-  testerPickers();
+  testerPickers(); historyButton();
   $("whoPill").textContent = "👤 " + profile.name + " • G" + (profile.grade || "") + " • " + (profile.teacher || "") + (isTesterAcc(profile) ? " • TEST" : "");
   updatePills();
   $("mapBadge").textContent = P.l; $("mapBadge").style.background = P.c;
@@ -2320,11 +2342,34 @@ window.SDC_forget = a => {
   if (slug(load("pyl_lastName", "")) === k) store("pyl_lastName", "");
 };
 function sdcTask(title, kind){ if (SDCG && profile) SDC.task(sdcAcct(profile), title, LEVEL_WEIGHT[profile.path] || 1, kind); }
+/* ---------- school years: on 1 September every student moves up a grade and up a level ----------
+   Beginner → Intermediate → Advanced (IB DP the same); Grade 10 → 11 starts IB DP Beginner.
+   Last year's level stays as history: they can look at it, but it is no longer their classwork. */
+const schoolYear = t => (window.SDC && SDC.ay) ? SDC.ay(t) : (d => d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1)(new Date(t == null ? Date.now() : t));
+const PATH_UP = {beginner:"intermediate", intermediate:"advanced", advanced:"advanced", dp_beginner:"dp_intermediate", dp_intermediate:"dp_advanced", dp_advanced:"dp_advanced"};
+function promotePy(acc){
+  if (!acc || isTesterAcc(acc)) return false;
+  const now = schoolYear();
+  if (!acc.yearOf) acc.yearOf = schoolYear(acc.created || Date.now());
+  const yrs = now - acc.yearOf; if (yrs <= 0) return false;
+  let g = parseInt(acc.grade, 10); acc.history = acc.history || [];
+  for (let i = 0; i < yrs; i++){
+    if (!acc.history.some(h => h.path === acc.path && h.grade === String(g))) acc.history.push({grade:String(isNaN(g) ? acc.grade : g), path:acc.path, year:acc.yearOf + i});
+    if (isNaN(g)) break;
+    const ng = Math.min(12, g + 1);
+    acc.path = isDPGrade(ng) && !isDPGrade(g) ? "dp_beginner" : (PATH_UP[acc.path] || acc.path);
+    g = ng;
+  }
+  if (!isNaN(g)) acc.grade = String(g);
+  acc.yearOf = now; saveAccount(acc); return true;
+}
 function applyAssign(acc, A){
   let changed = false;
-  if (A.g && String(A.g) !== String(acc.grade)){ acc.grade = String(A.g); changed = true; }
+  const stale = !!(A.at && schoolYear(A.at) < schoolYear());   // set last school year: the grade has moved up since, the level too
+  const ag = A.g ? String(window.SDC && SDC.rolled ? SDC.rolled(A.g, A.at) : A.g) : "";
+  if (ag && ag !== String(acc.grade)){ acc.grade = ag; changed = true; }
   if (A.t && A.t !== acc.teacher){ acc.teacher = A.t; changed = true; }
-  if (A.l && PATHS[A.l] && pathsForGrade(acc.grade).indexOf(A.l) >= 0 && A.l !== acc.path){ acc.path = A.l; changed = true; }
+  if (!stale && A.l && PATHS[A.l] && pathsForGrade(acc.grade).indexOf(A.l) >= 0 && A.l !== acc.path){ acc.path = A.l; changed = true; }
   if (pathsForGrade(acc.grade).indexOf(acc.path) < 0){ acc.path = pathsForGrade(acc.grade)[0]; changed = true; }
   if (changed){ saveAccount(acc); setTimeout(() => { try { syncTeacher("progress"); } catch(e){} }, 1500); }
 }
