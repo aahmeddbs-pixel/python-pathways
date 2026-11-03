@@ -199,9 +199,9 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261103j"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103j"></script>
-<script src="voice-recorder.js?v=20261103j"></script>
+<script src="pp-sync.js?v=20261103k"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103k"></script>
+<script src="voice-recorder.js?v=20261103k"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -717,7 +717,7 @@ function changeCourseDialog(st){
     '<label class="small" style="font-weight:700">Grade<select class="t" id="ccG"></select></label>' +
     '<label class="small" style="font-weight:700" id="ccLRow">Level<select class="t" id="ccL"></select></label>' +
     '<label class="small" style="font-weight:700">Teacher<select class="t" id="ccT">' + teachers.map(t => '<option>' + esc(t) + '</option>').join("") + '</select></label></div>' +
-    (SIGKEY ? '' : '<p class="small" style="margin-top:10px;color:var(--red)">Still unlocking (a few seconds)… If this stays, lock the admin page and sign in again.</p>') +
+    (SIGKEY ? '' : '<label class="small" style="font-weight:700;display:block;margin-top:10px">Admin password (needed once after the page was reopened)<input class="t" id="ccPw" type="password" autocomplete="off"></label>') +
     '<div id="ccMsg" class="small" style="margin-top:10px;font-weight:700"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="ccGo">Save change</button><button class="btn ghost" id="ccX">Close</button></div></div>';
   document.body.appendChild(bg);
   const q = x => bg.querySelector(x), close = () => bg.remove();
@@ -733,7 +733,13 @@ function changeCourseDialog(st){
     .catch(() => { q("#ccNow").textContent = "Couldn't check the current settings (no connection). You can still save."; });
   q("#ccGo").onclick = async () => {
     const m = (t, ok) => q("#ccMsg").innerHTML = '<span style="color:' + (ok ? "#13a05a" : "var(--red)") + '">' + t + '</span>';
-    if (!SIGKEY) return m("Still unlocking. Try again in a few seconds.", false);
+    if (!SIGKEY){
+      const pw = (q("#ccPw") || {}).value || ""; if (!pw) return m("Type the admin password, then press Save change.", false);
+      q("#ccGo").disabled = true; m("Checking the password… (a few seconds)", true);
+      try { SIGKEY = await unlockSig(pw); } catch(e){ SIGKEY = null; }
+      q("#ccGo").disabled = false;
+      if (!SIGKEY) return m("That password is not right.", false);
+    }
     if (!window.SDC) return m("The platform couldn't be reached. Check the internet connection.", false);
     const c = q("#ccC").value, g = q("#ccG").value, l = c === "cs" ? q("#ccL").value : "", t = q("#ccT").value;
     q("#ccGo").disabled = true;
