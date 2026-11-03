@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261103x"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103x"></script>
+<script src="pp-sync.js?v=20261103y"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103y"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1257,6 +1257,7 @@ $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("login
 $("switchBtn").onclick = () => signOutCS(false);
 /* switching = going to the other course: save and sign out here, but keep the link so they don't sign in again */
 function signOutCS(switching){
+  try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
   saveCode(); rememberPos(); stopClock(); if (prog) syncTeacher("progress"); syncNow(true); profile = null; prog = null; cur = {lesson:null, step:0};
   $("loginName").value = load("pyl_lastName", ""); $("loginPin").value = "";
   ["inName", "inEmail", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
@@ -1488,6 +1489,7 @@ function updatePills(){
   if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
 }
 function openMap(){
+  try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
   try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); } catch(e){}
   prog = load(progKey(), {lessons:{}});
   const P = PATHS[profile.path];
@@ -1571,7 +1573,7 @@ function renderSteps(){
   });
   renderMastery();
 }
-function goStep(i){ try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
+function goStep(i){ try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){} try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); speechSynthesis.cancel(); } catch(e){} saveCode(); cur.step = i; renderSteps(); renderStep(); window.scrollTo({top:0, behavior:"smooth"}); }
 
 let ed = null; // current editor {ta, get, set}
 function makeEditor(initial, label){
@@ -1636,6 +1638,7 @@ function renderStep(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), body = $("stepBody");
   rememberPos();
   body.innerHTML = ""; ed = null;
+  try { if (window.SDC && SDC.slow && !(cur.step >= 2 && cur.step <= PRACTICE)) SDC.slow.stop(); } catch(e){}
   if (cur.step === VIDEO){ renderConceptVideo(body, L, s); return; }
   if (cur.step === 0){
     body.innerHTML = '<h2>📖 Learn</h2><div class="goalbox">🎯 Learning goal: ' + L.goal + '</div><div class="learn">' + L.learn + '</div>';
@@ -1668,6 +1671,7 @@ function renderStep(){
     const isP = cur.step === PRACTICE;
     if (isP && !s.prac.cur) newPractice(cur.lesson, s);
     const k = cur.step - 2, Q = isP ? s.prac.cur : exQ(s, L.ex[k]), qn = isP ? Q.id : L.ex[k];
+    try { if (SDCG && window.SDC && SDC.slow){ if (s.solved[qn]) SDC.slow.stop(); else SDC.slow.start("cs|" + profile.path + "|" + cur.lesson + "|" + qn, "Lesson " + cur.lesson + ": " + Q.title, sdcAcct(profile), [6, 12, 18]); } } catch(e){}   // taking too long on one exercise
     const m0 = mastery(L, s);
     const head = isP ? 'PRACTICE QUESTION ' + s.prac.count + ' • ' + m0.prac + ' solved' + (m0.prac < m0.need ? ' (' + m0.need + ' needed to submit)' : ' ✓') : 'EXERCISE ' + (k + 1) + ' OF 3';
     body.innerHTML = '<div class="muted" style="font-weight:800">' + head + '</div><h2>' + Q.title + '</h2>' + (isP ? '<p class="muted" style="margin-top:4px">Unlimited practice: every question is new, with different numbers and words.</p>' : '') + '<div class="task" style="margin-top:8px">' + Q.task + '</div>';
@@ -1715,7 +1719,7 @@ function renderStep(){
       const hpBefore = houseTotal(), eligBefore = mastery(L, s).eligible;
       if (r.passed){
         const first = !s.solved[qn];
-        s.solved[qn] = true;
+        s.solved[qn] = true; try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
         if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); }
         if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); sdcTask("L" + cur.lesson + " " + (isP ? "practice" : "exercise") + ": " + Q.title, isP ? "practice" : "exercise"); }
         if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)});
