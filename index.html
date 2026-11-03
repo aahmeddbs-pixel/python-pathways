@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261103y"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103y"></script>
+<script src="pp-sync.js?v=20261103z"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103z"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -261,6 +261,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
     <button class="btn ghost" id="exportBtn">💾 Save my progress file</button><span class="muted" style="font-size:.88rem">Use this to move to another computer.</span></div>
   <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
   <div class="lessons" id="lessonList"></div>
+  <div id="rankBox" style="margin-top:18px"></div>
   <p class="foot">Your work is saved automatically every few seconds, on this computer and online, so you can sign in on any computer and carry on. It is sent to your teacher when you submit.</p>
 </div>
 
@@ -1519,7 +1520,7 @@ function openMap(){
   });
   const pct = Math.round(solvedAll / 30 * 100);
   $("mapBar").style.width = pct + "%"; $("mapPct").textContent = pct + "%";
-  show("map");
+  show("map"); rankShow();
 }
 $("backMap").onclick = () => { saveCode(); stopClock(); openMap(); };
 
@@ -1720,7 +1721,7 @@ function renderStep(){
       if (r.passed){
         const first = !s.solved[qn];
         s.solved[qn] = true; try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
-        if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); }
+        if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); setTimeout(rankReport, 500); }
         if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); sdcTask("L" + cur.lesson + " " + (isP ? "practice" : "exercise") + ": " + Q.title, isP ? "practice" : "exercise"); }
         if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)});
         saveProg();
@@ -2396,6 +2397,16 @@ window.SDC_forget = a => {
   ["pyl_pinfail_", "pyl_pinreset_done_"].forEach(x => { try { localStorage.removeItem(x + k); } catch(e){} });
   if (slug(load("pyl_lastName", "")) === k) store("pyl_lastName", "");
 };
+/* weekly class rankings: exercises completed (overall, this week, last week) */
+function csCounts(){
+  const out = { total:0, week:0, last:0 }; if (!prog || !window.SDC || !SDC.rank) return out;
+  const w = SDC.rank.weekId(), pw = SDC.rank.prevWeek(w);
+  Object.values(prog.lessons || {}).forEach(s => { out.total += Object.values(s.solved || {}).filter(Boolean).length;
+    Object.values(s.solvedAt || {}).forEach(t => { const k = SDC.rank.weekId(t); if (k === w) out.week++; else if (k === pw) out.last++; }); });
+  return out;
+}
+function rankReport(){ try { if (SDCG && profile && prog && SDC.rank) SDC.rank.report(sdcAcct(profile), csCounts()); } catch(e){} }
+function rankShow(){ try { if (SDCG && profile && SDC.rank){ rankReport(); setTimeout(() => SDC.rank.mount($("rankBox"), sdcAcct(profile)), 1500); } } catch(e){} }
 function sdcTask(title, kind){ if (SDCG && profile) SDC.task(sdcAcct(profile), title, LEVEL_WEIGHT[profile.path] || 1, kind); }
 /* ---------- school years: on 1 September every student moves up a grade and up a level ----------
    Beginner → Intermediate → Advanced (IB DP the same); Grade 10 → 11 starts IB DP Beginner.
