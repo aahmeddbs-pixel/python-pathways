@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261103q"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103q"></script>
+<script src="pp-sync.js?v=20261103s"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103s"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -2423,6 +2423,7 @@ if (SDCG){
     // teachers approved by the super admin appear in the list too
     SDC.teacherNames().then(names => { const sel = $("inTeacher"), have = [...sel.options].map(o => o.textContent);
       names.forEach(n => { if (!have.some(h => SDC.sameTeacher(h, n))){ const o = document.createElement("option"); o.textContent = n; sel.appendChild(o); } }); }).catch(() => {});
+    SDC.hiddenTeacherNames().then(hide => { [...$("inTeacher").options].forEach(o => { if (o.value !== "" && hide.some(n => SDC.sameTeacher(n, o.textContent))) o.remove(); }); }).catch(() => {});   // taken out of the list by the super admin
     document.querySelector('.tab[data-tab="up"]').click();
     if (tabs) tabs.classList.add("hidden");
     const chip = document.querySelector('#gradeChips .chip[data-g="' + SDCG.grade + '"]');
