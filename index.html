@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261103k"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261103k"></script>
+<script src="pp-sync.js?v=20261103l"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103l"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1156,7 +1156,7 @@ $("signBtn").onclick = async () => {
   }
   openMap();
   say("Welcome to Python Pathways, " + profile.name.split(" ")[0] + "! You can do it!", 300);
-  setTimeout(() => showHowTo(true), 2500);
+  setTimeout(() => { if (profile) showHowTo(true); }, 2500);
 };
 /* Teacher PIN resets: these students can sign in with PIN 0000 until the date below.
    Matched on first name (the only account with that first name on this computer), so a
@@ -1258,7 +1258,8 @@ $("switchBtn").onclick = () => {
   ["inName", "inEmail", "inPin", "inPin2"].forEach(id => $(id).value = ""); $("inTeacher").value = "";
   chosenGrade = chosen = null; document.querySelectorAll(".chip, .path").forEach(x => x.classList.remove("on")); showPathsFor(null);
   document.querySelector('.tab[data-tab="in"]').click();
-  if (SDCG) return SDC.leave("out");
+  document.querySelectorAll(".modal-bg").forEach(m => m.remove()); try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); } catch(e){}   // close any open video or message
+  if (SDCG){ SDCG.mode = "signin"; SDC.patchGate({ mode:"signin", logged:false }); }
   show("signin");
 };
 $("levelSel").onchange = e => { profile.path = e.target.value;
@@ -1386,6 +1387,8 @@ function show(id){
   ["signin", "map", "lesson"].forEach(s => $(s).classList.toggle("hidden", s !== id));
   const inApp = id !== "signin";
   ["whoPill", "switchBtn", "ptsPill", "housePill"].forEach(x => $(x).classList.toggle("hidden", !inApp));
+  $("adminBtn").classList.toggle("hidden", inApp);   // students never see the Admin button once signed in
+  if (SDCG){ $("switchBtn").classList.add("hidden"); try { SDC.setSignedIn(inApp); } catch(e){} }   // the platform bar has the Sign out / Sign in button
   if (id !== "lesson") $("clockPill").classList.add("hidden");
   window.scrollTo(0, 0);
 }
@@ -2376,7 +2379,8 @@ function applyAssign(acc, A){
   if (changed){ saveAccount(acc); setTimeout(() => { try { syncTeacher("progress"); } catch(e){} }, 1500); }
 }
 if (SDCG){
-  try { SDC.strip("cs", () => { if (profile) $("switchBtn").click(); else SDC.leave("out"); }, false, "#signin, #map, #lesson"); } catch(e){}
+  try { SDC.strip("cs", () => { if (profile) $("switchBtn").click(); }, false, "#signin, #map, #lesson",
+    () => { show("signin"); document.querySelector('.tab[data-tab="in"]').click(); const n = $("loginName"); if (n){ n.focus(); n.scrollIntoView({ block:"center" }); } }); } catch(e){}
   try { if (SDC.listen) SDC.listen("#stepBody:not(:has(video)):not(:has(.sumtable)):not(:has(.lockbox))", "", true); } catch(e){}   // Read to me only on the steps with something to learn or do: Learn, Example, Exercises, Practice
   document.querySelector(".brand") && (document.title = "Computer Science · SISD Design and Computing");
   const lvl = $("levelSel"); lvl.classList.add("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.add("hidden");
@@ -2395,7 +2399,7 @@ if (SDCG){
   } else {
     document.querySelector('.tab[data-tab="in"]').click();
     if (tabs) tabs.classList.add("hidden");
-    $("tabIn").insertAdjacentHTML("afterbegin", '<p class="small" style="margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#eef1f7;color:#1B2D4E;font-weight:700">Signing into <b>Computer Science</b>. Your teacher can see which course you sign into. New here? Use <b>Change course / sign out</b> at the top and choose Sign up.</p>');
+    $("tabIn").insertAdjacentHTML("afterbegin", '<p class="small" style="margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#eef1f7;color:#1B2D4E;font-weight:700">Signing into <b>Computer Science</b>. Your teacher can see which course you sign into. New here? Open <b>Change course</b> at the top and choose <b>＋ Sign up for a course</b>.</p>');
   }
 }
 
