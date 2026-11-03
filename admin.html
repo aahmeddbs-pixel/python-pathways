@@ -199,8 +199,9 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261103h"></script>
-<script src="voice-recorder.js?v=20261103h"></script>
+<script src="pp-sync.js?v=20261103i"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261103i"></script>
+<script src="voice-recorder.js?v=20261103i"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -314,6 +315,7 @@ $("gateBtn").onclick = async () => {
     try { sessionStorage.setItem("pyl_admin_key", u8b64(raw)); } catch(e){}
     __fails = 0; clearFails(); $("gateErr").textContent = ""; openApp();
     PPSync.recoveryKey(pw).then(k => { RESET_KEY = k; }).catch(() => {});   // kept in memory only, for Reset PIN
+    unlockSig(pw).then(k => { SIGKEY = k; if ($("tbl")) render(); }).catch(() => { SIGKEY = null; });   // for Change course
   } catch(e){
     __fails++; noteFail();
     const w2 = lockLeft();
@@ -679,19 +681,72 @@ function render(){
       '<td><b>' + x.solved + '</b> <span class="muted small">(' + x.coreDone + ' lesson, ' + (x.solved - x.coreDone) + ' practice)</span></td>' +
       '<td><b>' + x.house + '</b><div class="bar" title="' + x.into + ' / ' + x.every + ' to next"><i style="width:' + Math.round(x.into / x.every * 100) + '%"></i></div></td>' +
       '<td>' + fmtAvg(x.avgTask) + '</td><td>' + fmtDate(x.lastAt) + '</td>' +
-      '<td><div class="acts"><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm ghost" data-rpin="' + i + '">🔑 Reset PIN</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
+      '<td><div class="acts"><button class="btn sm" data-cc="' + i + '" title="Change course, grade, level or teacher">✏️ Change course</button><button class="btn sm ghost" data-view="' + i + '">👁 View</button><button class="btn sm" data-pdf="' + i + '">📄 PDF</button><button class="btn sm ghost" data-rpin="' + i + '">🔑 Reset PIN</button><button class="btn sm red" data-mail="' + i + '"' + (a.email ? "" : " disabled") + '>📧 Email</button><button class="btn sm ghost" data-pinmail="' + i + '"' + (a.email && st.pin ? "" : " disabled") + '>🔑 PIN</button></div></td></tr>';
   });
   if (!L.length) html += '<tr><td colspan="10" class="muted">No students match these filters.</td></tr>';
   $("tbl").innerHTML = html;
   $("tbl").querySelectorAll("[data-pin]").forEach(b => b.onclick = () => { const st = L[+b.dataset.pin]; b.textContent = b.textContent === "••••" ? st.pin : "••••"; });
   $("tbl").querySelectorAll("[data-view]").forEach(b => b.onclick = () => viewStudent(L[+b.dataset.view]));
   $("tbl").querySelectorAll("[data-rpin]").forEach(b => b.onclick = () => resetPinDialog(L[+b.dataset.rpin]));
+  $("tbl").querySelectorAll("[data-cc]").forEach(b => b.onclick = () => changeCourseDialog(L[+b.dataset.cc]));
   $("tbl").querySelectorAll("[data-pdf]").forEach(b => b.onclick = () => downloadPdf(L[+b.dataset.pdf]));
   $("tbl").querySelectorAll("[data-mail]").forEach(b => b.onclick = () => emailProgress(L[+b.dataset.mail]));
   $("tbl").querySelectorAll("[data-pinmail]").forEach(b => b.onclick = () => emailPin(L[+b.dataset.pinmail]));
 }
 /* ---------------- Reset a student's PIN (works on every computer, progress kept) ---------------- */
 let RESET_KEY = null;
+/* ---- Change course: the admin's signed change (same as the staff dashboard), read by the student at their next sign-in ---- */
+const WRAP = {"iter":600000,"salt":"MVkn8WJRApLor1E8Nn+0fw==","iv":"sH/H8GF0OfhpDWaF","ct":"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"};
+let SIGKEY = null;
+async function unlockSig(pw){
+  const u = s => Uint8Array.from(atob(s), c => c.charCodeAt(0)), TE2 = new TextEncoder();
+  const base = await crypto.subtle.importKey("raw", TE2.encode(pw), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({ name:"PBKDF2", salt:u(WRAP.salt), iterations:WRAP.iter, hash:"SHA-256" }, base, { name:"AES-GCM", length:256 }, false, ["decrypt"]);
+  const priv = JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name:"AES-GCM", iv:u(WRAP.iv) }, key, u(WRAP.ct))));
+  return crypto.subtle.importKey("jwk", priv.sig, { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]);
+}
+const COURSES_C = { cs:{ name:"Computer Science", grades:["6","7","8","9","10","11","12"] }, design:{ name:"Design", grades:["6","7","8","10"] }, it:{ name:"IT", grades:["10"] } };
+const CS_LEVELS = g => +g >= 11 ? ["dp_beginner","dp_intermediate","dp_advanced"] : ["beginner","intermediate","advanced"];
+function changeCourseDialog(st){
+  const a = st.acct || {}, bg = document.createElement("div"); bg.className = "modal-bg"; bg.style.zIndex = 80;
+  const teachers = [...new Set(["Mr. Ahmed", "Ms. Abdelaziz", "Mr. French"].concat(Object.values(STUDENTS).map(x => (x.acct || {}).teacher).filter(Boolean)))];
+  bg.innerHTML = '<div class="modal" style="max-width:520px"><h2>✏️ Change course: ' + esc(a.name || "") + '</h2><p class="muted small" style="margin-top:6px">' + esc(a.email || "No email on record") + '. ' + esc((a.name || "").split(" ")[0]) + ' gets this at their next sign-in. If you choose another course, Computer Science closes for them.</p>' +
+    '<div id="ccNow" class="small muted" style="margin-top:8px">Checking current settings…</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">' +
+    '<label class="small" style="font-weight:700">Course<select class="t" id="ccC">' + Object.keys(COURSES_C).map(c => '<option value="' + c + '">' + COURSES_C[c].name + '</option>').join("") + '</select></label>' +
+    '<label class="small" style="font-weight:700">Grade<select class="t" id="ccG"></select></label>' +
+    '<label class="small" style="font-weight:700" id="ccLRow">Level<select class="t" id="ccL"></select></label>' +
+    '<label class="small" style="font-weight:700">Teacher<select class="t" id="ccT">' + teachers.map(t => '<option>' + esc(t) + '</option>').join("") + '</select></label></div>' +
+    (SIGKEY ? '' : '<p class="small" style="margin-top:10px;color:var(--red)">Still unlocking (a few seconds)… If this stays, lock the admin page and sign in again.</p>') +
+    '<div id="ccMsg" class="small" style="margin-top:10px;font-weight:700"></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn" id="ccGo">Save change</button><button class="btn ghost" id="ccX">Close</button></div></div>';
+  document.body.appendChild(bg);
+  const q = x => bg.querySelector(x), close = () => bg.remove();
+  q("#ccX").onclick = close; bg.addEventListener("click", e => { if (e.target === bg) close(); });
+  const fill = () => { const c = q("#ccC").value, g0 = q("#ccG").value; q("#ccG").innerHTML = COURSES_C[c].grades.map(g => '<option value="' + g + '">Grade ' + g + '</option>').join("");
+    if (COURSES_C[c].grades.indexOf(g0) >= 0) q("#ccG").value = g0;
+    const l0 = q("#ccL").value; q("#ccLRow").style.display = c === "cs" ? "" : "none";
+    q("#ccL").innerHTML = CS_LEVELS(q("#ccG").value).map(l => '<option value="' + l + '">' + esc(PATH_NAMES[l] || l) + '</option>').join(""); if ([...q("#ccL").options].some(o => o.value === l0)) q("#ccL").value = l0; };
+  q("#ccC").value = "cs"; fill(); if (a.grade) q("#ccG").value = String(a.grade); fill(); if (a.path) q("#ccL").value = a.path; if (a.teacher && teachers.indexOf(a.teacher) >= 0) q("#ccT").value = a.teacher;
+  q("#ccC").onchange = fill; q("#ccG").onchange = fill;
+  if (window.SDC) SDC.lookup(a.email || "", a.name || "").then(L => { const A = L.assign;
+    q("#ccNow").textContent = A && A.del ? "This account was deleted." : A ? "Last changed by an admin: " + (COURSES_C[A.c] ? COURSES_C[A.c].name : A.c) + ", Grade " + A.g + (A.l ? " · " + (PATH_NAMES[A.l] || A.l) : "") + (A.t ? " · " + A.t : "") : "Currently: Computer Science (set when they signed up)."; })
+    .catch(() => { q("#ccNow").textContent = "Couldn't check the current settings (no connection). You can still save."; });
+  q("#ccGo").onclick = async () => {
+    const m = (t, ok) => q("#ccMsg").innerHTML = '<span style="color:' + (ok ? "#13a05a" : "var(--red)") + '">' + t + '</span>';
+    if (!SIGKEY) return m("Still unlocking. Try again in a few seconds.", false);
+    if (!window.SDC) return m("The platform couldn't be reached. Check the internet connection.", false);
+    const c = q("#ccC").value, g = q("#ccG").value, l = c === "cs" ? q("#ccL").value : "", t = q("#ccT").value;
+    q("#ccGo").disabled = true;
+    try {
+      const id = await SDC.idOf(a.email || "", a.name || ""), o = { k:id, c, g, t, l, cls:"", at: Date.now() }, json = JSON.stringify(o);
+      const sig = new Uint8Array(await crypto.subtle.sign({ name:"ECDSA", hash:"SHA-256" }, SIGKEY, new TextEncoder().encode(json)));
+      SDC.sendRow("S", id, SDC._internal.u8ToB64Text(json) + "." + SDC._internal.e64(sig)); SDC.flush();
+      SDC.log("adminchange", { name:"(admin)", course:c, grade:g, teacher:t }, { student:{ name:a.name, email:a.email || "" }, to:{ c, g, l, t }, from:{ c:"cs", g:a.grade || "", l:a.path || "", t:a.teacher || "" } });
+      m("✅ Saved. " + esc((a.name || "").split(" ")[0]) + " gets this at their next sign-in.", true);
+    } catch(e){ m("Couldn't save: " + esc(e.message), false); }
+    q("#ccGo").disabled = false;
+  };
+}
 function resetPinDialog(st){
   const a = st.acct || {}, bg = document.createElement("div"); bg.className = "modal-bg"; bg.style.zIndex = 80;
   const pin = String(1000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 9000));
