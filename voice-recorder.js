@@ -44,7 +44,7 @@ function build(){
       <div><video id="vrVid" playsinline preload="metadata" muted style="width:100%;border-radius:12px;background:#000;display:block"></video>
         <div id="vrCount" style="font-size:2.4rem;font-weight:800;text-align:center;min-height:0"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-          <button class="btn red" id="vrRec">● Record</button><button class="btn ghost hidden" id="vrStop">■ Stop</button>
+          <button class="btn red" id="vrRec">● Record</button><button class="btn ghost hidden" id="vrPause">❚❚ Pause</button><button class="btn ghost hidden" id="vrStop">■ Stop</button>
           <button class="btn ghost hidden" id="vrPlay">▶ Play back with the video</button><a class="btn green hidden" id="vrDl" download>⬇ Download my recording</a>
         </div>
         <div id="vrMsg" class="small" style="margin-top:8px;font-weight:700"></div></div>
@@ -67,7 +67,7 @@ function build(){
     $("vrScript").querySelectorAll("li").forEach((li, i) => { const on = i === k; if (on && !li.classList.contains("on")) li.parentNode.scrollTop = Math.max(0, li.offsetTop - li.parentNode.offsetTop - 40); li.classList.toggle("on", on); }); };
   v.addEventListener("timeupdate", highlight);
   const reset = () => { if (audio){ audio.pause(); audio = null; } if (blobUrl){ URL.revokeObjectURL(blobUrl); blobUrl = ""; }
-    ["vrPlay", "vrDl", "vrStop"].forEach(x => $(x).classList.add("hidden")); $("vrHow").classList.add("hidden"); $("vrRec").classList.remove("hidden"); $("vrRec").textContent = "● Record"; msg(""); };
+    ["vrPlay", "vrDl", "vrStop", "vrPause"].forEach(x => $(x).classList.add("hidden")); $("vrHow").classList.add("hidden"); $("vrRec").classList.remove("hidden"); $("vrRec").textContent = "● Record"; msg(""); };
   const choose = async () => {
     reset(); cur = VIDEOS[+sel.value]; v.pause(); v.src = cur.src; v.poster = cur.poster; v.currentTime = 0; paintScript(); highlight();
     $("vrHave").textContent = "Checking…"; const f = await existing(cur.name);
@@ -76,7 +76,17 @@ function build(){
   loadVideos().then(list => { sel.innerHTML = list.map((x, i) => `<option value="${i}">${esc(x.label)}</option>`).join(""); choose(); })
     .catch(() => { sel.innerHTML = "<option>Couldn't load the video list</option>"; });
   sel.onchange = () => { if (!recording) choose(); else sel.value = String(VIDEOS.indexOf(cur)); };
-  const finish = () => { if (!recording) return; recording = false; try { rec.stop(); } catch(e){} v.pause(); $("vrStop").classList.add("hidden"); };
+  let paused = false;
+  const finish = () => { if (!recording) return; recording = false; paused = false; try { rec.stop(); } catch(e){} v.pause(); $("vrStop").classList.add("hidden"); $("vrPause").classList.add("hidden"); };
+  /* pause midway and carry on: the recording and the video stop and start together */
+  $("vrPause").onclick = async () => {
+    if (!recording) return;
+    if (!paused){ try { rec.pause(); } catch(e){} v.pause(); paused = true; $("vrPause").textContent = "▶ Continue"; msg("⏸ Paused. Press <b>Continue</b> when you're ready: the video carries on from the same moment."); return; }
+    $("vrPause").disabled = true;
+    for (const n of ["3", "2", "1"]){ $("vrCount").textContent = n; await new Promise(r => setTimeout(r, 700)); if (!recording) return; }
+    $("vrCount").textContent = ""; paused = false; try { rec.resume(); } catch(e){} v.play().catch(() => {});
+    $("vrPause").disabled = false; $("vrPause").textContent = "❚❚ Pause"; msg("🔴 Recording again… read each highlighted line.");
+  };
   v.addEventListener("ended", finish);
   $("vrStop").onclick = finish;
   $("vrRec").onclick = async () => {
@@ -100,7 +110,7 @@ function build(){
     v.muted = true; v.pause(); v.currentTime = 0; highlight();
     for (const n of ["3", "2", "1"]){ $("vrCount").textContent = n; await new Promise(r => setTimeout(r, 800)); }
     $("vrCount").textContent = ""; sel.disabled = false;
-    recording = true; rec.start(250); v.play().catch(() => {}); $("vrStop").classList.remove("hidden");
+    recording = true; paused = false; rec.start(250); v.play().catch(() => {}); $("vrStop").classList.remove("hidden"); $("vrPause").classList.remove("hidden"); $("vrPause").textContent = "❚❚ Pause";
     msg("🔴 Recording… read each highlighted line. It stops by itself at the end of the video.");
   };
   $("vrPlay").onclick = () => {
