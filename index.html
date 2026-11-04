@@ -96,6 +96,8 @@ input.t:focus{border-color:var(--blue)}
 .step .ic{width:28px;height:28px;border-radius:50%;background:#eef2fa;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:900;flex:none;color:var(--muted)}
 .step.on{border-color:var(--blue);background:var(--blue-l)}
 .step.ok .ic{background:var(--green);color:#fff}
+.step.locked{opacity:.55;cursor:not-allowed}
+.btn:disabled{cursor:not-allowed}
 .step.tried .ic{background:var(--amber);color:var(--ink)}
 .goalbox{background:var(--blue-l);border-left:5px solid var(--blue);border-radius:10px;padding:12px 16px;margin:12px 0 16px;font-weight:700}
 .learn p,.learn ul,.learn ol{margin:0 0 12px}
@@ -1554,6 +1556,17 @@ function renderMastery(){
   $("mastery").innerHTML = '<div class="housebox">' + houseHTML() + (m.eligible ? '<button class="btn green" id="houseSubmitBtn" style="margin-top:8px">📨 Submit to ' + esc(profile.teacher || "my teacher") + '</button>' : '') + '</div><div class="mast"><div class="mast-top"><b>Skill level: ' + m.level + '</b><span>Lesson skill: ' + Math.min(m.total, m.target) + ' / ' + m.target + '</span></div><div class="bar"><i style="width:' + pct + '%;background:var(--green)"></i></div><div class="mast-msg">' + msg + '</div></div>';
   const hb = document.getElementById("houseSubmitBtn"); if (hb) hb.onclick = () => goStep(SUBMIT);
 }
+/* steps open in order: run the example before Exercise 1, solve each exercise before the next one, all three before Practice */
+function stepOpen(i, L, s){
+  if (isTesterAcc(profile) || i === VIDEO || i <= 1 || i === SUBMIT) return true;
+  const solved = q => !!s.solved[q], anyEx = L.ex.some(solved);
+  if (i === 2) return !!s.ranExample || anyEx;
+  if (i === 3 || i === 4) return solved(L.ex[i - 3]);
+  if (i === PRACTICE) return L.ex.every(solved);
+  return true;
+}
+function firstOpenStep(L, s){ for (let i = PRACTICE; i >= 0; i--) if (stepOpen(i, L, s)) return i; return 0; }
+const LOCK_WHY = ["", "", "Run the worked example first", "Solve Exercise 1 first", "Solve Exercise 2 first", "Solve all 3 exercises first"];
 function renderSteps(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), m = mastery(L, s);
   const box = $("steps"); box.innerHTML = "";
@@ -1568,8 +1581,11 @@ function renderSteps(){
     if (i === PRACTICE){ ic = "∞"; label = "Practice (" + m.prac + " solved)"; if (m.prac >= m.need) cls += " ok"; else if (m.prac) cls += " tried"; }
     if (i === SUBMIT){ ic = m.eligible ? "📨" : "🔒"; if (submittedToday(s)) cls += " ok"; }
     if (i === cur.step) cls += " on";
+    const open = stepOpen(i, L, s);
+    if (!open){ cls += " locked"; ic = "🔒"; }
     const b = el("button", cls, '<span class="ic">' + ic + '</span>' + label);
-    b.onclick = () => { saveCode(); cur.step = i; renderSteps(); renderStep(); };
+    if (!open){ b.disabled = true; b.title = LOCK_WHY[i] || "Finish the step before"; b.setAttribute("aria-disabled", "true"); }
+    b.onclick = () => { if (!stepOpen(i, L, s)) return; saveCode(); cur.step = i; renderSteps(); renderStep(); };
     box.appendChild(b);
   });
   renderMastery();
@@ -1639,6 +1655,7 @@ function renderStep(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), body = $("stepBody");
   rememberPos();
   body.innerHTML = ""; ed = null;
+  if (cur.step !== VIDEO && cur.step !== SUBMIT && !stepOpen(cur.step, L, s)){ cur.step = firstOpenStep(L, s); renderSteps(); }
   try { if (window.SDC && SDC.slow && !(cur.step >= 2 && cur.step <= PRACTICE)) SDC.slow.stop(); } catch(e){}
   if (cur.step === VIDEO){ renderConceptVideo(body, L, s); return; }
   if (cur.step === 0){
@@ -1661,11 +1678,13 @@ function renderStep(){
       const r = await runJob({mode:"run", code:ed.get(), inputs:ib ? ib.querySelector("textarea").value.split("\n").filter((x, i, a) => i < a.length - 1 || x !== "") : []}, 6000);
       consoleOut(con, r); run.disabled = false;
       if (!s.ranExample){ s.ranExample = true; saveProg(); renderSteps(); }
+      nx.textContent = "Next: Exercise 1 →"; if (nx._gate) nx._gate(); else { nx.disabled = false; nx.title = ""; }
     };
     reset.onclick = () => ed.set(L.example);
     const nav = el("div", "nav");
     const pv = el("button", "btn ghost", "← Learn"); pv.onclick = () => goStep(0);
-    const nx = el("button", "btn", "Next: Exercise 1 →"); nx.onclick = () => goStep(2);
+    const nx = el("button", "btn", "Next: Exercise 1 →"); nx.onclick = () => { if (stepOpen(2, L, s)) goStep(2); };
+    if (!stepOpen(2, L, s)){ nx.disabled = true; nx.textContent = "🔒 Press ▶ Run first, then Exercise 1"; nx.title = "Run the example to see what it does before you start the exercises"; }
     nav.append(pv, nx); body.appendChild(nav);
   }
   else if (cur.step >= 2 && cur.step <= PRACTICE){
@@ -1745,6 +1764,7 @@ function renderStep(){
         fb.appendChild(el("br")); fb.appendChild(nxt);
         if (mm.eligible){ const sb = el("button", "btn green", "📨 Go to Submit"); sb.style.margin = "10px 0 0 8px"; sb.onclick = () => goStep(SUBMIT); fb.appendChild(sb); }
         con.innerHTML = '<span class="dim">All tests passed.</span>';
+        if (!isP && nx && nx._goTxt){ nx.textContent = nx._goTxt; if (nx._gate) nx._gate(); else { nx.disabled = false; nx.title = ""; } }
         renderSteps();
       } else {
         saveProg();
@@ -1766,7 +1786,9 @@ function renderStep(){
       nx = el("button", "btn ghost", can ? "🎲 Try a different question" : "🎲 Different question (after 5 tries)");
       nx.disabled = !can;
       nx.onclick = () => { if (!s.solved[qn]) s.prac.skipped++; s.prac.cur = null; newPractice(cur.lesson, s); renderSteps(); renderStep(); };
-    } else { nx = el("button", "btn ghost", k < 2 ? "Skip to Exercise " + (k + 2) + " →" : "Go to Practice →"); nx.onclick = () => goStep(cur.step + 1); }
+    } else { const goTxt = k < 2 ? "Next: Exercise " + (k + 2) + " →" : "Go to Practice →";
+      nx = el("button", "btn ghost", goTxt); nx.onclick = () => { if (stepOpen(cur.step + 1, L, s)) goStep(cur.step + 1); };
+      if (!stepOpen(cur.step + 1, L, s)){ nx.disabled = true; nx.textContent = "🔒 Solve this exercise to unlock " + (k < 2 ? "Exercise " + (k + 2) : "Practice"); nx.title = "Type your code, press Check, and get it right to move on"; nx._goTxt = goTxt; } }
     nav.append(pv, nx); body.appendChild(nav);
   }
   else renderSubmit(body, L, s);
@@ -2377,9 +2399,15 @@ function gateNext(){
     const s = lessonState(cur.lesson); s.ack = s.ack || {}; const key = String(cur.step);
     const lab = el("label", "ack sdcNoRead"); lab.innerHTML = '<input type="checkbox"' + (s.ack[key] ? " checked" : "") + '><span>' + esc(ACK_TEXT) + '</span>';
     nav.parentNode.insertBefore(lab, nav);
-    const box = lab.querySelector("input"), paint = () => { btn.disabled = !box.checked; btn.title = box.checked ? "" : "Tick the box above first"; };
+    /* the example must be run, and each exercise solved, before the box can be ticked */
+    const L = DATA.lessons[profile.path][cur.lesson - 1], step = cur.step;
+    const ready = () => isTesterAcc(profile) || (step === 1 ? !!s.ranExample : step >= 2 && step <= 4 ? !!s.solved[L.ex[step - 2]] : true);
+    const why = step === 1 ? "Press ▶ Run on the example first, then you can tick this." : "Type your code, press ✓ Check my answer and get it right first, then you can tick this.";
+    const box = lab.querySelector("input"), tip = el("div", "small muted", ""); tip.style.cssText = "margin:4px 0 0 auto;max-width:560px;text-align:right;font-size:.85rem"; nav.parentNode.insertBefore(tip, nav);
+    const paint = () => { const r = ready(); box.disabled = !r; if (!r) box.checked = false; lab.style.opacity = r ? "" : ".6"; lab.style.cursor = r ? "" : "not-allowed"; lab.title = r ? "" : why;
+      tip.textContent = r ? "" : "🔒 " + why; btn.disabled = !box.checked || !r; btn.title = !r ? why : box.checked ? "" : "Tick the box above first"; };
     box.onchange = () => { s.ack[key] = box.checked; saveProg(); paint(); };
-    paint();
+    btn._gate = paint; paint();
   });
 }
 new MutationObserver(gateNext).observe($("stepBody"), { childList:true, subtree:true });
