@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261104b"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261104b"></script>
+<script src="pp-sync.js?v=20261105a"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105a"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1567,7 +1567,7 @@ function stepOpen(i, L, s){
   if (i === PRACTICE) return L.ex.every(solved);
   return true;
 }
-function firstOpenStep(L, s){ for (let i = PRACTICE; i >= 0; i--) if (stepOpen(i, L, s)) return i; return 0; }
+function lastOpenStep(L, s){ for (let i = PRACTICE; i >= 0; i--) if (stepOpen(i, L, s)) return i; return 0; }
 const LOCK_WHY = ["", "", "Run the worked example first", "Solve Exercise 1 first", "Solve Exercise 2 first", "Solve all 3 exercises first"];
 function renderSteps(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), m = mastery(L, s);
@@ -1657,7 +1657,7 @@ function renderStep(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], s = lessonState(cur.lesson), body = $("stepBody");
   rememberPos();
   body.innerHTML = ""; ed = null;
-  if (cur.step !== VIDEO && cur.step !== SUBMIT && !stepOpen(cur.step, L, s)){ cur.step = firstOpenStep(L, s); renderSteps(); }
+  if (cur.step !== VIDEO && cur.step !== SUBMIT && !stepOpen(cur.step, L, s)){ cur.step = lastOpenStep(L, s); renderSteps(); }
   try { if (window.SDC && SDC.slow && !(cur.step >= 2 && cur.step <= PRACTICE)) SDC.slow.stop(); } catch(e){}
   if (cur.step === VIDEO){ renderConceptVideo(body, L, s); return; }
   if (cur.step === 0){
