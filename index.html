@@ -1165,7 +1165,7 @@ $("signBtn").onclick = async () => {
 /* Teacher PIN resets: these students can sign in with PIN 0000 until the date below.
    Matched on first name (the only account with that first name on this computer), so a
    misspelt surname still works. Signing in with 0000 saves 0000 as their PIN. */
-const PIN_RESETS = {until: "2026-11-13", firstNames: ["inara", "dawid", "niilo"]};
+const PIN_RESETS = {until: "2026-11-13", firstNames: ["inara", "dawid", "niilo", "mikaeel"]};
 const resetLive = () => Date.now() <= new Date(PIN_RESETS.until + "T23:59:59").getTime();
 const resetListed = name => resetLive() && PIN_RESETS.firstNames.indexOf(slug(name).split(" ")[0]) >= 0;
 /* once a student has chosen a new PIN after a reset, 0000 stops working for that account on this computer */
@@ -1230,8 +1230,8 @@ $("loginBtn").onclick = async () => {
   }
   if (!pinOk && SDCG && window.SDC && /^\d{4}$/.test(pin)){   // a teacher reset this PIN before the account was online
     $("loginBtn").disabled = true; err.textContent = "Checking…";
-    try { const id = await SDC.idOf(acc.email || "", acc.name), ph = pinHash(acc.name, pin);
-      for (const r of await SDC.rows("P", id, 10)){ const o = await SDC.verify(r.text); if (o && o.k === id && o.ph === ph && o.at > (acc.pinSetAt || 0)){ acc.pin = ph; acc.pinSetAt = o.at; acc.wrapFor = ""; saveAccount(acc); pinOk = true; break; } } } catch(e){}
+    try { const ph = pinHash(acc.name, pin), ids = [...new Set([await SDC.idOf(acc.email || "", acc.name), await SDC.idOf("", acc.name)])];   // by email and by name
+      outer: for (const id of ids) for (const r of await SDC.rows("P", id, 10)){ const o = await SDC.verify(r.text); if (o && o.k === id && o.ph === ph && o.at > (acc.pinSetAt || 0)){ acc.pin = ph; acc.pinSetAt = o.at; acc.wrapFor = ""; saveAccount(acc); pinOk = true; break outer; } } } catch(e){}
     $("loginBtn").disabled = false; err.textContent = "";
   }
   if (!pinOk){
