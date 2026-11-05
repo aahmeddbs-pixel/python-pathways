@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261105i"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261105i"></script>
+<script src="pp-sync.js?v=20261105j"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105j"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -215,6 +215,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
         <input class="t pin" id="loginPin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="••••">
         <div class="err" id="loginErr"></div>
         <button class="btn lg full" id="loginBtn">Continue where I stopped →</button>
+        <p style="margin:10px 0 0;text-align:center"><button type="button" class="linkbtn2" id="forgotBtn" style="font-weight:800">Forgot your PIN?</button></p>
         <p class="small" style="margin:14px 0 0;padding:10px 12px;border-radius:10px;background:#FFF1F0;border:1px solid #F3B7B2;color:#8A1C14"><b>⚠️ Warning:</b> Trying to get into the staff area or into another person's account or details is monitored. Every attempt is recorded with the name and computer used and reported to your teacher, and school consequences will follow.</p>
         <p class="muted" style="margin-top:14px;font-size:.9rem">Using a different computer? <button class="linkbtn2" id="importBtn">Load my progress file</button><input type="file" id="importFile" accept=".txt,.json" class="hidden"></p>
         <div id="importMsg" class="muted" style="font-weight:700;margin-top:6px"></div>
@@ -1282,6 +1283,8 @@ function signOutCS(switching){
 /* ---------- Computer Science students can also use Design without signing in again ----------
    The link lives only in this browser tab (cleared by Sign out). The Design account's password is made
    from this student's own secret key, so the same Design account (and its saved work) opens on any computer. */
+$("forgotBtn").onclick = () => { if (window.SDC && SDC.forgotDialog){ const n = $("loginName").value.trim(), a = n ? accounts()[slug(n)] : null; SDC.forgotDialog({ course:"cs", name:(a && a.name) || n, email:(a && a.email) || "", teacher:(a && a.teacher) || "" }); }
+  else $("loginErr").textContent = "Ask your teacher to reset your PIN."; };
 async function linkFromCS(acc){
   if (!SDCG || !acc) return;
   const cs = { name: acc.name, email: acc.email || "", grade: String(acc.grade || ""), teacher: acc.teacher || "" };
