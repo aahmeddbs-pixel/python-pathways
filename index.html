@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261105a"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261105a"></script>
+<script src="pp-sync.js?v=20261105b"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105b"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1226,6 +1226,12 @@ $("loginBtn").onclick = async () => {
   if (!pinOk && PPSync.enabled() && /^\d{4}$/.test(pin)){   // the teacher may have reset this PIN on another computer
     $("loginBtn").disabled = true; err.textContent = "Checking…";
     try { const dk = await PPSync.findKey(slug(acc.name), pin); if (dk){ acc.pin = pinHash(acc.name, pin); acc.dk = dk; acc.wrapFor = acc.pin; saveAccount(acc); pinOk = true; } } catch(e){}
+    $("loginBtn").disabled = false; err.textContent = "";
+  }
+  if (!pinOk && SDCG && window.SDC && /^\d{4}$/.test(pin)){   // a teacher reset this PIN before the account was online
+    $("loginBtn").disabled = true; err.textContent = "Checking…";
+    try { const id = await SDC.idOf(acc.email || "", acc.name), ph = pinHash(acc.name, pin);
+      for (const r of await SDC.rows("P", id, 10)){ const o = await SDC.verify(r.text); if (o && o.k === id && o.ph === ph && o.at > (acc.pinSetAt || 0)){ acc.pin = ph; acc.pinSetAt = o.at; acc.wrapFor = ""; saveAccount(acc); pinOk = true; break; } } } catch(e){}
     $("loginBtn").disabled = false; err.textContent = "";
   }
   if (!pinOk){
