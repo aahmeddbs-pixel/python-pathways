@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261105g"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261105g"></script>
+<script src="pp-sync.js?v=20261105h"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105h"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1218,7 +1218,7 @@ $("loginBtn").onclick = async () => {
     $("loginBtn").disabled = false; err.textContent = "";
   }
   if (!acc && resetListed(name) && pin === "0000"){   // nothing saved anywhere for this student: let them start their account again
-    err.innerHTML = "We couldn't find a saved Computer Science account for <b>" + esc(name.trim()) + "</b> on this device or online. Press the button to make it again (it only takes a minute). " +
+    err.innerHTML = "We couldn't find a saved Computer Science account for <b>" + esc(name.trim()) + "</b> on this device or online. If you have done Computer Science work before, do not make a new account: ask your teacher to reset your PIN, which brings your work back on any device. If you are new, press the button. " +
       '<br><button type="button" class="btn" id="resetStart" style="margin-top:8px">Start my Computer Science account</button>';
     $("resetStart").onclick = () => { document.querySelector('.tab[data-tab="up"]').click(); const n = $("inName"); if (n){ n.value = name.trim(); n.dispatchEvent(new Event("input")); n.focus(); } err.textContent = ""; };
     return; }
