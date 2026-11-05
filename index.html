@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261105b"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261105b"></script>
+<script src="pp-sync.js?v=20261105c"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105c"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1790,7 +1790,7 @@ function renderStep(){
     const nav = el("div", "nav");
     const pv = el("button", "btn ghost", k === 0 ? "← Example" : isP ? "← Exercise 3" : "← Exercise " + k); pv.onclick = () => goStep(cur.step - 1);
     if (isP){
-      const can = (s.tries[qn] || 0) >= 5 || s.solved[qn];
+      const can = (s.tries[qn] || 0) >= 5 || s.solved[qn] || isTesterAcc(profile);
       nx = el("button", "btn ghost", can ? "🎲 Try a different question" : "🎲 Different question (after 5 tries)");
       nx.disabled = !can;
       nx.onclick = () => { if (!s.solved[qn]) s.prac.skipped++; s.prac.cur = null; newPractice(cur.lesson, s); renderSteps(); renderStep(); };
@@ -2413,7 +2413,7 @@ function gateNext(){
     const why = step === 1 ? "Press ▶ Run on the example first, then you can tick this." : "Type your code, press ✓ Check my answer and get it right first, then you can tick this.";
     const box = lab.querySelector("input"), tip = el("div", "small muted", ""); tip.style.cssText = "margin:4px 0 0 auto;max-width:560px;text-align:right;font-size:.85rem"; nav.parentNode.insertBefore(tip, nav);
     const paint = () => { const r = ready(); box.disabled = !r; if (!r) box.checked = false; lab.style.opacity = r ? "" : ".6"; lab.style.cursor = r ? "" : "not-allowed"; lab.title = r ? "" : why;
-      tip.textContent = r ? "" : "🔒 " + why; btn.disabled = !box.checked || !r; btn.title = !r ? why : box.checked ? "" : "Tick the box above first"; };
+      tip.textContent = r ? "" : "🔒 " + why; btn.disabled = isTesterAcc(profile) ? false : (!box.checked || !r); btn.title = !r ? why : box.checked ? "" : "Tick the box above first"; };
     box.onchange = () => { s.ack[key] = box.checked; saveProg(); paint(); };
     btn._gate = paint; paint();
   });
