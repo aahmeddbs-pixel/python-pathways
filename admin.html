@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://docs.google.com https://script.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' blob:; connect-src 'self' https://docs.google.com https://*.googleusercontent.com; worker-src 'self' blob:; frame-src https://docs.google.com; form-action https://docs.google.com; base-uri 'none'; object-src 'none'">
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <title>Python Pathways Admin</title>
@@ -199,9 +199,9 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261105k"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261105k"></script>
-<script src="voice-recorder.js?v=20261105k"></script>
+<script src="pp-sync.js?v=20261105l"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261105l"></script>
+<script src="voice-recorder.js?v=20261105l"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -772,6 +772,7 @@ function resetPinDialog(st){
       let k = RESET_KEY; if (!k){ k = await PPSync.recoveryKey(q("#rpPw").value); if (!k){ q("#rpGo").disabled = false; return m("That recovery password is not right.", false); } RESET_KEY = k; }
       const ok = await PPSync.resetWithKey(slug(a.name || ""), p, k);
       m(ok ? "Done. " + a.name + " can now sign in with PIN " + p + " on any computer. Their progress is kept." : "No saved progress was found for this student yet. Ask them to sign in once on their usual computer, then try again.", ok);
+      if (ok && a.email && window.SDC && SDC.resetDone){ const sent = await SDC.resetDone({ email:a.email, name:a.name, course:"cs", secret:p }); m("Done. " + a.name + " can now sign in with PIN " + p + " on any computer. Their progress is kept. " + (sent ? "📧 The new PIN has been emailed to " + a.email + "." : "The email to the student couldn't be sent, so please give them the PIN yourself."), true); }
     } catch(e){ m(e.message, false); }
     q("#rpGo").disabled = false;
   };
@@ -1072,7 +1073,9 @@ showGate();
     if (!PPSync.enabled()) return msg("Sync is not connected yet.", false);
     msg("Working…");
     try { const ok = await PPSync.adminReset(name, pin, pw);
-      msg(ok ? "Done. " + name + " can now sign in with PIN " + pin + " on any computer, and their progress is kept." : "No saved progress was found for that name. They need to sign in once on their usual computer first, then try again.", ok); }
+      msg(ok ? "Done. " + name + " can now sign in with PIN " + pin + " on any computer, and their progress is kept." : "No saved progress was found for that name. They need to sign in once on their usual computer first, then try again.", ok);
+      if (ok && window.SDC && SDC.resetDone){ const st = Object.values(typeof STUDENTS === "object" && STUDENTS ? STUDENTS : {}).find(x => x && x.acct && String(x.acct.name || "").trim().replace(/\s+/g, " ").toLowerCase() === name), em = st && st.acct.email;
+        if (em){ const sent = await SDC.resetDone({ email:em, name:st.acct.name, course:"cs", secret:pin }); msg("Done. " + name + " can now sign in with PIN " + pin + " on any computer, and their progress is kept. " + (sent ? "📧 Emailed to " + em + "." : "The email couldn't be sent, so please give them the PIN yourself."), true); } } }
     catch(e){ msg(e.message, false); }
   };
   document.getElementById("syncTest").onclick = async () => { msg("Sending a test row and reading it back… up to a minute."); try { await PPSync.test(); msg("Sync works: a test row was saved and read back.", true); } catch(e){ msg(e.message, false); } };
