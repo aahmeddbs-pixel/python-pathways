@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261109d"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261109d"></script>
+<script src="pp-sync.js?v=20261109e"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261109e"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1394,7 +1394,7 @@ async function syncNow(force){
   } catch(e){ syncDirty = true; }
   finally { syncBusy = false; }
 }
-setInterval(() => { if (syncDirty && !syncBusy) syncNow(); else if (PPSync.queued()) PPSync.flush(); }, 5000);
+setInterval(() => { if (syncDirty && !syncBusy) syncNow(); else if (PPSync.queued()) PPSync.flush(); }, 30000);   // work is saved online every 30 seconds (and when the page is closed or hidden)
 /* "Saving… / ✓ Saved" in the top bar */
 try { if (window.SDC && SDC.saveBadge) SDC.saveBadge.watch(() => ({ on: !!(SDCG && profile && profile.dk && PPSync.enabled()), pending: syncDirty || syncBusy || PPSync.queued() > 0 })); } catch(e){}
 window.addEventListener("pagehide", () => { try { if (profile && profile.dk) { saveCode(); syncNow(true); } } catch(e){} });
