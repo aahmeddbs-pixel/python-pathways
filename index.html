@@ -161,6 +161,9 @@ input.pin{letter-spacing:.4em;font-weight:700}
 .linkbtn2{background:none;border:none;color:var(--red);font-weight:700;text-decoration:underline;font-size:inherit;padding:0}
 .maptools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
 .maptools select{width:auto;padding:6px 10px;font-size:.95rem}
+.lvlrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+.lvlbtn{font:inherit;font-weight:800;border-radius:999px;padding:7px 14px;border:2px solid var(--line,#D8DEEA);background:#fff;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.lvlbtn.on{background:#1B2D4E;color:#fff;border-color:#1B2D4E}.lvlbtn.done{border-color:#1E8A55}.lvlbtn:disabled{opacity:.55;cursor:not-allowed;background:#f4f6fa}
 .chip{border:2px solid var(--line);background:#fff;color:var(--ink);border-radius:999px;padding:8px 16px;font-weight:700}
 .chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 .housebox{background:#fff;border:1px solid var(--line);border-left:5px solid var(--red);border-radius:12px;padding:10px 14px;margin-top:10px;box-shadow:var(--shadow)}
@@ -1375,7 +1378,7 @@ let syncDirty = false, syncBusy = false;
 function syncMark(){ if (profile && profile.dk) syncDirty = true; }
 const SYNC_SKIP = new Set(["activeMs", "ms", "nudges"]);   // timers change every second; they ride along with the next real change
 function bundleNow(){
-  const acct = {}; ["name", "email", "cls", "grade", "teacher", "path", "created", "last", "yearOf", "history"].forEach(k => { if (profile[k] !== undefined) acct[k] = profile[k]; });
+  const acct = {}; ["name", "email", "cls", "grade", "teacher", "path", "created", "last", "yearOf", "history", "levelUp", "lvlCheered"].forEach(k => { if (profile[k] !== undefined) acct[k] = profile[k]; });
   const progress = {};
   Object.keys(PATHS).forEach(p => { const v = p === profile.path ? prog : load("pyl_" + p + "_" + slug(profile.name), null); if (v && v.lessons && Object.keys(v.lessons).length) progress[p] = v; });
   return {acct, progress};
@@ -1412,7 +1415,7 @@ function applyBundle(acc, bundle, withAcct){
   acc.name = acc.name || cap(a.name, 60);
   if (withAcct){ acc.email = cap(a.email, 80); acc.cls = cap(a.cls, 20); acc.grade = cap(a.grade, 4); acc.teacher = cap(a.teacher, 40);
     if (PATHS[a.path]) acc.path = a.path; if (a.created) acc.created = +a.created || acc.created; if (a.last && typeof a.last === "object") acc.last = a.last;
-    if (+a.yearOf) acc.yearOf = +a.yearOf; if (Array.isArray(a.history)) acc.history = a.history.slice(0, 12).filter(h => h && PATHS[h.path]).map(h => ({grade:cap(h.grade, 4), path:h.path, year:+h.year || 0})); }
+    if (+a.yearOf) acc.yearOf = +a.yearOf; if (a.levelUp && PATHS[a.levelUp.path]) acc.levelUp = { path:a.levelUp.path, at:+a.levelUp.at || 0 }; if (a.lvlCheered && typeof a.lvlCheered === "object") acc.lvlCheered = a.lvlCheered; if (Array.isArray(a.history)) acc.history = a.history.slice(0, 12).filter(h => h && PATHS[h.path]).map(h => ({grade:cap(h.grade, 4), path:h.path, year:+h.year || 0})); }
   Object.keys((bundle && bundle.progress) || {}).forEach(p => { if (!PATHS[p] || !bundle.progress[p] || !bundle.progress[p].lessons) return;
     const k = "pyl_" + p + "_" + slug(acc.name), loc = load(k, null); store(k, loc && loc.lessons ? mergeProg(loc, bundle.progress[p]) : bundle.progress[p]); });
 }
@@ -1505,6 +1508,48 @@ function updatePills(){
   $("housePill").textContent = "🏠 " + hp + " this week";
   if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
 }
+/* Levels: finishing every exercise of a level (all 10 lessons) unlocks the next level for the student */
+const LEVEL_NEXT = { beginner:"intermediate", intermediate:"advanced", dp_beginner:"dp_intermediate", dp_intermediate:"dp_advanced" };
+function levelDone(p){
+  const pr = p === profile.path && prog ? prog : load("pyl_" + p + "_" + slug(profile.name), null);
+  if (!pr || !pr.lessons) return false;
+  return DATA.lessons[p].every((L, i) => { const s = pr.lessons[i + 1]; return !!s && L.ex.every(q => s.solved && s.solved[q]); });
+}
+function levelOpen(p, chain){   // open: the level they're on, any level before it, or the one after a finished level
+  const i = chain.indexOf(p), at = chain.indexOf(profile.path);
+  if (i <= at) return true;
+  const prev = chain[i - 1]; return !!prev && levelOpen(prev, chain) && levelDone(prev);
+}
+function switchLevel(p){
+  saveCode(); stopClock();
+  profile.path = p; profile.levelUp = { path:p, at:Date.now() }; profile.last = null; saveAccount(profile);
+  try { syncTeacher("progress"); } catch(e){}
+  openMap(); window.scrollTo({ top:0, behavior:"smooth" });
+}
+function levelRow(){
+  let row = $("lvlRow"); if (!row){ row = el("div", "lvlrow"); row.id = "lvlRow"; document.querySelector(".maptools").insertAdjacentElement("afterend", row); }
+  const chain = pathsForGrade(profile.grade); if (chain.indexOf(profile.path) < 0){ row.innerHTML = ""; return; }
+  row.innerHTML = '<span class="muted" style="font-weight:700">Levels:</span>' + chain.map((p, i) => {
+    const open = levelOpen(p, chain), done = levelDone(p), on = p === profile.path;
+    const tip = on ? "You are on this level" : open ? "Open " + PATHS[p].name : "Finish every exercise in " + PATHS[chain[i - 1]].name + " to unlock";
+    return '<button class="lvlbtn' + (on ? " on" : "") + (done ? " done" : "") + '" data-lvl="' + p + '" title="' + tip + '"' + (open ? "" : " disabled") + '>' + (done ? "✅ " : open ? "" : "🔒 ") + PATHS[p].name + '</button>';
+  }).join("");
+  row.querySelectorAll("[data-lvl]").forEach(b => b.onclick = () => { if (b.dataset.lvl !== profile.path) switchLevel(b.dataset.lvl); });
+  // just finished this level: tell them once that the next one is open
+  const nx = LEVEL_NEXT[profile.path];
+  if (nx && chain.indexOf(nx) >= 0 && levelDone(profile.path)){
+    profile.lvlCheered = profile.lvlCheered || {};
+    if (!profile.lvlCheered[profile.path]){
+      profile.lvlCheered[profile.path] = Date.now(); saveAccount(profile);
+      const bg = el("div", "modal-bg"), done = PATHS[profile.path].name, nn = PATHS[nx].name;
+      bg.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:3rem">🎉</div><h2>You finished ' + done + '!</h2><p style="margin-top:8px">Every exercise in all 10 lessons is done. <b>' + nn + '</b> is now unlocked.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn" id="lvlGo">Start ' + nn + ' →</button><button class="btn ghost" id="lvlStay">Stay on ' + done + '</button></div></div>';
+      document.body.appendChild(bg);
+      try { sfx("unlock"); } catch(e){}
+      bg.querySelector("#lvlGo").onclick = () => { bg.remove(); switchLevel(nx); };
+      bg.querySelector("#lvlStay").onclick = () => bg.remove();
+    }
+  }
+}
 function openMap(){
   try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
   try { if (window.__ppTeacherAudio) window.__ppTeacherAudio.pause(); if (window.SDC && SDC.stopNarrating) SDC.stopNarrating(); } catch(e){}
@@ -1537,6 +1582,7 @@ function openMap(){
   const pct = Math.round(solvedAll / 30 * 100);
   $("mapBar").style.width = pct + "%"; $("mapPct").textContent = pct + "%";
   show("map"); rankShow();
+  if (!isTesterAcc(profile)) levelRow();
 }
 $("backMap").onclick = () => { saveCode(); stopClock(); openMap(); };
 
@@ -2479,7 +2525,7 @@ function applyAssign(acc, A){
   const ag = A.g ? String(window.SDC && SDC.rolled ? SDC.rolled(A.g, A.at) : A.g) : "";
   if (ag && ag !== String(acc.grade)){ acc.grade = ag; changed = true; }
   if (A.t && A.t !== acc.teacher){ acc.teacher = A.t; changed = true; }
-  if (!stale && A.l && PATHS[A.l] && pathsForGrade(acc.grade).indexOf(A.l) >= 0 && A.l !== acc.path){ acc.path = A.l; changed = true; }
+  if (!stale && A.l && PATHS[A.l] && pathsForGrade(acc.grade).indexOf(A.l) >= 0 && A.l !== acc.path && !(acc.levelUp && acc.levelUp.at > (A.at || 0))){ acc.path = A.l; changed = true; }
   if (pathsForGrade(acc.grade).indexOf(acc.path) < 0){ acc.path = pathsForGrade(acc.grade)[0]; changed = true; }
   if (changed){ saveAccount(acc); setTimeout(() => { try { syncTeacher("progress"); } catch(e){} }, 1500); }
 }
