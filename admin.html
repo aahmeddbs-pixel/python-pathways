@@ -119,14 +119,14 @@ td .em{color:var(--muted);font-size:.82rem}
   <div id="ansView" class="hidden">
     <div class="card" id="ansControls">
       <h1>Exercise answers</h1>
-      <p class="muted" style="margin-top:4px"><b>Choose a student</b> to see the exact tasks <b>they</b> were given, their code and the exact answer to <b>their</b> version (their own numbers, words and function names). Each student's tasks are different, so always pick the student first.</p>
+      <p class="muted" style="margin-top:4px">Pick a level and lesson to see that lesson's worked example and its tasks, each with the answer. To see the exact answers to one student's own version of the tasks, open the student on the 📊 Student progress tab.</p>
+      <p class="muted small" style="margin-top:6px"><b>Function names:</b> students see their own function name, e.g. <code>product_fox27</code> instead of <code>product</code>. The answer is the same; the student just keeps the name on their screen.</p>
       <div class="ansgrid">
-        <div><label class="small" style="font-weight:700">Student</label><select class="t" id="ansStu"><option value="">Choose a student…</option></select></div>
         <div><label class="small" style="font-weight:700">Level</label><select class="t" id="ansLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="dp_beginner">IB DP Beginner (G11–12)</option><option value="dp_intermediate">IB DP Intermediate (G11–12)</option><option value="dp_advanced">IB DP Advanced HL (G11–12)</option></select></div>
         <div><label class="small" style="font-weight:700">Lesson</label><select class="t" id="ansLesson"></select></div>
-        <div id="ansGradeBox"><label class="small" style="font-weight:700">Grade (words used)</label><select class="t" id="ansGrade"><option value="6">Grade 6</option><option value="7" selected>Grade 7</option><option value="8">Grade 8</option><option value="11">Grade 11</option><option value="12">Grade 12</option></select></div>
+        
       </div>
-      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn ghost hidden" id="ansNew">🎲 New examples</button><button class="btn ghost" id="ansPrint">🖨 Print / save these answers as PDF</button></div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn ghost" id="ansPrint">🖨 Print / save this lesson's answers as PDF</button></div>
     </div>
     <div id="ansOut"></div>
   </div>
@@ -199,10 +199,10 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261109c"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261109c"></script>
-<script src="voice-recorder.js?v=20261109c"></script>
-<script src="answers-view.js?v=20261109c"></script>
+<script src="pp-sync.js?v=20261109d"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261109d"></script>
+<script src="voice-recorder.js?v=20261109d"></script>
+<script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
 "use strict";
@@ -1005,84 +1005,52 @@ window.__initAnswers = function(){
       else if (keep.has(ch)) ch.classList.toggle("hidden", keep.get(ch));
     });
     $("ansView").classList.toggle("hidden", !ans);
-    if (ans){ fillStudents(); fillLessons(); render(); }
+    if (ans) render();
   }
   $("vProg").onclick = () => view(false);
   $("vAns").onclick = () => view(true);
   const h = t => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   function fillLessons(){
     const lv = $("ansLevel").value, sel = $("ansLesson"), was = sel.value;
-    sel.innerHTML = ($("ansStu").value ? '<option value="all">All lessons this student started</option>' : '') + A.LESSONS[lv].map((L, i) => '<option value="' + (i + 1) + '">Lesson ' + (i + 1) + ': ' + h(L.title) + '</option>').join("");
-    if (was && (was === "all" ? $("ansStu").value : +was <= A.LESSONS[lv].length)) sel.value = was;
+    sel.innerHTML = A.LESSONS[lv].map((L, i) => '<option value="' + (i + 1) + '">Lesson ' + (i + 1) + ': ' + h(L.title) + '</option>').join("");
+    if (was && +was <= A.LESSONS[lv].length) sel.value = was;
   }
-  const stuList = () => Object.keys(typeof STUDENTS === "object" && STUDENTS ? STUDENTS : {}).map(k => ({ k, st:STUDENTS[k] })).filter(x => x.st && x.st.acct && x.st.acct.name && x.st.snap && x.st.snap.paths && Object.keys(x.st.snap.paths).length)
-    .sort((a, b) => String(a.st.acct.name).localeCompare(String(b.st.acct.name)));
-  function fillStudents(){
-    const sel = $("ansStu"), was = sel.value, list = stuList();
-    sel.innerHTML = '<option value="">' + (list.length ? "Choose a student…" : "No students loaded yet") + '</option>' + list.map(x => '<option value="' + h(x.k) + '">' + h(x.st.acct.name) + (x.st.acct.grade ? " (G" + h(x.st.acct.grade) + ")" : "") + '</option>').join("");
-    if (was && list.some(x => x.k === was)) sel.value = was;
+  let DATA = null;   // the lessons exactly as students see them (worked examples and tasks), read from the student page
+  async function lessonData(){
+    if (DATA) return DATA;
+    try { const t = await (await fetch("index.html?v=" + Date.now(), { cache:"no-store" })).text(), i = t.indexOf("const DATA = ") + 13, j = t.indexOf("\n", i);
+      DATA = JSON.parse(t.slice(i, j).replace(/;\s*$/, "")); } catch(e){ DATA = null; }
+    return DATA;
   }
-  function stuPath(st){ const ps = Object.keys(st.snap.paths); let best = ps[0], t = -1;
-    ps.forEach(p => Object.values(st.snap.paths[p].lessons || {}).forEach(L => (L.core || []).forEach(o => { if ((o.at || 0) > t){ t = o.at || 0; best = p; } })));
-    return best; }
-  function card(g, k){
-    A.setGradeTheme($("ansGrade").value);
-    let P, Q, code;
-    try { P = g.make(); Q = g.q(P); code = A.answerFor(g, P, Q); } catch(e){ code = null; }
-    const d = document.createElement("div"); d.className = "anscard";
-    if (!Q){ d.textContent = "This example could not be made. Press New example."; return d; }
-    const hints = (Q.hints || []).map(x => "<li>" + x + "</li>").join("");
-    d.innerHTML = '<span class="anstag">Exercise type ' + String.fromCharCode(65 + k) + '</span><h3>' + h(Q.title) + '</h3>' +
-      '<div class="anstask">' + Q.task + '</div>' +
-      '<b class="small">Model answer</b><pre class="anscode"></pre>' +
-      (hints ? '<details style="margin-top:8px"><summary class="small" style="font-weight:700;cursor:pointer">Hints the student can buy</summary><ul class="anshints small">' + hints + '</ul></details>' : '') +
-      '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn sm ghost" data-a="new">🎲 New example</button><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
-    d.querySelector(".anscode").textContent = code || "(answer not available)";
-    d.querySelector('[data-a=new]').onclick = () => d.replaceWith(card(g, k));
-    d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(code || ""); e.target.textContent = "✅ Copied"; } catch(x){} };
-    return d;
-  }
-  function render(){
-    const sk = $("ansStu").value, stu = sk && STUDENTS[sk];
-    $("ansGradeBox").classList.toggle("hidden", !!stu); $("ansNew").classList.toggle("hidden", !!stu || !$("ansExOn"));
-    if (stu){
-      const out = $("ansOut"), lv = $("ansLevel").value, ls = $("ansLesson").value, a = stu.acct;
-      out.innerHTML = '<div class="card" style="margin-top:14px"><h2 style="margin:0">' + h(a.name) + ' · ' + h(PATH_NAMES[lv] || lv) + (ls === "all" ? "" : " · Lesson " + h(ls)) + '</h2><p class="muted small" style="margin-top:4px">The exact tasks this student did, with the answer to their own version. Updated ' + (stu.snap.at ? h(new Date(stu.snap.at).toLocaleString()) : "when they last synced") + '.</p>' +
-        (window.PPAnswerView ? PPAnswerView.render(stu.snap, A, { path:lv, lesson: ls === "all" ? null : ls }) : '<p class="note">The answer viewer did not load. Refresh the page.</p>') + '</div>';
-      if (window.PPAnswerView) PPAnswerView.bind(out);
-      return;
-    }
-    if (!$("ansExOn")){
-      const out = $("ansOut");
-      out.innerHTML = '<div class="card" style="margin-top:14px"><h2 style="margin:0">👆 Choose a student above</h2><p class="muted" style="margin-top:6px">You will see the tasks that student actually did and the exact answers to them. ' + (stuList().length ? "" : "Load your student data on the 📊 Student progress tab first (it fills in automatically when sync is on).") + '</p>' +
-        '<p class="small" style="margin-top:10px"><button class="btn sm ghost" id="ansExBtn">Show general examples for this lesson instead (not a student\'s task)</button></p></div>';
-      $("ansExBtn").onclick = () => { const f = document.createElement("i"); f.id = "ansExOn"; f.hidden = true; document.body.appendChild(f); render(); };
-      return;
-    }
-    const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, gens = A.GEN[lv][n - 1] || [], L = A.LESSONS[lv][n - 1];
+  function copyBtn(d, text){ d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(text || ""); e.target.textContent = "✅ Copied"; } catch(x){} }; }
+  async function render(){
+    const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, L = A.LESSONS[lv][n - 1];
     const out = $("ansOut"); out.innerHTML = "";
     const head = document.createElement("div"); head.className = "card"; head.style.marginTop = "14px";
-    head.innerHTML = '<div class="note" style="margin-bottom:8px">⚠️ These are <b>general examples</b>, not any student\'s task. Choose a student above to see the exact tasks they did.</div><h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + ' Students\' lesson exercises and practice questions are made from these ' + gens.length + ' exercise types.</p>';
+    head.innerHTML = '<h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + '</p>';
     out.appendChild(head);
-    gens.forEach((g, k) => out.appendChild(card(g, k)));
-    // the original fixed exercises for this lesson (seen by students who started the lesson before exercises were personalised)
-    const fx = (L.ex || []).map(q => ({ q, F: ((A.FIXED || {})[lv] || [])[q - 1] })).filter(x => x.F);
-    if (fx.length){
-      const hd = document.createElement("div"); hd.className = "card"; hd.style.marginTop = "14px";
-      hd.innerHTML = '<h3 style="margin:0">Original exercises for this lesson</h3><p class="muted small" style="margin-top:4px">Students who started this lesson before exercises were personalised see these fixed versions. Each answer has been checked against the real marking.</p>';
-      out.appendChild(hd);
-      fx.forEach((x, k) => { const d = document.createElement("div"); d.className = "anscard";
-        d.innerHTML = '<span class="anstag">Original exercise ' + (k + 1) + '</span><h3>' + h(x.F.t) + '</h3><div class="anstask">' + x.F.task + '</div><b class="small">Model answer</b><pre class="anscode"></pre>' +
-          '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
-        d.querySelector(".anscode").textContent = x.F.a;
-        d.querySelector('[data-a=copy]').onclick = e => { try { navigator.clipboard.writeText(x.F.a); e.target.textContent = "✅ Copied"; } catch(z){} };
-        out.appendChild(d); });
+    const D = await lessonData(), DL = D && D.lessons[lv] && D.lessons[lv][n - 1];
+    if ($("ansLevel").value !== lv || (+$("ansLesson").value || 1) !== n) return;   // the choice changed while loading
+    if (DL && DL.example){
+      const d = document.createElement("div"); d.className = "anscard";
+      d.innerHTML = '<span class="anstag">Lesson example</span><h3>Worked example from the lesson</h3>' + (DL.learn ? '<details style="margin:6px 0"><summary class="small" style="font-weight:700;cursor:pointer">What the lesson teaches</summary><div class="anstask">' + DL.learn + '</div></details>' : '') +
+        '<b class="small">Example code</b><pre class="anscode"></pre>' + (DL.note ? '<div class="anstask small">' + DL.note + '</div>' : '') +
+        '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-a="copy">📋 Copy example</button></div>';
+      d.querySelector(".anscode").textContent = DL.example; copyBtn(d, DL.example); out.appendChild(d);
     }
+    (L.ex || []).forEach((q, k) => {
+      const F = ((A.FIXED || {})[lv] || [])[q - 1], Qd = D && D.questions[lv] && D.questions[lv][q - 1]; if (!F) return;
+      const hints = ((Qd && Qd.hints) || []).map(x => "<li>" + x + "</li>").join("");
+      const d = document.createElement("div"); d.className = "anscard";
+      d.innerHTML = '<span class="anstag">Task ' + (k + 1) + '</span><h3>' + h(F.t) + '</h3><div class="anstask">' + F.task + '</div><b class="small">Answer</b><pre class="anscode"></pre>' +
+        (hints ? '<details style="margin-top:8px"><summary class="small" style="font-weight:700;cursor:pointer">Hints the student can buy</summary><ul class="anshints small">' + hints + '</ul></details>' : '') +
+        '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-a="copy">📋 Copy answer</button></div>';
+      d.querySelector(".anscode").textContent = F.a; copyBtn(d, F.a); out.appendChild(d);
+    });
   }
-  $("ansStu").onchange = () => { const st = $("ansStu").value && STUDENTS[$("ansStu").value]; if (st){ const p = stuPath(st); if (p && A.LESSONS[p]) $("ansLevel").value = p; } const ex = $("ansExOn"); if (ex) ex.remove(); $("ansLesson").value = ""; fillLessons(); if (st) $("ansLesson").value = "all"; render(); };
   $("ansLevel").onchange = () => { fillLessons(); render(); };
-  $("ansLesson").onchange = render; $("ansGrade").onchange = render; $("ansNew").onclick = render;
-  $("ansPrint").onclick = () => { $("ansOut").querySelectorAll("details").forEach(d => d.open = true); window.print(); };
+  $("ansLesson").onchange = render;
+  $("ansPrint").onclick = () => window.print();
   fillLessons();
 };
 showGate();

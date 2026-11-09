@@ -35,14 +35,13 @@ function item(A, path, o, label, isPractice){
     ${note ? `<div class="note">${esc(note)}</div>` : ""}</div>`;
 }
 /* snap = the student's latest progress record ({paths:{level:{lessons:{n:{title, core, prac, pcur}}}}}) */
-function render(snap, A, only){
+function render(snap, A){
   style();
   if (!A || !A.exactAnswer) return `<div class="ppav"><p class="note">The answer key is locked. Sign in with the admin password (or as an approved teacher) to see the answers.</p></div>`;
   if (!snap || !snap.paths || !Object.keys(snap.paths).length) return `<div class="ppav"><p class="note">No exercises recorded yet.</p></div>`;
   let h = "";
   Object.keys(snap.paths).forEach(path => {
-    if (only && only.path && only.path !== path) return;
-    const P = snap.paths[path], nums = Object.keys(P.lessons || {}).map(Number).filter(n => !(only && only.lesson) || n === +only.lesson).sort((a, b) => a - b);
+    const P = snap.paths[path], nums = Object.keys(P.lessons || {}).map(Number).sort((a, b) => a - b);
     if (!nums.length) return;
     const lastActive = n => { const L = P.lessons[n]; return Math.max(0, ...(L.core || []).map(x => x.at || 0), ...Object.keys(L.days || {}).map(d => Date.parse(d) || 0)); };
     const open = nums.slice().sort((a, b) => lastActive(b) - lastActive(a))[0];
@@ -52,13 +51,10 @@ function render(snap, A, only){
       h += `<details class="les"${n === open ? " open" : ""}><summary>Lesson ${n}: ${esc(L.title || "")} · ${done}/${core.length} exercises${L.pcur ? " · practising" : ""}</summary>` +
         core.map((o, i) => item(A, path, o, "Exercise " + (i + 1), false)).join("") +
         (L.pcur ? item(A, path, Object.assign({ ok:false }, L.pcur), "Current practice question", true) : "") +
-        ((L.prac || []).length ? (() => { const withAns = L.prac.filter(x => x.g && x.P), older = L.prac.filter(x => !(x.g && x.P));
-          return `<div class="ex"><div class="hd"><span>Practice questions solved: ${L.prac.length}</span></div>${older.length ? `<div class="tk">${withAns.length ? "Earlier: " : ""}${esc(older.slice(-8).map(x => x.t).join(" · "))}</div>` : ""}</div>` +
-            withAns.map((x, i) => item(A, path, Object.assign({ ok:true }, x), "Practice question " + (L.prac.length - withAns.length + i + 1), true)).join(""); })() : "") +
+        ((L.prac || []).length ? `<div class="ex"><div class="hd"><span>Practice questions solved: ${L.prac.length}</span></div><div class="tk">${esc(L.prac.slice(-8).map(x => x.t).join(" · "))}</div></div>` : "") +
         `</details>`;
     });
   });
-  if (!h) return `<div class="ppav"><p class="note">This student has no exercises recorded for that choice yet.</p></div>`;
   return `<div class="ppav">${h}</div>`;
 }
 function bind(root){
