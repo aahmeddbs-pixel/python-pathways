@@ -6,8 +6,8 @@
 <title>Python Pathways</title>
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261109b"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261109b"></script>
+<script src="pp-sync.js?v=20261109c"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261109c"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1756,7 +1756,7 @@ function renderStep(){
         s.solved[qn] = true; try { if (window.SDC && SDC.slow) SDC.slow.stop(); } catch(e){}
         if (first){ s.solvedAt = s.solvedAt || {}; s.solvedAt[qn] = Date.now(); queueSync(); setTimeout(rankReport, 500); }
         if (first){ prog.log = prog.log || []; prog.log.push({at:Date.now(), date:today(), lesson:cur.lesson, title:Q.title, kind:isP ? "practice" : "exercise"}); sdcTask("L" + cur.lesson + " " + (isP ? "practice" : "exercise") + ": " + Q.title, isP ? "practice" : "exercise"); }
-        if (isP && first) s.prac.done.push({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)});
+        if (isP && first){ const pc0 = s.prac.cur && s.prac.cur.id === qn ? s.prac.cur : null; s.prac.done.push(Object.assign({id:qn, gid:Q.gid, title:Q.title, ok:true, hints:s.hints[qn] || 0, checks:s.tries[qn], ms:(s.ms || {})[qn] || 0, at:Date.now(), code:(ed.get() || "").slice(0, 1500)}, pc0 ? {P:pc0.P || null, fname:pc0.fname || "", fold:pc0.fold || "", grade:pc0.grade || ""} : {})); }
         saveProg();
         fb.className = "fb ok";
         fb.textContent = "✅ Correct! " + (first ? "+" + POINTS_EACH + " points" : "Already solved, so no new points.");
@@ -1995,7 +1995,9 @@ function snapshot(type, extra){
         const code = cut((s.code || {})[q], e ? e.starter : DATA.questions[p][q - 1].starter); if (code && (!s.solved[q] || recent)) o.code = code;
         return o; });
       const pc = (s.prac || {}).cur, pcur = pc && !s.solved[pc.id] ? {id:pc.id, t:pc.title, g:pc.gid, P:pc.P || null, fn:pc.fname || "", fo:pc.fold || "", gr:pc.grade || String(acct.grade || ""), tk:String(pc.task || "").slice(0, 1500), code:cut((s.code || {})[pc.id], pc.starter), c:s.tries[pc.id] || 0} : null;
-      const prac = ((s.prac || {}).done || []).filter(x => x.ok).map(x => ({t:x.title, h:x.hints || 0, c:x.checks || 0, ms:x.ms || 0, at:x.at || 0}));
+      const prac = ((s.prac || {}).done || []).filter(x => x.ok).map((x, i, all) => { const o = {t:x.title, h:x.hints || 0, c:x.checks || 0, ms:x.ms || 0, at:x.at || 0};
+        if (x.gid && x.P && i >= all.length - 12){ o.g = x.gid; o.P = x.P; if (x.fname){ o.fn = x.fname; o.fo = x.fold; } o.gr = x.grade || String(acct.grade || ""); }   // the student's own practice values, so staff see the exact answer
+        return o; });
       solved += core.filter(x => x.ok).length + prac.length;
       const days = {}; Object.keys(s.days || {}).forEach(d => days[d] = s.days[d].activeMs || 0);
       const errs = {}; Object.keys(s.errs || {}).forEach(q => Object.keys(s.errs[q]).forEach(k => errs[k] = (errs[k] || 0) + s.errs[q][k]));
