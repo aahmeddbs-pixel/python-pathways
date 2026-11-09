@@ -119,9 +119,10 @@ td .em{color:var(--muted);font-size:.82rem}
   <div id="ansView" class="hidden">
     <div class="card" id="ansControls">
       <h1>Exercise answers</h1>
-      <p class="muted" style="margin-top:4px">Pick a level and lesson to see that lesson's worked example and its tasks, each with the answer. To see the exact answers to one student's own version of the tasks, open the student on the 📊 Student progress tab.</p>
+      <p class="muted" style="margin-top:4px">Pick a level and lesson to see that lesson's worked example and its tasks, each with the answer. <b>Choose a student</b> to see the exact exercises and practice questions <b>that student</b> is solving, with identical solutions to their version (their own numbers, words and function names), so you can check their work and support them.</p>
       <p class="muted small" style="margin-top:6px"><b>Function names:</b> students see their own function name, e.g. <code>product_fox27</code> instead of <code>product</code>. The answer is the same; the student just keeps the name on their screen.</p>
       <div class="ansgrid">
+        <div><label class="small" style="font-weight:700">Student</label><select class="t" id="ansStu"><option value="">All students (lesson tasks)</option></select></div>
         <div><label class="small" style="font-weight:700">Level</label><select class="t" id="ansLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option><option value="dp_beginner">IB DP Beginner (G11–12)</option><option value="dp_intermediate">IB DP Intermediate (G11–12)</option><option value="dp_advanced">IB DP Advanced HL (G11–12)</option></select></div>
         <div><label class="small" style="font-weight:700">Lesson</label><select class="t" id="ansLesson"></select></div>
         
@@ -199,9 +200,9 @@ td .em{color:var(--muted);font-size:.82rem}
 </div>
 
 <script src="answers.enc.js"></script>
-<script src="pp-sync.js?v=20261109e"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261109e"></script>
-<script src="voice-recorder.js?v=20261109e"></script>
+<script src="pp-sync.js?v=20261109f"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261109f"></script>
+<script src="voice-recorder.js?v=20261109f"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
 (function(){
@@ -1005,7 +1006,7 @@ window.__initAnswers = function(){
       else if (keep.has(ch)) ch.classList.toggle("hidden", keep.get(ch));
     });
     $("ansView").classList.toggle("hidden", !ans);
-    if (ans) render();
+    if (ans){ fillStudents(); render(); }
   }
   $("vProg").onclick = () => view(false);
   $("vAns").onclick = () => view(true);
@@ -1015,6 +1016,20 @@ window.__initAnswers = function(){
     sel.innerHTML = A.LESSONS[lv].map((L, i) => '<option value="' + (i + 1) + '">Lesson ' + (i + 1) + ': ' + h(L.title) + '</option>').join("");
     if (was && +was <= A.LESSONS[lv].length) sel.value = was;
   }
+  const stuList = () => Object.keys(typeof STUDENTS === "object" && STUDENTS ? STUDENTS : {}).map(k => ({ k, st:STUDENTS[k] }))
+    .filter(x => x.st && x.st.acct && x.st.acct.name && x.st.snap && x.st.snap.paths && Object.keys(x.st.snap.paths).length)
+    .sort((a, b) => String(a.st.acct.name).localeCompare(String(b.st.acct.name)));
+  function fillStudents(){
+    const sel = $("ansStu"), was = sel.value, list = stuList();
+    sel.innerHTML = '<option value="">All students (lesson tasks)</option>' + list.map(x => '<option value="' + h(x.k) + '">' + h(x.st.acct.name) + (x.st.acct.grade ? " (G" + h(x.st.acct.grade) + ")" : "") + '</option>').join("");
+    if (was && list.some(x => x.k === was)) sel.value = was;
+  }
+  /* the level and lesson the student worked on most recently */
+  function latest(st){ let best = null, t = -1;
+    Object.keys(st.snap.paths).forEach(p => Object.keys(st.snap.paths[p].lessons || {}).forEach(n => { const L = st.snap.paths[p].lessons[n];
+      const at = Math.max(0, ...(L.core || []).map(o => o.at || 0), ...(L.prac || []).map(o => o.at || 0), L.pcur ? 1 : 0);
+      if (at > t || !best){ t = at; best = { p, n }; } }));
+    return best; }
   let DATA = null;   // the lessons exactly as students see them (worked examples and tasks), read from the student page
   async function lessonData(){
     if (DATA) return DATA;
@@ -1027,7 +1042,8 @@ window.__initAnswers = function(){
     const lv = $("ansLevel").value, n = +$("ansLesson").value || 1, L = A.LESSONS[lv][n - 1];
     const out = $("ansOut"); out.innerHTML = "";
     const head = document.createElement("div"); head.className = "card"; head.style.marginTop = "14px";
-    head.innerHTML = '<h2 style="margin:0">' + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + '</p>';
+    const sk = $("ansStu").value, stu = sk && STUDENTS[sk];
+    head.innerHTML = '<h2 style="margin:0">' + (stu ? h(stu.acct.name) + ' · ' : '') + PATH_NAMES[lv] + ' · Lesson ' + n + ': ' + h(L.title) + '</h2><p class="muted small" style="margin-top:4px">' + h(L.goal) + '</p>';
     out.appendChild(head);
     const D = await lessonData(), DL = D && D.lessons[lv] && D.lessons[lv][n - 1];
     if ($("ansLevel").value !== lv || (+$("ansLesson").value || 1) !== n) return;   // the choice changed while loading
@@ -1037,6 +1053,15 @@ window.__initAnswers = function(){
         '<b class="small">Example code</b><pre class="anscode"></pre>' + (DL.note ? '<div class="anstask small">' + DL.note + '</div>' : '') +
         '<div class="ansbtns" style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-a="copy">📋 Copy example</button></div>';
       d.querySelector(".anscode").textContent = DL.example; copyBtn(d, DL.example); out.appendChild(d);
+    }
+    if (stu){
+      const d = document.createElement("div"); d.className = "anscard";
+      const has = stu.snap.paths[lv] && stu.snap.paths[lv].lessons && stu.snap.paths[lv].lessons[n];
+      d.innerHTML = '<span class="anstag">' + h(stu.acct.name) + '\'s tasks</span><h3>Exercises and practice questions this student is solving</h3><p class="muted small" style="margin:4px 0 0">Each one exactly as the student sees it, with the identical solution to their version' + (stu.snap.at ? ' · last saved ' + h(new Date(stu.snap.at).toLocaleString("en-GB", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })) : '') + '.</p>' +
+        (has && window.PPAnswerView ? PPAnswerView.render(stu.snap, A, { path:lv, lesson:n }) : '<p class="note" style="margin-top:10px">This student hasn\'t started this lesson yet. Pick another lesson, or choose “All students” to see the lesson\'s tasks.</p>');
+      d.querySelectorAll("details.les").forEach(x => x.open = true);
+      if (window.PPAnswerView) PPAnswerView.bind(d);
+      out.appendChild(d); return;
     }
     (L.ex || []).forEach((q, k) => {
       const F = ((A.FIXED || {})[lv] || [])[q - 1], Qd = D && D.questions[lv] && D.questions[lv][q - 1]; if (!F) return;
@@ -1048,9 +1073,11 @@ window.__initAnswers = function(){
       d.querySelector(".anscode").textContent = F.a; copyBtn(d, F.a); out.appendChild(d);
     });
   }
+  $("ansStu").onchange = () => { const st = $("ansStu").value && STUDENTS[$("ansStu").value], b = st && latest(st);
+    if (b && A.LESSONS[b.p]){ $("ansLevel").value = b.p; fillLessons(); $("ansLesson").value = String(b.n); } render(); };
   $("ansLevel").onchange = () => { fillLessons(); render(); };
   $("ansLesson").onchange = render;
-  $("ansPrint").onclick = () => window.print();
+  $("ansPrint").onclick = () => { $("ansOut").querySelectorAll("details").forEach(d => d.open = true); window.print(); };
   fillLessons();
 };
 showGate();
