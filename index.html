@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js?v=20261109f"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261109f"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261110b"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1293,9 +1293,11 @@ async function linkFromCS(acc){
   const cs = { name: acc.name, email: acc.email || "", grade: String(acc.grade || ""), teacher: acc.teacher || "" };
   let design = null;
   try {
-    if (/@sisd\.ae$/i.test(acc.email || "") && (acc.dk || acc.pin)){
-      const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("sdc-cs-design|" + String(acc.email).toLowerCase() + "|" + (acc.dk || acc.pin))));
-      design = { email: String(acc.email).toLowerCase(), pw: "cs" + [...h].slice(0, 20).map(v => v.toString(16).padStart(2, "0")).join(""), name: acc.name, grade: cs.grade, teacher: cs.teacher, created: acc.created || Date.now() };
+    // a Study Plus student whose CS account has no school email still gets one sign-in for both courses
+    const em = /@sisd\.ae$/i.test(acc.email || "") ? acc.email : (SDC.studyPlusOK && SDC.studyPlusOK(acc) && SDC.studyPlusEmail ? SDC.studyPlusEmail(acc) : "");
+    if (em && (acc.dk || acc.pin)){
+      const h = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode("sdc-cs-design|" + String(em).toLowerCase() + "|" + (acc.dk || acc.pin))));
+      design = { email: String(em).toLowerCase(), pw: "cs" + [...h].slice(0, 20).map(v => v.toString(16).padStart(2, "0")).join(""), name: acc.name, grade: cs.grade, teacher: cs.teacher, created: acc.created || Date.now() };
     }
   } catch(e){}
   SDC.patchGate({ link: { cs, design } });
