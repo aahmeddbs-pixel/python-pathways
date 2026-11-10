@@ -156,6 +156,13 @@ input.t:focus{border-color:var(--blue)}
 .tab{flex:1;border:none;background:transparent;border-radius:9px;padding:10px;font-weight:700;color:var(--ink2)}
 .tab.on{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
 .btn.full{width:100%;justify-content:center;margin-top:16px}
+/* 3D sign-in buttons: they press down when clicked, so students can see it worked */
+#loginBtn,#signBtn{position:relative;box-shadow:0 6px 0 #0b1628,0 8px 14px rgba(0,0,0,.18);transform:translateY(0);transition:transform .07s ease,box-shadow .07s ease,filter .15s;border-bottom:none}
+#loginBtn:hover:not(:disabled),#signBtn:hover:not(:disabled){filter:brightness(1.08)}
+#loginBtn:active:not(:disabled),#signBtn:active:not(:disabled),#loginBtn.pressed,#signBtn.pressed{transform:translateY(6px);box-shadow:0 0 0 #0b1628,0 2px 4px rgba(0,0,0,.2)}
+#loginBtn.busy::after,#signBtn.busy::after{content:"";width:18px;height:18px;border:3px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;margin-left:10px;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#loginBtn,#signBtn{transition:none}#loginBtn.busy::after,#signBtn.busy::after{animation:none}}
 select.t{background:#fff;appearance:auto}
 input.pin{letter-spacing:.4em;font-weight:700}
 .linkbtn2{background:none;border:none;color:var(--red);font-weight:700;text-decoration:underline;font-size:inherit;padding:0}
@@ -1253,14 +1260,20 @@ $("loginBtn").onclick = async () => {
   store(lk, {n:0, until:0});
   promotePy(acc);
   let newPin = false;
-  if (rs && pin === "0000"){ err.textContent = ""; pin = await chooseNewPin(acc); newPin = true; } else await ensureSync(acc, pin);
+  if (rs && pin === "0000"){ err.textContent = ""; pin = await chooseNewPin(acc); newPin = true; }
+  else {   // fast sign-in: wait at most 1.5 s for newer progress from another computer, the rest carries on in the background
+    const sync = ensureSync(acc, pin);
+    await Promise.race([sync, new Promise(r => setTimeout(r, 1500))]);
+    sync.then(() => { promotePy(acc); }).catch(() => {});
+  }
   promotePy(acc);   // the online copy may be from last school year
-  if (SDCG){
-    $("loginBtn").disabled = true; err.textContent = "Checking your course…";
-    let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
-    $("loginBtn").disabled = false; err.textContent = "";
-    if (!ck.ok){ $("loginPin").value = ""; SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return; }
-    if (ck.assign) applyAssign(acc, ck.assign);
+  if (SDCG){   // the course check runs in the background: the student goes straight in, and is only stopped if it fails
+    const pathWas = acc.path + "|" + acc.grade;
+    SDC.confirm(sdcAcct(acc), false).then(ck => {
+      if (!ck) return;
+      if (!ck.ok){ if (profile === acc) signOutCS(false); SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return; }
+      if (ck.assign){ applyAssign(acc, ck.assign); if (profile === acc && acc.path + "|" + acc.grade !== pathWas && !cur.lesson) openMap(); }
+    }).catch(() => {});
   }
   profile = acc; store("pyl_lastName", acc.name); $("loginPin").value = ""; err.textContent = "";
   if (newPin) syncTeacher("pinchange", {pin:pin});   // so their teacher can see the new PIN
@@ -1270,6 +1283,13 @@ $("loginBtn").onclick = async () => {
   if (acc.last && acc.last.path === acc.path && acc.last.lesson) openLesson(acc.last.lesson, acc.last.step);
 };
 $("loginPin").addEventListener("keydown", e => { if (e.key === "Enter") $("loginBtn").click(); });
+/* show the click straight away: the button stays pressed with a spinner until sign-in finishes */
+["loginBtn", "signBtn"].forEach(id => { const b = $(id), run = b.onclick; if (!b || !run) return;
+  const label = b.textContent;
+  b.onclick = async ev => { if (b.classList.contains("busy")) return;
+    b.classList.add("pressed", "busy"); b.textContent = id === "loginBtn" ? "Signing you in…" : "Creating your account…";
+    await new Promise(r => requestAnimationFrame(() => setTimeout(r, 0)));   // let the press show before any work starts
+    try { await run.call(b, ev); } finally { b.classList.remove("pressed", "busy"); b.textContent = label; } }; });
 $("switchBtn").onclick = () => signOutCS(false);
 /* switching = going to the other course: save and sign out here, but keep the link so they don't sign in again */
 function signOutCS(switching){
