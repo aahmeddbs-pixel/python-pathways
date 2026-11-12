@@ -7,7 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261109f"></script>
+<script src="pp-sync.js?v=20261112lb"></script>
 <script src="/sisd-design-and-computing/sdc.js?v=20261112hp"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2588,7 +2588,10 @@ if (SDCG){
 $("loginName").value = load("pyl_lastName", "");
 if (!SDCG && !Object.keys(accounts()).length) document.querySelector('.tab[data-tab="up"]').click();
 show("signin");
+/* read-only window for the live class leaderboard (leaderboard.js) */
+window.PPLive = { profile: () => profile, ready: () => !!(profile && prog), solved: () => (prog ? solvedCount() : 0), confetti, say, sfx };
 })();
 </script>
+<script src="leaderboard.js?v=20261112lb"></script>
 </body>
 </html>

@@ -255,7 +255,15 @@ async function escrowSecret(email, pw){
   const pub = await crypto.subtle.importKey("jwk", k.encPub, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["encrypt"]);
   queueRow("P", await emailId(email), String(Date.now()), e64(new Uint8Array(await crypto.subtle.encrypt({ name:"RSA-OAEP" }, pub, TE.encode(String(pw).slice(0, 120)))))); await flush(); return true;
 }
-return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, queued: () => getQ().length };
+/* ---- live class leaderboard: one small row per student per update, read back by classmates ---- */
+function boardPost(id, text){ if (!cfg()) return; queueRow("L", id, String(Date.now()), text); flush(); }
+async function boardRead(prefix){
+  const c = cfg(); if (!c) return {};
+  const all = versions(await cells(c, "L", prefix, 400)), out = {};
+  Object.keys(all).forEach(k => { out[k.slice(2)] = all[k][0].text; });
+  return out;
+}
+return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, boardPost, boardRead, queued: () => getQ().length };
 }
 window.PPSync = ppMake({ pfx:"PPS2", e:"pp-e|", d:"pp-d|", v:"pp-v2|", q:"pyl_syncq" });
 /* the same locked sync for the Design course's accounts (school email + password) */
