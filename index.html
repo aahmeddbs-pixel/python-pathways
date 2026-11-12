@@ -2119,7 +2119,14 @@ setTimeout(flushFormbox, 3000);
 window.addEventListener("online", flushFormbox);
 window.addEventListener("online", flushOutbox);
 
-/* ---------------- Lesson clock (50 minutes) ---------------- */
+/* ---------------- Lesson clock (50 minutes) ----------------
+   One clock per day: it starts with the first lesson opened today and carries on through any next lesson.
+   A fresh 50 minutes only starts on another day. */
+function sessionStart(d){
+  let first = Infinity;
+  Object.keys((prog && prog.lessons) || {}).forEach(n => { const x = prog.lessons[n] && prog.lessons[n].days && prog.lessons[n].days[d]; if (x && x.start) first = Math.min(first, x.start); });
+  return first === Infinity ? Date.now() : first;
+}
 function startClock(){
   stopClock();
   let lastTick = Date.now();
@@ -2140,7 +2147,7 @@ function startClock(){
       }
     }
     lastTick = now;
-    const left = LESSON_MIN * 60000 - (now - day.start);
+    const start0 = sessionStart(d), left = LESSON_MIN * 60000 - (now - start0);
     const pill = $("clockPill");
     const doneToday = submittedToday(s);
     const L = DATA.lessons[profile.path][cur.lesson - 1];
@@ -2153,7 +2160,7 @@ function startClock(){
       if ($("timeBanner").dataset.h !== html){ $("timeBanner").dataset.h = html; $("timeBanner").innerHTML = html; }   // only redraw when it changes, so the button stays clickable
     } else {
       pill.textContent = "⏱ Time's up"; pill.className = "pill late";
-      if (!doneToday && !day.autoSent){
+      if (!doneToday && !day.autoSent && day.start < start0 + LESSON_MIN * 60000){   // a lesson opened after time was already up isn't auto-sent
         day.autoSent = true; saveProg();
         const ready = mastery(L, s).eligible;
         submitLesson(L, s, ready ? "Auto-submitted at time up" : "Time up – work incomplete", null, ready).then(() => { renderSteps(); if (cur.step === SUBMIT) renderStep(); });
