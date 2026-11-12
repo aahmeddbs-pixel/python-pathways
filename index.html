@@ -39,7 +39,10 @@ pre{white-space:pre-wrap}
 .pill{background:rgba(255,255,255,.12);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;white-space:nowrap}
 .pill.warn{background:var(--amber);color:var(--ink)}
 .pill.late{background:var(--red);color:#fff}
-#clockPill{font-variant-numeric:tabular-nums;min-width:5.6em;text-align:center;display:inline-block}
+#clockPill{position:fixed;left:18px;bottom:18px;z-index:55;font-variant-numeric:tabular-nums;min-width:6.2em;text-align:center;display:inline-block;padding:9px 16px;font-size:1.05rem;background:#1B2D4E;color:#fff;border:2px solid rgba(255,255,255,.25);box-shadow:0 8px 22px rgba(0,0,0,.25)}
+#clockPill.hidden{display:none}
+#clockPill.warn{background:var(--amber);color:var(--ink)}
+#clockPill.late{background:var(--red);color:#fff}
 .linkbtn{background:none;border:none;color:#c9d6f2;font-weight:700;text-decoration:underline;font-size:.9rem}
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:22px}
 h1{font-size:1.9rem;font-weight:900;line-height:1.15}
@@ -195,7 +198,6 @@ input.pin{letter-spacing:.4em;font-weight:700}
 <div class="topbar"><div class="wrap">
   <div class="brand"><span class="logo">SISD</span>Python Pathways</div>
   <span class="pill" id="pyStatus">🐍 Loading Python…</span>
-  <span class="pill hidden notranslate" id="clockPill" translate="no" title="Time left in this lesson"></span>
   <span class="pill hidden" id="ptsPill"></span>
   <span class="pill house hidden" id="housePill"></span>
   <button class="iconbtn" id="howBtn" title="How it works video">▶ How it works</button>
@@ -937,6 +939,7 @@ GEN.dp_advanced = [
 if (typeof module !== "undefined") module.exports = {GEN, R, py, setGradeTheme};
 
 </script>
+<span class="pill hidden notranslate" id="clockPill" translate="no" title="Time left in this lesson" aria-live="off"></span>
 <script>
 (function(){
 "use strict";
@@ -1427,9 +1430,14 @@ async function syncNow(force){
   } catch(e){ syncDirty = true; }
   finally { syncBusy = false; }
 }
-setInterval(() => { if (syncDirty && !syncBusy) syncNow(); else if (PPSync.queued()) PPSync.flush(); }, 30000);   // work is saved online every 30 seconds (and when the page is closed or hidden)
+/* Save every 10 seconds, on its own clock (the lesson countdown never triggers a save): on this computer, then online
+   if anything really changed (timers alone don't count). */
+setInterval(() => {
+  if (profile && prog){ try { saveCode(); } catch(e){} saveProg(); if (!syncBusy) syncNow(); }
+  else if (PPSync.queued()) PPSync.flush();
+}, 10000);
 /* "Saving… / ✓ Saved" in the top bar */
-try { if (window.SDC && SDC.saveBadge) SDC.saveBadge.watch(() => ({ on: !!(SDCG && profile && profile.dk && PPSync.enabled()), pending: syncDirty || syncBusy || PPSync.queued() > 0 })); } catch(e){}
+try { if (window.SDC && SDC.saveBadge) SDC.saveBadge.watch(() => ({ on: !!(SDCG && profile && profile.dk && PPSync.enabled()), pending: syncBusy || PPSync.queued() > 0 })); } catch(e){}
 window.addEventListener("pagehide", () => { try { if (profile && profile.dk) { saveCode(); syncNow(true); } } catch(e){} });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { try { if (profile && profile.dk) syncNow(true); } catch(e){} } });
 const solvedN = s => Object.keys(s.solved || {}).filter(k => s.solved[k]).length;
@@ -2170,7 +2178,7 @@ function startClock(){
           : '<div class="banner late">⏰ The 50 minutes are up. Your teacher can see what you have done so far, but your lesson is <b>not complete</b> yet. Finish the work to unlock Submit.</div>';
       }
     }
-    if (Math.floor(now / 10000) !== Math.floor((now - 1000) / 10000)){ saveProg(); if (tryAward()){ renderSteps(); } else if ($("mapHouse")) updatePills(); }
+    if (Math.floor(now / 10000) !== Math.floor((now - 1000) / 10000)){ if (tryAward()){ renderSteps(); } else if ($("mapHouse")) updatePills(); }   // saving is separate: every 10 seconds (below)
   };
   tick(); clockTimer = setInterval(tick, 1000);
 }
