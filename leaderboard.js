@@ -29,7 +29,7 @@ function begin(pf){
   s.key = key; s.who = pf; S = s; posted = -1; lastTop = s.lastTop || []; save(); post(true);
   if (isNew) setTimeout(align, T ? 500 : 8000);
 }
-/* a student who signs in late joins the class's lesson clock (the earliest classmate who started up to 40 minutes ago) */
+/* a student who signs in late joins the class's lesson clock (the earliest classmate who started earlier in the lesson) */
 async function align(){
   if (!S) return; const mine = S.key, list = await ranking(); if (!S || S.key !== mine) return;
   const first = Math.min(S.start, ...list.map(r => r.s || S.start));
