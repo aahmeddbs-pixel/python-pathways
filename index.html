@@ -39,6 +39,7 @@ pre{white-space:pre-wrap}
 .pill{background:rgba(255,255,255,.12);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.9rem;white-space:nowrap}
 .pill.warn{background:var(--amber);color:var(--ink)}
 .pill.late{background:var(--red);color:#fff}
+#clockPill{font-variant-numeric:tabular-nums;min-width:5.6em;text-align:center;display:inline-block}
 .linkbtn{background:none;border:none;color:#c9d6f2;font-weight:700;text-decoration:underline;font-size:.9rem}
 .card{background:var(--card);border-radius:var(--r);box-shadow:var(--shadow);border:1px solid var(--line);padding:22px}
 h1{font-size:1.9rem;font-weight:900;line-height:1.15}
@@ -194,7 +195,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
 <div class="topbar"><div class="wrap">
   <div class="brand"><span class="logo">SISD</span>Python Pathways</div>
   <span class="pill" id="pyStatus">🐍 Loading Python…</span>
-  <span class="pill hidden" id="clockPill"></span>
+  <span class="pill hidden notranslate" id="clockPill" translate="no" title="Time left in this lesson"></span>
   <span class="pill hidden" id="ptsPill"></span>
   <span class="pill house hidden" id="housePill"></span>
   <button class="iconbtn" id="howBtn" title="How it works video">▶ How it works</button>
@@ -1532,10 +1533,11 @@ function houseHTML(){
   return h;
 }
 function updatePills(){
-  $("ptsPill").textContent = "⭐ " + totalPoints() + " pts";
-  const hp = housePoints();
-  $("housePill").textContent = "🏠 " + hp + " this week";
-  if ($("mapHouse")) $("mapHouse").innerHTML = houseHTML();
+  // only rewrite when something changed, so a translated top bar isn't reset to English and doesn't jump
+  const put = (id, v, html) => { const e = $(id); if (e && e.dataset.v !== v){ e.dataset.v = v; if (html) e.innerHTML = v; else e.textContent = v; } };
+  put("ptsPill", "⭐ " + totalPoints() + " pts");
+  put("housePill", "🏠 " + housePoints() + " this week");
+  if ($("mapHouse")) put("mapHouse", houseHTML(), true);
 }
 /* Levels: finishing every exercise of a level (all 10 lessons) unlocks the next level for the student */
 const LEVEL_NEXT = { beginner:"intermediate", intermediate:"advanced", dp_beginner:"dp_intermediate", dp_intermediate:"dp_advanced" };
@@ -2153,13 +2155,13 @@ function startClock(){
     const L = DATA.lessons[profile.path][cur.lesson - 1];
     if (left > 0){
       const m = Math.floor(left / 60000), sec = Math.floor(left % 60000 / 1000);
-      pill.textContent = "⏱ " + m + ":" + String(sec).padStart(2, "0") + " left";
-      pill.className = "pill" + (left <= 5 * 60000 ? " warn" : "");
+      const txt = "⏱ " + m + ":" + String(sec).padStart(2, "0"), cls = "pill notranslate" + (left <= 5 * 60000 ? " warn" : "");   // numbers only, never translated, fixed width: the top bar stays still
+      if (pill.textContent !== txt) pill.textContent = txt; if (pill.className !== cls) pill.className = cls;
       const mm = mastery(L, s), done = mm.core === 3 && mm.prac >= mm.need;
       const html = done ? nextLessonBanner(m) : left <= 5 * 60000 && !doneToday ? '<div class="banner warn">⏰ Less than 5 minutes left. ' + (mm.eligible ? "Go to <b>Submit</b> now!" : "Finish the work you need so you can submit!") + '</div>' : "";
       if ($("timeBanner").dataset.h !== html){ $("timeBanner").dataset.h = html; $("timeBanner").innerHTML = html; }   // only redraw when it changes, so the button stays clickable
     } else {
-      pill.textContent = "⏱ Time's up"; pill.className = "pill late";
+      if (pill.textContent !== "⏱ 0:00") pill.textContent = "⏱ 0:00"; if (pill.className !== "pill notranslate late") pill.className = "pill notranslate late";
       if (!doneToday && !day.autoSent && day.start < start0 + LESSON_MIN * 60000){   // a lesson opened after time was already up isn't auto-sent
         day.autoSent = true; saveProg();
         const ready = mastery(L, s).eligible;
