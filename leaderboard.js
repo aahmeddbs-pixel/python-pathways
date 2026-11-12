@@ -81,8 +81,9 @@ function css(){
   document.head.appendChild(st);
 }
 
+const popsOn = () => { try { return localStorage.getItem("pyl_popups") !== "off"; } catch(e){ return true; } };
 async function show(min){
-  if (!S || popOpen) return;
+  if (!S || popOpen || !popsOn()) return;   // the student switched pop-ups off (🏆 button in the top bar)
   const final = min >= LESSON; popOpen = true;
   post(true); await new Promise(r => setTimeout(r, T ? 300 : 2500));   // give my latest score a moment to land
   if (!S){ popOpen = false; return; }

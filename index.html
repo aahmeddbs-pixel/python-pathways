@@ -205,6 +205,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <button class="iconbtn" id="sfxBtn" title="Sound effects">🔊</button>
   <button class="iconbtn" id="voiceBtn" title="Spoken encouragement">🗣️ Voice on</button>
   <button class="iconbtn off" id="musicBtn" title="Background music">🎵 Music off</button>
+  <button class="iconbtn" id="popBtn" title="Class ranking and motivating pop-ups">🏆 Pop-ups on</button>
   <span class="pill hidden" id="whoPill"></span>
   <button class="linkbtn hidden" id="switchBtn">Sign out</button>
 </div></div>
@@ -2221,6 +2222,7 @@ const NUDGE_TIPS = [
   "You can buy advice for 5 points with the 💡 button. It's a smart move when you're stuck!"
 ];
 function nudge(n){
+  if (!popupsOn()) return;
   sfx("unlock");
   const bg = el("div", "modal-bg");
   bg.innerHTML = '<div class="modal"><div class="big">💪</div><h2 style="margin-top:8px">' + ["Keep going!", "You're nearly there!", "Don't give up!", "Stay strong, coder!"][n % 4] + '</h2>' +
@@ -2279,6 +2281,11 @@ function say(text, delay){
   }, delay || 0);
 }
 function cheer(kind, delay){ const a = CHEERS[kind]; if (a) say(a[Math.floor(Math.random() * a.length)], delay); }
+/* Pop-ups: the class ranking every 5 minutes and the "keep going" messages. Each student can switch them off; the computer remembers. */
+function popupsOn(){ try { return localStorage.getItem("pyl_popups") !== "off"; } catch(e){ return true; } }
+function paintPop(){ const b = $("popBtn"); if (!b) return; const on = popupsOn(); b.textContent = on ? "🏆 Pop-ups on" : "🔕 Pop-ups off"; b.classList.toggle("off", !on); b.setAttribute("aria-pressed", String(on)); }
+$("popBtn").onclick = () => { const on = !popupsOn(); try { localStorage.setItem("pyl_popups", on ? "on" : "off"); } catch(e){} paintPop(); };
+paintPop();
 function paintVoice(){ const b = $("voiceBtn"); if (!b) return; b.textContent = SND.voice ? "🗣️ Voice on" : "🤐 Voice off"; b.classList.toggle("off", !SND.voice); }
 function ac(){ if (!actx){ try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ return null; } } if (actx.state === "suspended") actx.resume(); return actx; }
 function tone(f, t0, dur, type, vol, dest){
@@ -2609,6 +2616,6 @@ show("signin");
 window.PPLive = { profile: () => profile, ready: () => !!(profile && prog), solved: () => (prog ? solvedCount() : 0), confetti, say, sfx };
 })();
 </script>
-<script src="leaderboard.js?v=20261112lb"></script>
+<script src="leaderboard.js?v=20261112pop"></script>
 </body>
 </html>
