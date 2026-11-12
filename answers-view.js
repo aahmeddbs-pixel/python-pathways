@@ -65,5 +65,52 @@ function bind(root){
   root.querySelectorAll("[data-copy]").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation();
     const pre = root.querySelector("#" + b.dataset.copy); try { navigator.clipboard.writeText(pre ? pre.textContent : ""); b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1500); } catch(x){} });
 }
-return { render, bind, plain };
+/* Every task in a lesson with its answer (not tied to a student): the worked example, the three lesson exercises,
+   then every kind of question the lesson's exercises and practice are made from, each with a full example and its exact answer.
+   Students get their own numbers, words and function names, but the method and the answer's shape are identical. */
+let DATA = null;
+async function lessonData(){
+  if (DATA) return DATA;
+  try { const t = await (await fetch("/python-pathways/index.html?v=" + Date.now(), { cache:"no-store" })).text(), i = t.indexOf("const DATA = ") + 13, j = t.indexOf("\n", i);
+    DATA = JSON.parse(t.slice(i, j).replace(/;\s*$/, "")); } catch(e){ DATA = null; }
+  return DATA;
+}
+function sample(A, path, g, grade){
+  try { if (A.setGradeTheme) A.setGradeTheme(String(grade || "")); } catch(e){}
+  for (let k = 0; k < 6; k++){
+    try { const P = g.make(), Q = g.q(P), ex = A.exactAnswer(path, { g: g.id, P, gr: String(grade || ""), t: Q.title, tk: Q.task });
+      if (ex && !ex.missing && ex.answer != null) return { title: ex.title || Q.title, task: ex.task || Q.task, answer: ex.answer, hints: Q.hints || [] }; } catch(e){}
+  }
+  return null;
+}
+const card = (tag, title, task, answer, extra) => {
+  const id = "a" + Math.random().toString(36).slice(2, 9);
+  return `<div class="ex"><div class="hd"><span class="pl">${esc(tag)}</span><span>${esc(title || "")}</span>${extra || ""}</div>
+    ${task ? `<div class="tk">${esc(plain(task))}</div>` : ""}
+    <div class="lbl">Answer <button type="button" class="cp" data-copy="${id}">Copy</button></div><pre id="${id}">${esc(answer)}</pre></div>`;
+};
+async function lessonAll(A, path, n, grade){
+  style();
+  if (!A || !A.exactAnswer || !A.LESSONS) return `<div class="ppav"><p class="note">The answer key is locked. The super admin opens it by signing in once; teachers then get it automatically the next time they sign in.</p></div>`;
+  const L = (A.LESSONS[path] || [])[n - 1]; if (!L) return "";
+  const D = await lessonData(), DL = D && D.lessons && D.lessons[path] && D.lessons[path][n - 1];
+  let h = `<div class="ppav" data-path="${esc(path)}" data-lesson="${n}" data-grade="${esc(grade || "")}">`;
+  if (DL && DL.example) h += `<details class="les" open><summary>Example (worked example from the lesson)</summary><div class="ex"><div class="lbl">Example code <button type="button" class="cp" data-copy="exm${n}">Copy</button></div><pre id="exm${n}">${esc(DL.example)}</pre></div></details>`;
+  const fixed = ((A.FIXED || {})[path] || []);
+  h += `<details class="les" open><summary>Exercise 1, 2 and 3</summary>` + (L.ex || []).map((q, k) => { const F = fixed[q - 1]; return F ? card("Exercise " + (k + 1), F.t, F.task, F.a) : ""; }).join("") + `</details>`;
+  const gens = ((A.GEN || {})[path] || [])[n - 1] || [];
+  h += `<details class="les" open><summary>Practice: every kind of question in this lesson (${gens.length})</summary><p class="muted small" style="margin:6px 0 0">Exercises and practice questions are made from these. Each student gets different numbers, words and a personal function name (e.g. <code>total_fox27</code>), but the answer is written the same way. Press <b>New example</b> for another one.</p>`;
+  gens.forEach((g, i) => { const x = sample(A, path, g, grade);
+    h += `<div class="ppav-g" data-g="${i}">` + (x ? card("Question type " + (i + 1), x.title, x.task, x.answer, `<button type="button" class="cp" data-new="${i}">🔄 New example</button>`) : `<div class="ex"><div class="note">No example available for question type ${i + 1}.</div></div>`) + `</div>`; });
+  h += `</details></div>`;
+  return h;
+}
+function bindAll(root, A){
+  bind(root);
+  root.querySelectorAll("[data-new]").forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation();
+    const box = b.closest(".ppav"), path = box.dataset.path, n = +box.dataset.lesson, i = +b.dataset.new, g = (((A.GEN || {})[path] || [])[n - 1] || [])[i];
+    const x = g && sample(A, path, g, box.dataset.grade); if (!x) return;
+    const wrap = b.closest(".ppav-g"); wrap.innerHTML = card("Question type " + (i + 1), x.title, x.task, x.answer, `<button type="button" class="cp" data-new="${i}">🔄 New example</button>`); bindAll(wrap, A); });
+}
+return { render, bind, plain, lessonAll, bindAll };
 })();
