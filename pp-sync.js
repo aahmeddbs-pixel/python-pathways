@@ -264,6 +264,19 @@ async function readSecrets(keys, encJwk){
     for (const v of list){ try { out[key] = { pw: new TextDecoder().decode(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsa, d64(v.text))), at: v.ver }; break; } catch(e){} } }
   return out;
 }
+/* a note only the staff dashboard can open (live view, help requests): a fresh AES key, locked with the admin key */
+async function sealForStaff(obj){
+  const k = CFG.adminKeys; if (!k) throw new Error("no key");
+  const raw = newKey(), pub = await crypto.subtle.importKey("jwk", k.encPub, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["encrypt"]);
+  return "h1~" + e64(new Uint8Array(await crypto.subtle.encrypt({ name:"RSA-OAEP" }, pub, d64(raw)))) + "~" + await seal(raw, JSON.stringify(obj));
+}
+let rsaCache = null;
+async function openForStaff(text, encJwk){
+  const p = String(text || "").split("~"); if (p[0] !== "h1" || p.length < 3 || !encJwk) return null;
+  try { if (!rsaCache || rsaCache.j !== encJwk) rsaCache = { j:encJwk, k: await crypto.subtle.importKey("jwk", encJwk, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["decrypt"]) };
+    const raw = e64(new Uint8Array(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsaCache.k, d64(p[1]))));
+    return JSON.parse(await open(raw, p.slice(2).join("~"))); } catch(e){ return null; }
+}
 /* ---- live class leaderboard: one small row per student per update, read back by classmates ---- */
 function boardPost(id, text){ if (!cfg()) return; queueRow("L", id, String(Date.now()), text); flush(); }
 async function boardRead(prefix){
@@ -272,7 +285,7 @@ async function boardRead(prefix){
   Object.keys(all).forEach(k => { out[k.slice(2)] = all[k][0].text; });
   return out;
 }
-return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, readSecrets, boardPost, boardRead, queued: () => getQ().length };
+return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, readSecrets, sealForStaff, openForStaff, boardPost, boardRead, queued: () => getQ().length };
 }
 window.PPSync = ppMake({ pfx:"PPS2", e:"pp-e|", d:"pp-d|", v:"pp-v2|", q:"pyl_syncq" });
 /* the same locked sync for the Design course's accounts (school email + password) */

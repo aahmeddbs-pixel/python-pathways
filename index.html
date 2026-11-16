@@ -7,8 +7,8 @@
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261116lg"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261116gb"></script>
+<script src="pp-sync.js?v=20261116lv"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261116lv"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1757,6 +1757,7 @@ function renderStep(){
   body.innerHTML = ""; ed = null;
   if (cur.step !== VIDEO && cur.step !== SUBMIT && !stepOpen(cur.step, L, s)){ cur.step = lastOpenStep(L, s); renderSteps(); }
   try { if (window.SDC && SDC.slow && !(cur.step >= 2 && cur.step <= PRACTICE)) SDC.slow.stop(); } catch(e){}
+  try { if (SDCG && window.SDC && SDC.live) SDC.live.where(profile.path.replace("dp_", "DP ").replace(/^./, x => x.toUpperCase()) + " · Lesson " + cur.lesson + ": " + L.title + (cur.step === VIDEO ? " · video" : cur.step === SUBMIT ? " · submitting" : cur.step < 2 ? " · learn and example" : "")); } catch(e){}   // live view for the teacher
   if (cur.step === VIDEO){ renderConceptVideo(body, L, s); return; }
   if (cur.step === 0){
     body.innerHTML = '<h2>📖 Learn</h2><div class="goalbox">🎯 Learning goal: ' + L.goal + '</div><div class="learn">' + L.learn + '</div>';
@@ -1795,6 +1796,7 @@ function renderStep(){
     const m0 = mastery(L, s);
     const head = isP ? 'PRACTICE QUESTION ' + s.prac.count + ' • ' + m0.prac + ' solved' + (m0.prac < m0.need ? ' (' + m0.need + ' needed to submit)' : ' ✓') : 'EXERCISE ' + (k + 1) + ' OF 3';
     body.innerHTML = '<div class="muted" style="font-weight:800">' + head + '</div><h2>' + Q.title + '</h2>' + (isP ? '<p class="muted" style="margin-top:4px">Unlimited practice: every question is new, with different numbers and words.</p>' : '') + '<div class="task" style="margin-top:8px">' + Q.task + '</div>';
+    try { if (SDCG && window.SDC && SDC.live){ const lab = "Lesson " + cur.lesson + ": " + Q.title + (isP ? " (practice " + s.prac.count + ")" : " (exercise " + (k + 1) + ")"); SDC.live.where(lab); body.appendChild(SDC.live.button(lab)); } } catch(e){}   // "Need help" on every exercise
     ed = makeEditor(s.code[qn] != null ? s.code[qn] : Q.starter, isP ? "practice.py" : "exercise" + (k + 1) + ".py"); body.appendChild(ed.wrap);
     ed.ta.addEventListener("input", () => { clearTimeout(ed._t); ed._t = setTimeout(saveCode, 600); });
     let ib = null; if (Q.sample != null){ ib = inputBox(Q.sample); body.appendChild(ib); }
