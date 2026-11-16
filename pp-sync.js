@@ -255,6 +255,15 @@ async function escrowSecret(email, pw){
   const pub = await crypto.subtle.importKey("jwk", k.encPub, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["encrypt"]);
   queueRow("P", await emailId(email), String(Date.now()), e64(new Uint8Array(await crypto.subtle.encrypt({ name:"RSA-OAEP" }, pub, TE.encode(String(pw).slice(0, 120)))))); await flush(); return true;
 }
+/* the latest password copy (escrowed, see escrowSecret) for each account key: { key: { pw, at } }. One read for the whole class. */
+async function readSecrets(keys, encJwk){
+  const c = cfg(); if (!c || !encJwk || !keys || !keys.length) return {};
+  const rsa = await crypto.subtle.importKey("jwk", encJwk, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["decrypt"]);
+  const all = versions(await cells(c, "P", "", 5000)), out = {};
+  for (const key of keys){ const list = all["P|" + await emailId(key)] || [];
+    for (const v of list){ try { out[key] = { pw: new TextDecoder().decode(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsa, d64(v.text))), at: v.ver }; break; } catch(e){} } }
+  return out;
+}
 /* ---- live class leaderboard: one small row per student per update, read back by classmates ---- */
 function boardPost(id, text){ if (!cfg()) return; queueRow("L", id, String(Date.now()), text); flush(); }
 async function boardRead(prefix){
@@ -263,7 +272,7 @@ async function boardRead(prefix){
   Object.keys(all).forEach(k => { out[k.slice(2)] = all[k][0].text; });
   return out;
 }
-return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, boardPost, boardRead, queued: () => getQ().length };
+return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, readSecrets, boardPost, boardRead, queued: () => getQ().length };
 }
 window.PPSync = ppMake({ pfx:"PPS2", e:"pp-e|", d:"pp-d|", v:"pp-v2|", q:"pyl_syncq" });
 /* the same locked sync for the Design course's accounts (school email + password) */
