@@ -277,6 +277,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   <div class="housebox" id="mapHouse" style="margin-bottom:14px"></div>
   <div class="maptools"><label class="muted" style="font-weight:700" for="levelSel">Level:</label><select class="t" id="levelSel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
     <button class="btn ghost" id="exportBtn">💾 Save my progress file</button><span class="muted" style="font-size:.88rem">Use this to move to another computer.</span></div>
+  <div id="gdBox"></div>
   <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
   <div class="lessons" id="lessonList"></div>
   <div id="rankBox" style="margin-top:18px"></div>
@@ -1621,8 +1622,22 @@ function openMap(){
   });
   const pct = Math.round(solvedAll / 30 * 100);
   $("mapBar").style.width = pct + "%"; $("mapPct").textContent = pct + "%";
-  show("map"); rankShow();
+  show("map"); rankShow(); gdCard();
   if (!isTesterAcc(profile)) levelRow();
+}
+/* Grade 7 Game Development unit (MakeCode Arcade): shown only when the super admin switches it on */
+let gdSW = null, gdAt = 0;
+async function gdCard(){
+  const box = $("gdBox"); if (!box) return; box.innerHTML = "";
+  const tester = isTesterAcc(profile); if (!profile || (!tester && String(profile.grade) !== "7") || !SDCG) return;
+  if (!gdSW || Date.now() - gdAt > 300000){ try { const r = await SDC.loadState(), st = r.state; gdSW = (st && (!SDC.freshSwitches || SDC.freshSwitches(st)) && (st.unlocks || {}).cs7gd) || {}; gdAt = Date.now(); } catch(e){ gdSW = gdSW || {}; } }
+  if (!gdSW.on && !tester) return;
+  const open = ["s1","s2","s3","s4"].filter(k => gdSW[k]).length;
+  box.innerHTML = '<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:linear-gradient(130deg,#1B2D4E 55%,#DC2B3E);color:#fff;border-radius:14px;padding:16px 18px;margin:14px 0">'
+    + '<div style="font-size:2.4rem">🎮</div><div style="flex:1;min-width:220px"><div style="font-weight:900;font-size:1.15rem">New unit: Make Your Own Arcade Game</div>'
+    + '<div style="opacity:.9;font-size:.92rem">Game Development with MakeCode Arcade · plan, design levels, build and test' + (gdSW.on ? " · " + open + " of 4 stages open" : " · <b>switched off: only you (test account) can see this</b>") + '</div></div>'
+    + '<button class="btn" id="gdGo" style="background:#fff;color:#1B2D4E">Open the unit →</button></div>';
+  $("gdGo").onclick = () => { saveCode(); stopClock(); linkFromCS(profile).finally(() => { location.href = "game-dev.html"; }); };
 }
 $("backMap").onclick = () => { saveCode(); stopClock(); openMap(); };
 

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Development · Grade 7 Computer Science · SISD</title>
+<meta name="referrer" content="no-referrer">
+<meta name="color-scheme" content="light dark">
+<script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261116lv"></script>
+<script>window.SDC && SDC.require(["cs"]);</script>
+<script src="game-dev-data.js?v=20261116gd"></script>
+<style>
+:root{--navy:#1B2D4E;--navy-d:#101d35;--red:#DC2B3E;--red-d:#b81f30;--bg:#F3F5F9;--card:#fff;--ink:#16223A;--muted:#5B6782;--line:#D8DEEA;--soft:#E9EDF5;
+  --ok:#1E8A55;--okbg:#E3F4EA;--warn:#8A4B00;--warnbg:#FFF2DC;--bad:#A3172A;--badbg:#FBE5E8;--r:14px;--gold:#f5b301}
+@media (prefers-color-scheme: dark){:root{--bg:#0E1626;--card:#16213A;--ink:#E7ECF6;--muted:#9AA7C2;--line:#2A3858;--soft:#1D2A47;--okbg:#143326;--ok:#47C487;--warnbg:#3A2C10;--warn:#F0B44C;--badbg:#3E1820;--bad:#FF8A98}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 Arial,Helvetica,sans-serif;min-height:100vh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.hidden{display:none!important}
+.top{background:var(--navy);color:#fff;border-bottom:4px solid var(--red)}
+.top .in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo{background:var(--red);border-radius:7px;padding:4px 9px;font-weight:900;letter-spacing:.06em;font-size:.9rem}
+.brand{font-weight:900;font-size:1.1rem}
+.top .r{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{border:1px solid rgba(255,255,255,.35);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.85rem;background:none;color:#fff;text-decoration:none}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.hero{background:linear-gradient(130deg,var(--navy) 55%,var(--red));color:#fff;border-radius:var(--r);padding:22px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.hero h1{font-size:1.9rem;line-height:1.15;font-weight:900}
+.hero p{opacity:.92;margin-top:6px}
+.hero .big{font-size:3rem}
+.prog{flex:1;min-width:240px}
+.stg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
+.stg>div{background:rgba(0,0,0,.2);border-radius:10px;padding:8px 10px;font-size:.82rem}
+.stg b{display:block;font-size:.95rem}
+.bar{height:8px;border-radius:99px;background:rgba(255,255,255,.25);overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}
+.tabs button{border:2px solid var(--line);background:var(--card);border-radius:12px;padding:9px 14px;font-weight:800;color:var(--muted)}
+.tabs button[aria-selected="true"]{border-color:var(--red);color:var(--ink);box-shadow:0 2px 0 var(--red)}
+.tabs button .lk{font-size:.8em}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:0 2px 10px rgba(11,33,73,.06);margin-bottom:14px}
+h2{font-size:1.35rem;font-weight:900}h3{font-size:1.1rem;font-weight:900}
+.muted{color:var(--muted)}.small{font-size:.88rem}
+.btn{border:none;border-radius:11px;padding:10px 16px;background:var(--navy);color:#fff;font-weight:800;box-shadow:0 4px 0 var(--navy-d);transition:transform .06s,box-shadow .06s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--navy-d)}
+.btn.red{background:var(--red);box-shadow:0 4px 0 var(--red-d)}
+.btn.ghost{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.btn.sm{padding:6px 11px;font-size:.88rem}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.notice{border-radius:12px;padding:12px 14px;margin:12px 0;font-size:.95rem;background:var(--soft)}
+.notice.ok{background:var(--okbg);color:var(--ok)}.notice.warn{background:var(--warnbg);color:var(--warn)}.notice.bad{background:var(--badbg);color:var(--bad)}
+.layout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+@media(max-width:940px){.layout{grid-template-columns:1fr}}
+.side{position:sticky;top:60px}
+.sec{margin:22px 0 8px;padding-bottom:6px;border-bottom:3px solid var(--soft)}
+.sec h3{color:var(--red)}.sec .crit{font-size:.75rem;font-weight:900;background:var(--navy);color:#fff;border-radius:99px;padding:2px 9px;margin-left:6px;vertical-align:middle}
+.fld{margin:14px 0}
+.fld>label,.fld .lab{display:flex;gap:8px;align-items:flex-start;font-weight:800;margin-bottom:6px}
+.fld .lab>span:not(.tools){flex:1}
+.fld .tools{display:flex;gap:6px;flex:none}
+.hb{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:.8rem;font-weight:800;color:var(--muted)}
+.hb:hover{border-color:var(--navy);color:var(--ink)}
+input.t,select.t,textarea.t{width:100%;border:2px solid var(--line);border-radius:10px;padding:9px 11px;background:var(--card)}
+textarea.t{resize:vertical;min-height:70px;line-height:1.45}
+input.t:focus,select.t:focus,textarea.t:focus{outline:none;border-color:var(--navy)}
+.wc{font-size:.78rem;color:var(--muted);margin-top:3px;text-align:right}.wc.ok{color:var(--ok);font-weight:700}
+.rows{border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.rw{display:grid;gap:8px;padding:10px;border-top:1px solid var(--line);position:relative;background:var(--card)}
+.rw:first-child{border-top:none}
+.rw .n{font-weight:900;color:var(--red);font-size:.85rem}
+.rw .del{position:absolute;top:8px;right:8px;border:none;background:none;color:var(--muted);font-size:1.1rem}
+.rw .cell label{font-size:.8rem;font-weight:800;color:var(--muted);display:block;margin-bottom:2px}
+.rw textarea.t{min-height:44px}
+@media(min-width:760px){.rw.wide{grid-template-columns:repeat(var(--c),1fr)}}
+.chk{display:flex;gap:9px;align-items:flex-start;padding:6px 0;cursor:pointer}
+.chk input{width:19px;height:19px;accent-color:var(--red);flex:none;margin-top:2px}
+.ctl{display:grid;grid-template-columns:130px 1fr;gap:6px 10px;align-items:center}
+.ctl b{font-size:.9rem}
+/* pixel editor */
+.pix{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.pgrid{display:grid;grid-template-columns:repeat(16,20px);grid-template-rows:repeat(16,20px);border:2px solid var(--navy);background:repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 0 0/20px 20px;touch-action:none;user-select:none}
+.pgrid i{border-right:1px solid rgba(0,0,0,.06);border-bottom:1px solid rgba(0,0,0,.06)}
+.pal{display:grid;grid-template-columns:repeat(4,32px);gap:5px}
+.pal button{width:32px;height:32px;border-radius:7px;border:2px solid var(--line)}
+.pal button[aria-pressed="true"]{outline:3px solid var(--red);outline-offset:1px}
+/* map editor */
+.mapwrap{overflow:auto;max-width:100%;border:2px solid var(--navy);border-radius:6px;display:inline-block}
+.mgrid{display:grid;touch-action:none;user-select:none}
+.mgrid i{width:24px;height:24px;font-style:normal;text-align:center;line-height:24px;font-size:15px;border-right:1px solid rgba(0,0,0,.07);border-bottom:1px solid rgba(0,0,0,.07)}
+.tpal{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.tpal button{display:flex;gap:6px;align-items:center;border:2px solid var(--line);border-radius:9px;padding:4px 9px;background:var(--card);font-size:.82rem;font-weight:700}
+.tpal button[aria-pressed="true"]{border-color:var(--red);box-shadow:0 0 0 2px var(--red) inset}
+.tpal .sw{width:16px;height:16px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.lvl{border:2px solid var(--line);border-left:6px solid var(--red);border-radius:12px;padding:14px;margin:14px 0}
+.lvltabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.lvltabs button{border:2px solid var(--line);border-radius:10px;padding:7px 12px;background:var(--card);font-weight:800}
+.lvltabs button[aria-pressed="true"]{border-color:var(--red);background:color-mix(in srgb,var(--red) 10%,var(--card))}
+.lvltabs .ok{color:var(--ok)}
+/* checklist */
+.ck li{list-style:none;display:flex;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:.88rem}
+.ck li .i{flex:none;width:20px}
+.ck li small{display:block;color:var(--muted)}
+.ck li.go{cursor:pointer}.ck li.go:hover span{text-decoration:underline}
+.pct{font-size:2rem;font-weight:900;color:var(--red)}
+/* weeks */
+.weeks{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.wk{border:2px solid var(--line);border-radius:14px;padding:14px;background:var(--card);position:relative}
+.wk .wn{font-size:.75rem;font-weight:900;letter-spacing:.08em;color:var(--red);text-transform:uppercase}
+.wk h3{margin:2px 0 6px}
+.wk .chip{position:absolute;top:12px;right:12px;font-size:.75rem;font-weight:900;border-radius:99px;padding:2px 9px;background:var(--soft)}
+.wk.locked{opacity:.55}
+.wk details{margin-top:6px}.wk summary{cursor:pointer;font-weight:800;color:var(--navy)}
+@media (prefers-color-scheme: dark){.wk summary{color:#9cc0ff}}
+.wk ul,.wk ol{padding-left:20px;margin-top:4px;font-size:.92rem}
+.walt{background:var(--soft);border-radius:10px;padding:8px 10px;font-size:.9rem;margin-top:6px}
+/* toolkit */
+.tk{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+.tkc{border:2px solid var(--line);border-radius:14px;padding:14px;background:var(--card)}
+.tkc h3{font-size:1.02rem}
+.tkc .wh{font-size:.82rem;background:var(--soft);border-radius:8px;padding:6px 8px;margin:6px 0}
+pre.code{background:#0f1c33;color:#e7ecf6;border-radius:10px;padding:10px;font:12.5px/1.45 Consolas,Menlo,monospace;overflow:auto;white-space:pre;margin-top:6px}
+.bug{font-size:.83rem;color:var(--warn);margin-top:6px}
+.lockbox{text-align:center;padding:40px 20px}
+.lockbox .big{font-size:3.4rem}
+.modal-bg{position:fixed;inset:0;background:rgba(8,15,30,.6);display:flex;align-items:flex-start;justify-content:center;padding:60px 14px;z-index:9000;overflow:auto}
+.modal{background:var(--card);color:var(--ink);border-radius:var(--r);max-width:640px;width:100%;padding:22px;box-shadow:0 10px 40px rgba(0,0,0,.35);position:relative}
+.modal .x{position:absolute;top:10px;right:12px;border:none;background:none;font-size:1.4rem;color:var(--muted)}
+.spin{font-size:1.15rem;font-weight:800;background:var(--soft);border-radius:12px;padding:14px;margin-top:10px;min-height:60px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 18px;border-radius:12px;font-weight:700;z-index:9999;box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.play{width:100%;aspect-ratio:4/3.4;border:0;border-radius:12px;background:#000;margin-top:8px}
+.rb{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:8px}.rb td,.rb th{border:1px solid var(--line);padding:6px 8px;vertical-align:top;text-align:left}.rb th{background:var(--soft)}
+@media print{.top,.tabs,.side,#sdcStrip,.tools,.btn,.hb{display:none!important}body{background:#fff}.card{box-shadow:none;border:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="in"><span class="logo">SISD</span><span class="brand">Computer Science · Game Development</span>
+  <span class="r"><span id="saveBadge" class="pill" title="">💾 Saved</span><a class="pill" href="/python-pathways/" id="backPy">← Python lessons</a></span></div></header>
+<main id="main">
+  <div id="gateMsg"></div>
+  <div id="app" class="hidden">
+    <section class="hero">
+      <div class="big">🎮</div>
+      <div style="flex:1;min-width:260px">
+        <div style="font-weight:800;opacity:.85" id="who"></div>
+        <h1>Make Your Own Arcade Game</h1>
+        <p>A 9-week unit in MakeCode Arcade: plan it, design every level, build it, test it and let real players try it.</p>
+      </div>
+      <div class="prog"><div class="stg" id="stg"></div></div>
+    </section>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <div id="view"></div>
+  </div>
+</main>
+
+<script>
+(function(){
+"use strict";
+const D = window.GD7, esc = D.esc, words = D.words, $ = id => document.getElementById(id);
+const OFF = location.protocol === "file:";
+/* ---------- who is signed in ---------- */
+const G = window.SDC ? SDC.gate() : null;
+const L = (G && G.link && G.link.cs) || (G && G.acct) || null;
+let ACCT = L ? { name: L.name || "", email: L.email || "", grade: String(L.grade || ""), teacher: L.teacher || "", course:"cs" } : null;
+if (!ACCT && OFF) ACCT = { name:"Preview Student", email:"test@sisd.ae", grade:"7", teacher:"Mr. Ahmed", course:"cs" };
+const TESTER = !!(ACCT && window.SDC && SDC.isTester && SDC.isTester(ACCT.email)) || OFF || !!(G && G.gdPreview);
+const toast = t => { const d = document.createElement("div"); d.className = "toast"; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 3200); };
+
+/* ---------- storage: this computer + locked online copy (key from the student's Computer Science secret) ---------- */
+const LKEY = ACCT ? "gd7_" + (window.SDC ? SDC.keyOf(ACCT.email, ACCT.name) : ACCT.name) : "gd7_none";
+const blank = () => ({ v:1, u:0, s1:{}, s2:{ levels:[] }, s3:{}, s4:{}, sub:{} });
+let DB = (() => { try { return Object.assign(blank(), JSON.parse(localStorage.getItem(LKEY)) || {}); } catch(e){ return blank(); } })();
+function saveLocal(){ try { localStorage.setItem(LKEY, JSON.stringify(DB)); } catch(e){} }
+let saveT = null;
+function changed(){ DB.u = Date.now(); saveLocal(); badge(Cloud.on ? "pending" : "local"); clearTimeout(saveT); saveT = setTimeout(() => { Cloud.later(); refreshSide(); }, 600); }
+function badge(st){ const b = $("saveBadge"); const T = { local:["💾 Saved on this computer","Saved on this computer"], pending:["☁ Saving…","Saving online soon"], saved:["☁ Saved","Saved online: sign in on any computer to carry on"], offline:["☁ Will save when online","No connection right now"], loading:["☁ Loading…","Getting your saved work"] }[st] || ["",""]; b.textContent = T[0]; b.title = T[1]; }
+
+const Cloud = (() => {
+  const TE = new TextEncoder(), C = { on:false, id:"", key:null, pushedAt:0, first:0, timer:null };
+  const hex = u8 => [...u8].map(v => v.toString(16).padStart(2, "0")).join("");
+  const sha = async t => new Uint8Array(await crypto.subtle.digest("SHA-256", TE.encode(t)));
+  const b64 = u8 => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+  const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+  const pipe = async (u8, st) => new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(st)).arrayBuffer());
+  const zip = typeof CompressionStream === "function";
+  function dk(){ try { const all = JSON.parse(localStorage.getItem("pyl_accounts")) || {}, k = String(ACCT.name || "").trim().toLowerCase().replace(/\s+/g, " "); return (all[k] && all[k].dk) || (G && G.link && G.link.cs && G.link.cs.dk) || ""; } catch(e){ return ""; } }
+  async function init(){ if (!ACCT || OFF || !(window.crypto && crypto.subtle) || !window.SDC || !SDC.sendRow) return false;
+    const s = dk(); if (!s) return false;
+    C.id = hex(await sha("sdc-gd7-id|" + s)).slice(0, 32); C.key = await crypto.subtle.importKey("raw", await sha("sdc-gd7-key|" + s), "AES-GCM", false, ["encrypt", "decrypt"]);
+    C.on = true; return true; }
+  async function seal(text){ let body = TE.encode(text), f = 0; if (zip){ body = await pipe(body, new CompressionStream("gzip")); f = 1; }
+    const iv = crypto.getRandomValues(new Uint8Array(12)), ct = new Uint8Array(await crypto.subtle.encrypt({ name:"AES-GCM", iv }, C.key, body));
+    const out = new Uint8Array(13 + ct.length); out[0] = f; out.set(iv, 1); out.set(ct, 13); return b64(out); }
+  async function open(s){ const u = unb64(s); let body = new Uint8Array(await crypto.subtle.decrypt({ name:"AES-GCM", iv:u.slice(1, 13) }, C.key, u.slice(13)));
+    if (u[0] === 1) body = await pipe(body, new DecompressionStream("gzip")); return JSON.parse(new TextDecoder().decode(body)); }
+  async function pull(){ if (!C.on) return null; let rows = []; try { rows = await SDC.rows("W", C.id, 40); } catch(e){ return null; }
+    const sets = {}; rows.forEach(r => { const p = String(r.text).split("."); if (p.length !== 5 || p[0] !== "g1") return; const g = sets[p[1]] = sets[p[1]] || { n:+p[3], parts:{} }; g.parts[+p[2]] = p[4]; });
+    for (const v of Object.keys(sets).sort((a, b) => +b - +a)){ const g = sets[v]; if (Object.keys(g.parts).length !== g.n) continue;
+      try { return await open(Array.from({ length:g.n }, (_, i) => g.parts[i]).join("")); } catch(e){} }
+    return null; }
+  async function push(){ if (!C.on) return; clearTimeout(C.timer); C.timer = null; C.first = 0;
+    if ((DB.u || 0) <= C.pushedAt){ badge("saved"); return; }
+    const at = DB.u;
+    try { const text = await seal(JSON.stringify(DB)), ver = String(Date.now()), parts = [];
+      for (let i = 0; i < text.length; i += 30000) parts.push(text.slice(i, i + 30000));
+      parts.forEach((p, i) => SDC.sendRow("W", C.id, ["g1", ver, i, parts.length, p].join(".")));
+      try { SDC.flush(); } catch(e){}
+      C.pushedAt = at; badge(navigator.onLine === false ? "offline" : "saved");
+    } catch(e){ badge("offline"); } }
+  function later(){ if (!C.on) return; const now = Date.now(); if (!C.first) C.first = now; if (now - C.first > 60000) return push(); clearTimeout(C.timer); C.timer = setTimeout(push, 12000); }
+  return { init, pull, push, later, get on(){ return C.on; } };
+})();
+window.addEventListener("pagehide", () => { try { Cloud.push(); } catch(e){} });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") try { Cloud.push(); } catch(e){} });
+
+/* ---------- the super admin's switches ---------- */
+let SW = { on:false, s1:false, s2:false, s3:false, s4:false };
+async function loadSwitches(){
+  try { const r = await SDC.loadState(); const st = r.state; if (st && (!SDC.freshSwitches || SDC.freshSwitches(st))) SW = Object.assign(SW, (st.unlocks || {})[D.SWITCH] || {}); } catch(e){}
+  return SW;
+}
+const stageOpen = k => TESTER || (SW.on && !!SW[k]);
+
+/* ---------- data helpers ---------- */
+function getP(path){ return path.split(".").reduce((o, k) => (o == null ? undefined : o[k]), DB); }
+function setP(path, v){ const ks = path.split("."); let o = DB; for (let i = 0; i < ks.length - 1; i++){ const k = ks[i], nk = ks[i + 1]; if (o[k] == null) o[k] = /^\d+$/.test(nk) ? [] : {}; o = o[k]; } o[ks[ks.length - 1]] = v; }
+
+/* ---------- tabs ---------- */
+let TAB = "map";
+function tabsHTML(){
+  const t = [["map","🗺 Course map"]].concat(D.STAGES.map(s => [s.key, `${s.icon} ${s.n}. ${s.name}${stageOpen(s.key) ? "" : ' <span class="lk">🔒</span>'}`]), [["tk","🧰 MakeCode toolkit"],["rb","📏 How I'm assessed"]]);
+  $("tabs").innerHTML = t.map(([k, l]) => `<button role="tab" data-t="${k}" aria-selected="${k === TAB}">${l}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b => b.onclick = () => go(b.dataset.t));
+}
+function go(t){ TAB = t; tabsHTML(); paint(); window.scrollTo({ top:0, behavior:"smooth" });
+  try { if (window.SDC && SDC.live) SDC.live.where("Game Dev · " + (({ map:"course map", tk:"toolkit", rb:"assessment" })[t] || ("Stage " + t.slice(1) + ": " + D.STAGES[+t.slice(1) - 1].name))); } catch(e){} }
+function heroStages(){
+  $("stg").innerHTML = D.STAGES.map(s => { const p = D.percent(s.key, DB), sub = DB.sub[s.key];
+    return `<div><b>${s.icon} ${s.name}</b>${stageOpen(s.key) ? (sub ? "Submitted ✓" : p + "% ready") : "🔒 Not open yet"}<div class="bar"><i style="width:${stageOpen(s.key) ? p : 0}%"></i></div></div>`; }).join(""); }
+function paint(){
+  heroStages();
+  const v = $("view");
+  if (TAB === "map") v.innerHTML = mapView();
+  else if (TAB === "tk") { v.innerHTML = toolkitView(); bindToolkit(); }
+  else if (TAB === "rb") v.innerHTML = rubricView();
+  else stageView(TAB);
+  v.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+
+/* ---------- course map ---------- */
+function mapView(){
+  let h = `<div class="card"><h2>Your 9-week journey</h2><p class="muted" style="margin-top:4px">Each stage opens when your teacher switches it on. Work through the weeks in order: plan first, then design, then build. Every lesson is 50 minutes.</p>
+    <div class="row" style="margin-top:12px"><a class="btn red" href="https://arcade.makecode.com/" target="_blank" rel="noopener">Open MakeCode Arcade ↗</a><button class="btn ghost" id="spinBtn">🎲 Idea generator</button><button class="btn ghost" data-go="tk">🧰 Toolkit</button></div></div>`;
+  h += `<div class="weeks">` + D.WEEKS.map(w => { const s = D.STAGES[w.s - 1], open = stageOpen(s.key);
+    return `<div class="wk${open ? "" : " locked"}"><span class="chip">${s.icon} Stage ${s.n}${open ? "" : " 🔒"}</span><div class="wn">Week ${w.w}${w.opt ? " · optional" : ""}</div><h3>${esc(w.title)}</h3>
+      <div class="walt"><b>WALT:</b> ${esc(w.walt)}</div>
+      <details><summary>WILF: what I'm looking for</summary><ul>${w.wilf.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
+      <details><summary>What we'll do</summary><ol>${w.act.map(x => `<li>${esc(x)}</li>`).join("")}</ol></details>
+      <details><summary>💡 Hints</summary><ul>${w.hints.map(x => `<li>${esc(x)}</li>`).join("")}</ul></details>
+      ${open ? `<div style="margin-top:10px"><button class="btn sm" data-go="${s.key}">Go to Stage ${s.n} →</button></div>` : ""}</div>`; }).join("") + `</div>`;
+  setTimeout(() => { const b = $("spinBtn"); if (b) b.onclick = spinner; }, 0);
+  return h;
+}
+function spinner(){ modal(`<h2>🎲 Idea generator</h2><p class="muted small" style="margin-top:4px">Spin for a random starting point, then change it to make it your own.</p><div class="spin" id="spinOut">${esc(D.idea())}</div><div class="row" style="margin-top:12px"><button class="btn red" id="spinAgain">Spin again</button></div>`,
+  m => { m.querySelector("#spinAgain").onclick = () => { m.querySelector("#spinOut").textContent = D.idea(); }; }); }
+
+/* ---------- modal: closes with ✕, Escape or a tap outside ---------- */
+function modal(html, after){
+  const bg = document.createElement("div"); bg.className = "modal-bg";
+  bg.innerHTML = `<div class="modal" role="dialog"><button class="x" aria-label="Close">✕</button>${html}</div>`;
+  document.body.appendChild(bg);
+  const close = () => { bg.remove(); document.removeEventListener("keydown", k); };
+  const k = e => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", k);
+  bg.onclick = e => { if (e.target === bg || e.target.classList.contains("x")) close(); };
+  if (after) after(bg.querySelector(".modal"), close);
+}
+function hintModal(label, hints, ex){
+  let shown = 1;
+  const paintH = m => { m.querySelector("#hl").innerHTML = hints.slice(0, shown).map((h, i) => `<div class="notice" style="margin:8px 0"><b>Hint ${i + 1}:</b> ${esc(h)}</div>`).join("");
+    const nb = m.querySelector("#hn"); if (nb) nb.classList.toggle("hidden", shown >= hints.length); };
+  modal(`<h3>💡 ${esc(label)}</h3><div id="hl"></div><div class="row"><button class="btn sm" id="hn">Next hint</button>${ex ? `<button class="btn ghost sm" id="he">📖 Show an example</button>` : ""}</div><div id="hx"></div>`,
+    m => { paintH(m); m.querySelector("#hn").onclick = () => { shown++; paintH(m); };
+      const e = m.querySelector("#he"); if (e) e.onclick = () => { m.querySelector("#hx").innerHTML = `<div class="notice ok" style="white-space:pre-wrap"><b>Example (Coral Quest)</b><br>${esc(ex)}</div><p class="small muted">Use it to see the level of detail expected. Don't copy it: your game is different!</p>`; e.remove(); }; });
+}
+
+/* ---------- a stage ---------- */
+let LV = 0;   // which level is open in Stage 2
+function stageView(k){
+  const s = D.STAGES.find(x => x.key === k), v = $("view");
+  if (!stageOpen(k)){ v.innerHTML = `<div class="card lockbox"><div class="big">🔒</div><h2>Stage ${s.n}: ${esc(s.name)} isn't open yet</h2><p class="muted" style="margin-top:6px">Your teacher will switch it on when the class is ready (${esc(s.weeks)}). Meanwhile, finish the stages that are open and explore the Toolkit.</p><div class="row" style="justify-content:center;margin-top:14px"><button class="btn" data-go="map">Course map</button><button class="btn ghost" data-go="tk">🧰 Toolkit</button></div></div>`; return; }
+  const weeks = D.WEEKS.filter(w => w.s === s.n);
+  let h = `<div class="layout"><div>`;
+  h += `<div class="card intro"><div class="muted small" style="font-weight:800">${esc(s.weeks)} · MYP Criterion ${esc(s.crit)}${TESTER && !(SW.on && SW[k]) ? ' · <span style="color:var(--red)">preview: students can\'t see this yet</span>' : ""}</div><h2>${s.icon} Stage ${s.n}: ${esc(s.name)}</h2><p style="margin-top:6px">${esc(s.intro)}</p>
+    ${weeks.map(w => `<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:800">Week ${w.w}: ${esc(w.title)}</summary><div class="walt"><b>WALT:</b> ${esc(w.walt)}</div><ul style="padding-left:20px;margin-top:6px;font-size:.92rem">${w.wilf.map(x => `<li>${esc(x)}</li>`).join("")}</ul><div class="small muted" style="margin-top:6px"><b>Hints:</b> ${w.hints.map(esc).join(" · ")}</div></details>`).join("")}
+    ${k === "s1" ? `<div class="row" style="margin-top:12px"><button class="btn ghost sm" id="spinBtn2">🎲 Idea generator</button><a class="btn ghost sm" href="https://arcade.makecode.com/" target="_blank" rel="noopener">Browse MakeCode games ↗</a></div>` : ""}
+    ${k === "s3" ? `<div class="row" style="margin-top:12px"><a class="btn red sm" href="https://arcade.makecode.com/" target="_blank" rel="noopener">Open MakeCode Arcade ↗</a><button class="btn ghost sm" data-go="tk">🧰 Toolkit</button></div>` : ""}
+    ${DB.sub[k] ? `<div class="notice ok">✅ Submitted on ${new Date(DB.sub[k].at).toLocaleString("en-GB", { day:"numeric", month:"short", hour:"2-digit", minute:"2-digit" })}. You can keep improving it and submit again: your teacher sees your latest version.</div>` : ""}</div>`;
+  h += `<div class="card" id="form">` + formHTML(k) + `</div>`;
+  if ((k === "s3" || k === "s4") && D.linkOK(DB[k][k === "s3" ? "link" : "finalLink"] || DB.s3.link)) h += playerCard(DB[k][k === "s3" ? "link" : "finalLink"] || DB.s3.link);
+  h += `</div><aside class="side"><div class="card" id="side"></div></aside></div>`;
+  v.innerHTML = h;
+  bindForm(k); refreshSide();
+  const sb = $("spinBtn2"); if (sb) sb.onclick = spinner;
+  v.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+}
+function playerCard(link){
+  const id = String(link).trim().replace(/^https:\/\/(arcade\.)?makecode\.com\//i, "").replace(/[?#].*$/, "");
+  return `<div class="card"><h3>▶ Play your game</h3><p class="muted small">This plays the last version you shared. Share again in MakeCode after big changes.</p>
+    <iframe class="play" sandbox="allow-scripts allow-same-origin" src="https://arcade.makecode.com/---run?id=${encodeURIComponent(id)}" title="My MakeCode game" loading="lazy"></iframe></div>`;
+}
+function tools(label, hint, ex){ return (hint || ex) ? `<span class="tools">${hint ? `<button type="button" class="hb" data-hint="${esc(label)}">💡 Hint</button>` : ""}${ex ? `<button type="button" class="hb" data-ex="${esc(label)}">📖 Example</button>` : ""}</span>` : ""; }
+const HINTS = {};
+function wcHTML(v, min){ if (!min) return ""; const w = words(v); return `<div class="wc${w >= min ? " ok" : ""}">${w} / ${min} words${w >= min ? " ✓" : ""}</div>`; }
+function formHTML(k){
+  let h = ""; const d = DB[k];
+  D.F[k].forEach(f => {
+    if (f.sec){ h += `<div class="sec"><h3>${esc(f.sec)}${f.crit ? `<span class="crit">Criterion ${f.crit}</span>` : ""}</h3>${f.note ? `<p class="muted small" style="margin-top:3px">${esc(f.note)}</p>` : ""}</div>`; return; }
+    const p = k + "." + f.id; HINTS[f.label] = { h:f.hint, ex:f.ex };
+    h += `<div class="fld" data-f="${f.id}" id="f_${f.id}"><div class="lab"><span>${esc(f.label)}${f.opt ? ' <span class="muted small">(optional)</span>' : ""}</span>${tools(f.label, f.hint, f.ex)}</div>`;
+    if (f.type === "text") h += `<input class="t" data-p="${p}" data-min="${f.min || 0}" value="${esc(d[f.id] || "")}" placeholder="${esc(f.ph || "")}">`;
+    else if (f.type === "area") h += `<textarea class="t" rows="${f.rows || 3}" data-p="${p}" data-min="${f.min || 0}">${esc(d[f.id] || "")}</textarea>${wcHTML(d[f.id], f.min)}`;
+    else if (f.type === "select") h += `<select class="t" data-p="${p}"><option value="">Choose…</option>${f.options.map(o => `<option${d[f.id] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    else if (f.type === "link") h += `<input class="t" data-p="${p}" value="${esc(d[f.id] || "")}" placeholder="https://makecode.com/_xxxxxxx"><div class="wc" data-linkok>${d[f.id] ? (D.linkOK(d[f.id]) ? "✓ MakeCode link" : "This doesn't look like a MakeCode share link yet") : "Share → Share Project → Copy"}</div>`;
+    else if (f.type === "checks") h += f.options.map(o => `<label class="chk"><input type="checkbox" data-chk="${p}" value="${esc(o)}"${(d[f.id] || []).indexOf(o) >= 0 ? " checked" : ""}><span>${esc(o)}</span></label>`).join("") + `<div class="wc">Tick at least ${f.minChecks}</div>`;
+    else if (f.type === "controls"){ const c = d[f.id] || {}; h += `<div class="ctl">${D.BUTTONS.map(b => `<b>${b[1]}</b><input class="t" data-p="${p}.${b[0]}" value="${esc(c[b[0]] || "")}" placeholder="${b[0] === "a" || b[0] === "b" ? "e.g. jump / shoot / dash, or not used" : "e.g. move " + b[0]}">`).join("")}</div>`; }
+    else if (f.type === "rows") h += rowsHTML(p, f, d[f.id] || []);
+    else if (f.type === "pixel") h += pixelEd(p, d[f.id]);
+    else if (f.type === "levels") h += levelsHTML();
+    else if (f.type === "criteria") h += critHTML();
+    h += `</div>`;
+  });
+  return h + `<div class="row" style="margin-top:20px"><button class="btn red" id="submitBtn2">📤 Submit Stage ${k.slice(1)} to my teacher</button><button class="btn ghost" id="printBtn">🖨 Print / save as PDF</button></div>`;
+}
+function rowsHTML(p, f, rows){
+  const n = Math.max(f.minRows || 1, rows.length);
+  let h = `<div class="rows" data-rows="${p}">`;
+  for (let i = 0; i < n; i++){ const r = rows[i] || {};
+    h += `<div class="rw${f.cols.length > 1 ? " wide" : ""}" style="--c:${Math.min(f.cols.length, 3)}"><div class="n" style="grid-column:1/-1">${f.cols.length > 1 ? "#" + (i + 1) : ""}</div>${i >= (f.minRows || 1) ? `<button class="del" data-del="${p}" data-i="${i}" title="Remove">✕</button>` : ""}
+      ${f.cols.map(c => `<div class="cell"><label>${esc(c.label)}${c.opt ? " (optional)" : ""}</label>${c.sel ? `<select class="t" data-p="${p}.${i}.${c.id}"><option value="">Choose…</option>${c.sel.map(o => `<option${r[c.id] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>` : `<textarea class="t" rows="2" data-p="${p}.${i}.${c.id}">${esc(r[c.id] || "")}</textarea>`}</div>`).join("")}</div>`; }
+  h += `</div>${n < (f.maxRows || 10) ? `<button class="btn ghost sm" style="margin-top:8px" data-add="${p}" data-n="${n}">＋ Add another</button>` : ""}<div class="wc">At least ${f.minRows} complete</div>`;
+  return h;
+}
+function critHTML(){
+  const C = D.critList(DB); if (!C.length) return `<div class="notice warn">Write your success criteria in Stage 1 first. They appear here automatically.</div>`;
+  const ev = DB.s4.evaluation || {};
+  return `<div class="rows">` + C.map((r, i) => { const e = ev[i] || {};
+    return `<div class="rw"><div><b>${i + 1}. ${esc(r.c)}</b><div class="small muted">Test: ${esc(r.t || "")}</div></div>
+      <div class="row">${["Met ✅","Partly met 🟡","Not met ❌"].map(o => `<label class="chk" style="padding:0"><input type="radio" name="ev${i}" data-p="s4.evaluation.${i}.r" value="${o}"${e.r === o ? " checked" : ""}> ${o}</label>`).join("")}</div>
+      <div class="cell"><label>Evidence from testing (who tested, what happened, numbers)</label><textarea class="t" rows="2" data-p="s4.evaluation.${i}.e" data-min="10">${esc(e.e || "")}</textarea>${wcHTML(e.e, 10)}</div></div>`; }).join("") + `</div>`;
+}
+
+/* ---------- pixel editor (16 × 16, MakeCode colours) ---------- */
+let PEN = 7;
+function pixelEd(p, s){ s = String(s || "").padEnd(256, "0").slice(0, 256);
+  let g = `<div class="pgrid" data-pix="${p}">`; for (let i = 0; i < 256; i++){ const v = parseInt(s[i], 16) || 0; g += `<i data-i="${i}" style="background:${v ? D.PALETTE[v] : "transparent"}"></i>`; } g += `</div>`;
+  const pal = `<div><div class="pal">${D.PALETTE.map((c, i) => `<button type="button" data-pen="${i}" title="${D.PAL_NAMES[i]}" aria-pressed="${i === PEN}" style="background:${i ? c : "repeating-conic-gradient(#ccc 0 25%,#fff 0 50%) 0 0/10px 10px"}"></button>`).join("")}</div>
+    <p class="small muted" style="margin-top:6px;max-width:150px">Pick a colour, then click or drag. "Clear" is the eraser.</p>
+    <div style="display:grid;gap:6px;margin-top:6px"><button type="button" class="btn ghost sm" data-pclear="${p}">🗑 Clear all</button><button type="button" class="btn ghost sm" data-pcopy="${p}">📋 Copy for MakeCode</button></div></div>`;
+  return `<div class="pix">${g}${pal}<div style="font-size:.85rem;max-width:240px" class="muted">In MakeCode: switch to <b>JavaScript</b>, then paste over the <code>img\`…\`</code> part of your sprite. Or redraw it in the Blocks image editor using the same colours.</div></div><div class="wc" data-pixn="${p}"></div>`;
+}
+function bindPixel(root){
+  root.querySelectorAll(".pal [data-pen]").forEach(b => b.onclick = () => { PEN = +b.dataset.pen; root.querySelectorAll(".pal [data-pen]").forEach(x => x.setAttribute("aria-pressed", +x.dataset.pen === PEN)); });
+  root.querySelectorAll(".pgrid").forEach(gr => { const p = gr.dataset.pix; let down = false;
+    const paintAt = el => { if (!el || el.dataset.i == null) return; const s = String(getP(p) || "").padEnd(256, "0").split(""); s[+el.dataset.i] = PEN.toString(16); setP(p, s.join("")); el.style.background = PEN ? D.PALETTE[PEN] : "transparent"; changed(); pixN(root, p); };
+    gr.addEventListener("pointerdown", e => { down = true; gr.setPointerCapture(e.pointerId); paintAt(e.target); });
+    gr.addEventListener("pointermove", e => { if (down) paintAt(document.elementFromPoint(e.clientX, e.clientY)); });
+    gr.addEventListener("pointerup", () => { down = false; }); gr.addEventListener("pointercancel", () => { down = false; }); pixN(root, p); });
+  root.querySelectorAll("[data-pclear]").forEach(b => b.onclick = () => { if (!confirm("Clear this drawing?")) return; setP(b.dataset.pclear, ""); changed(); stageView(TAB); });
+  root.querySelectorAll("[data-pcopy]").forEach(b => b.onclick = async () => { const t = D.imgLiteral(getP(b.dataset.pcopy)); try { await navigator.clipboard.writeText(t); toast("Copied! Paste it into MakeCode (JavaScript view)."); } catch(e){ modal(`<h3>Copy this into MakeCode</h3><textarea class="t" rows="18" style="font-family:monospace">${esc(t)}</textarea>`); } });
+}
+function pixN(root, p){ const el = root.querySelector(`[data-pixn="${p}"]`); if (el){ const n = String(getP(p) || "").split("").filter(c => c !== "0").length; el.textContent = n + " pixels coloured"; el.classList.toggle("ok", n >= 20); } }
+
+/* ---------- Stage 2: levels with a map editor ---------- */
+let TILEPEN = "W";
+function levelsHTML(){
+  const n = D.levelCount(DB), lv = DB.s2.levels || [], total = Math.max(n, lv.length); if (LV >= total) LV = 0;
+  const ck = D.checks("s2", DB).filter(c => c.lv != null);
+  let h = `<div class="notice small">Your Stage 1 plan says <b>${n} levels</b>. Design each one: click a level below. ${total < 5 ? "You can add a bonus or boss level too." : ""}</div>
+    <div class="lvltabs">${Array.from({ length:total }, (_, i) => `<button type="button" data-lv="${i}" aria-pressed="${i === LV}">${ck[i] && ck[i].ok ? '<span class="ok">✓</span> ' : ""}Level ${i + 1}${lv[i] && lv[i].name ? ": " + esc(lv[i].name).slice(0, 18) : ""}</button>`).join("")}
+    ${total < 5 ? `<button type="button" data-lvadd="1">＋ Add a level</button>` : ""}</div>`;
+  const L = lv[LV] || {}, p = "s2.levels." + LV;
+  h += `<div class="lvl"><div class="row" style="justify-content:space-between"><h3>Level ${LV + 1}</h3><button type="button" class="hb" data-lvex="1">📖 Example level</button></div>`;
+  D.LEVEL_FIELDS.forEach(f => {
+    const hint = D.LEVEL_HINTS[f.id]; if (hint) HINTS["L:" + f.label] = { h:hint };
+    h += `<div class="fld"><div class="lab"><span>${esc(f.label)}</span>${hint ? `<span class="tools"><button type="button" class="hb" data-hint="L:${esc(f.label)}">💡 Hint</button></span>` : ""}</div>`;
+    if (f.type === "text") h += `<input class="t" data-p="${p}.${f.id}" value="${esc(L[f.id] || "")}" placeholder="${esc(f.ph || "")}">`;
+    else if (f.type === "area") h += `<textarea class="t" rows="${f.rows || 2}" data-p="${p}.${f.id}" data-min="${f.min || 0}">${esc(L[f.id] || "")}</textarea>${wcHTML(L[f.id], f.min)}`;
+    else if (f.type === "select") h += `<select class="t" data-p="${p}.${f.id}"><option value="">Choose…</option>${f.options.map(o => `<option${L[f.id] === o ? " selected" : ""}>${esc(o)}</option>`).join("")}</select>`;
+    else if (f.type === "map") h += mapEd(p + ".map", L.map);
+    h += `</div>`;
+  });
+  return h + `</div>`;
+}
+function mapEd(p, m){
+  if (!m || !m.d){ return `<div class="notice">Choose a size for this level's map. Each square is one 16 × 16 MakeCode tile; the screen shows about 10 × 7 tiles at once.</div><div class="row">${D.MAP_SIZES.map(s => `<button type="button" class="btn ghost sm" data-mapnew="${p}" data-w="${s[0]}" data-h="${s[1]}">${esc(s[2])}</button>`).join("")}</div>`; }
+  let g = `<div class="mapwrap"><div class="mgrid" data-map="${p}" style="grid-template-columns:repeat(${m.w},24px)">`;
+  for (let i = 0; i < m.w * m.h; i++){ const t = D.TILE[m.d[i]] || D.TILE["."]; g += `<i data-i="${i}" style="background:${t.c}">${t.e}</i>`; }
+  g += `</div></div>`;
+  return `<div class="tpal">${D.TILES.map(t => `<button type="button" data-tile="${t.k}" aria-pressed="${t.k === TILEPEN}"><span class="sw" style="background:${t.c}">${t.e}</span>${esc(t.n)}</button>`).join("")}</div>${g}
+    <div class="row" style="margin-top:8px"><span class="small muted" data-mapkey="${p}">${D.mapKey(m)}</span><span style="margin-left:auto"></span><button type="button" class="btn ghost sm" data-mapborder="${p}">🧱 Add walls round the edge</button><button type="button" class="btn ghost sm" data-mapclear="${p}">🗑 Clear map</button></div>
+    <div class="wc">Must include a 🙂 start and a 🚪 goal (or 👹 boss). Click or drag to paint.</div>`;
+}
+function bindMaps(root){
+  root.querySelectorAll("[data-tile]").forEach(b => b.onclick = () => { TILEPEN = b.dataset.tile; root.querySelectorAll("[data-tile]").forEach(x => x.setAttribute("aria-pressed", x.dataset.tile === TILEPEN)); });
+  root.querySelectorAll("[data-mapnew]").forEach(b => b.onclick = () => { const w = +b.dataset.w, h = +b.dataset.h; setP(b.dataset.mapnew, { w, h, d: ".".repeat(w * h) }); changed(); stageView(TAB); });
+  root.querySelectorAll("[data-mapclear]").forEach(b => b.onclick = () => { if (!confirm("Clear the whole map?")) return; const m = getP(b.dataset.mapclear); m.d = ".".repeat(m.w * m.h); changed(); stageView(TAB); });
+  root.querySelectorAll("[data-mapborder]").forEach(b => b.onclick = () => { const m = getP(b.dataset.mapborder), a = m.d.split(""); for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (x === 0 || y === 0 || x === m.w - 1 || y === m.h - 1) a[y * m.w + x] = "W"; m.d = a.join(""); changed(); stageView(TAB); });
+  root.querySelectorAll(".mgrid").forEach(gr => { const p = gr.dataset.map; let down = false;
+    const paintAt = el => { if (!el || el.dataset.i == null || !gr.contains(el)) return; const m = getP(p), i = +el.dataset.i;
+      let k = TILEPEN; if (k === "S" && m.d.indexOf("S") >= 0 && m.d[i] !== "S"){ const a = m.d.split("").map(x => x === "S" ? "." : x); m.d = a.join(""); gr.querySelectorAll("i").forEach((c, j) => { if (m.d[j] === "." && c.textContent === "🙂"){ c.style.background = D.TILE["."].c; c.textContent = ""; } }); }
+      if (m.d[i] === k) return; m.d = m.d.slice(0, i) + k + m.d.slice(i + 1); const t = D.TILE[k]; el.style.background = t.c; el.textContent = t.e; changed();
+      const kk = root.querySelector(`[data-mapkey="${p}"]`); if (kk) kk.innerHTML = D.mapKey(m); };
+    gr.addEventListener("pointerdown", e => { down = true; gr.setPointerCapture(e.pointerId); paintAt(e.target); });
+    gr.addEventListener("pointermove", e => { if (down) paintAt(document.elementFromPoint(e.clientX, e.clientY)); });
+    gr.addEventListener("pointerup", () => { down = false; }); gr.addEventListener("pointercancel", () => { down = false; }); });
+}
+
+/* ---------- binding the form ---------- */
+function bindForm(k){
+  const root = $("form");
+  root.addEventListener("input", e => { const t = e.target, p = t.dataset && t.dataset.p; if (!p) return;
+    if (t.type === "radio"){ if (t.checked) setP(p, t.value); } else setP(p, t.value);
+    const min = +t.dataset.min; if (min){ let wc = t.nextElementSibling; if (wc && wc.classList.contains("wc")){ const w = words(t.value); wc.className = "wc" + (w >= min ? " ok" : ""); wc.textContent = `${w} / ${min} words${w >= min ? " ✓" : ""}`; } }
+    if (t.closest("[data-f]") && t.parentElement.querySelector("[data-linkok]")){ const el = t.parentElement.querySelector("[data-linkok]"); el.textContent = D.linkOK(t.value) ? "✓ MakeCode link" : "This doesn't look like a MakeCode share link yet"; }
+    changed(); });
+  root.addEventListener("change", e => { const t = e.target;
+    if (t.dataset && t.dataset.chk){ const p = t.dataset.chk, a = (getP(p) || []).filter(x => x !== t.value); if (t.checked) a.push(t.value); setP(p, a); changed(); }
+    else if (t.dataset && t.dataset.p && (t.tagName === "SELECT" || t.type === "radio")){ if (t.type !== "radio" || t.checked) setP(t.dataset.p, t.value); changed(); if (t.dataset.p === "s1.levelCount") refreshSide(); } });
+  root.querySelectorAll("[data-add]").forEach(b => b.onclick = () => { const a = getP(b.dataset.add) || []; while (a.length < +b.dataset.n) a.push({}); a.push({}); setP(b.dataset.add, a); changed(); stageView(TAB); });
+  root.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (!confirm("Remove this row?")) return; const a = getP(b.dataset.del) || []; a.splice(+b.dataset.i, 1); setP(b.dataset.del, a); changed(); stageView(TAB); });
+  root.querySelectorAll("[data-hint]").forEach(b => b.onclick = () => { const H = HINTS[b.dataset.hint] || {}; hintModal(b.dataset.hint.replace(/^L:/, ""), H.h || [], H.ex); });
+  root.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => { const H = HINTS[b.dataset.ex] || {}; modal(`<h3>📖 Example: ${esc(b.dataset.ex)}</h3><div class="notice ok" style="white-space:pre-wrap">${esc(H.ex || "")}</div><p class="small muted">This is from an example game called Coral Quest. Use it to see how much detail to write, then write about YOUR game.</p>`); });
+  root.querySelectorAll("[data-lv]").forEach(b => b.onclick = () => { LV = +b.dataset.lv; stageView(TAB); document.querySelector(".lvltabs").scrollIntoView({ block:"start" }); });
+  root.querySelectorAll("[data-lvadd]").forEach(b => b.onclick = () => { const a = DB.s2.levels = DB.s2.levels || []; const n = Math.max(D.levelCount(DB), a.length); while (a.length < n) a.push({}); a.push({}); LV = a.length - 1; changed(); stageView(TAB); });
+  root.querySelectorAll("[data-lvex]").forEach(b => b.onclick = () => modal(`<h3>📖 Example level</h3><div class="notice ok" style="white-space:pre-wrap">${esc(D.LEVEL_EX)}</div><p class="small muted">From the example game Coral Quest. Your levels should be this detailed.</p>`));
+  bindPixel(root); bindMaps(root);
+  $("submitBtn2").onclick = () => submit(k);
+  $("printBtn").onclick = () => printStage(k);
+}
+
+/* ---------- side checklist + submit ---------- */
+function refreshSide(){
+  const side = $("side"); if (!side || !/^s\d$/.test(TAB)) { heroStages(); return; }
+  const k = TAB, c = D.checks(k, DB), ok = c.filter(x => x.ok).length, pct = c.length ? Math.round(ok / c.length * 100) : 0, all = ok === c.length;
+  side.innerHTML = `<div class="muted small" style="font-weight:800">READY TO SUBMIT?</div><div class="pct">${pct}%</div><div class="bar" style="background:var(--soft)"><i style="width:${pct}%;background:var(--red)"></i></div>
+    <ul class="ck" style="margin-top:10px">${c.map(x => `<li class="go" data-jump="${x.id}"${x.lv != null ? ` data-jlv="${x.lv}"` : ""}><span class="i">${x.ok ? "✅" : "⬜"}</span><span>${esc(x.label)}${x.info ? `<small>${esc(x.info)}</small>` : ""}</span></li>`).join("")}</ul>
+    <button class="btn red" id="submitBtn" style="width:100%;margin-top:12px" ${all ? "" : "disabled"}>📤 Submit Stage ${k.slice(1)}</button>
+    <p class="small muted" style="margin-top:6px">${all ? "Everything is complete. Submit to send it to your teacher." : "Submit unlocks when every item is ticked. Click an item to jump to it."}</p>`;
+  $("submitBtn").onclick = () => submit(k);
+  side.querySelectorAll("[data-jump]").forEach(li => li.onclick = () => { if (li.dataset.jlv != null && +li.dataset.jlv !== LV){ LV = +li.dataset.jlv; stageView(TAB); } const el = $("f_" + li.dataset.jump); if (el) el.scrollIntoView({ behavior:"smooth", block:"start" }); });
+  const sb2 = $("submitBtn2"); if (sb2) sb2.disabled = !all;
+  heroStages();
+}
+function submit(k){
+  const c = D.checks(k, DB); if (c.some(x => !x.ok)){ toast("Finish every item in the checklist first."); return; }
+  const s = D.STAGES.find(x => x.key === k);
+  modal(`<h2>📤 Submit Stage ${s.n}: ${esc(s.name)}?</h2><p style="margin-top:6px">Your teacher will see everything in this stage. You can keep improving and submit again later.</p>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="own"> <span>This is my own work. Anything I reused (gallery images or code) is credited.</span></label>
+    <div class="row" style="margin-top:12px"><button class="btn red" id="goSub" disabled>Submit</button></div>`, (m, close) => {
+    m.querySelector("#own").onchange = e => m.querySelector("#goSub").disabled = !e.target.checked;
+    m.querySelector("#goSub").onclick = () => {
+      const first = !DB.sub[k], ctx = { levelCount: DB.s1.levelCount || "3", criteria: D.critList(DB), title: DB.s1.title || "" };
+      let data = JSON.parse(JSON.stringify(DB[k]));
+      let payload = { stage:s.n, key:k, pct:100, data, ctx };
+      if (JSON.stringify(payload).length > 45000 && data.diary){ data.diary = data.diary.slice(-10); payload = { stage:s.n, key:k, pct:100, data, ctx }; }
+      try { if (window.SDC && !OFF){ SDC.log("gamedev", ACCT, { gd: payload }); if (first && SDC.task) SDC.task(ACCT, "Game Dev Stage " + s.n + ": " + s.name, 2, "gamedev"); try { SDC.flush(); } catch(e){} } } catch(e){}
+      DB.sub[k] = { at: Date.now() }; changed(); Cloud.push(); close();
+      modal(`<div style="text-align:center"><div style="font-size:3rem">🎉</div><h2>Stage ${s.n} submitted!</h2><p style="margin-top:6px">${s.n < 4 ? "Great work. Your teacher will open the next stage when the class is ready." : "You've finished the unit. Get ready for Arcade Day!"}</p></div>`);
+      try { if (window.speechSynthesis){ const u = new SpeechSynthesisUtterance("Brilliant work! Stage " + s.n + " submitted."); u.lang = "en-GB"; speechSynthesis.speak(u); } } catch(e){}
+      stageView(k);
+    };
+  });
+}
+function printStage(k){
+  const s = D.STAGES.find(x => x.key === k), w = window.open("", "_blank"); if (!w){ toast("Allow pop-ups to print."); return; }
+  w.document.write(`<!DOCTYPE html><html lang="en-GB"><head><meta charset="utf-8"><title>${esc(ACCT.name)} · Game Dev Stage ${s.n}</title><style>body{font:14px/1.45 Arial,sans-serif;color:#16223A;margin:24px}h1{font-size:20px;margin:0}h1 span{color:#DC2B3E}</style></head><body>
+    <div style="border-bottom:4px solid #DC2B3E;padding-bottom:6px;margin-bottom:10px"><b style="background:#DC2B3E;color:#fff;padding:2px 7px;border-radius:5px">SISD</b> Grade 7 Computer Science · Game Development</div>
+    <h1>Stage ${s.n}: ${esc(s.name)} <span>· ${esc(DB.s1.title || "")}</span></h1><p>${esc(ACCT.name)} · ${esc(ACCT.teacher)} · ${new Date().toLocaleDateString("en-GB")}</p>${D.render(k, DB)}</body></html>`);
+  w.document.close(); setTimeout(() => w.print(), 400);
+}
+
+/* ---------- toolkit ---------- */
+let TKF = "all", TKQ = "";
+function toolkitView(){
+  return `<div class="card"><h2>🧰 MakeCode Arcade toolkit</h2><p class="muted" style="margin-top:4px">Recipes for the things most games need. Each card tells you where the block is and shows the same code in JavaScript. Build it in Blocks, then peek at JavaScript to learn how it looks as text.</p>
+    <div class="row" style="margin-top:10px"><input class="t" id="tkq" placeholder="Search: jump, coin, level, timer…" style="max-width:300px" value="${esc(TKQ)}"><select class="t" id="tkf" style="max-width:220px">${D.TOOL_TAGS.map(t => `<option value="${t[0]}"${t[0] === TKF ? " selected" : ""}>${esc(t[1])}</option>`).join("")}</select><a class="btn red sm" href="https://arcade.makecode.com/" target="_blank" rel="noopener">Open MakeCode ↗</a></div></div>
+    <div class="tk" id="tkl"></div>`;
+}
+function bindToolkit(){
+  const paintTK = () => { const q = TKQ.toLowerCase();
+    const list = D.TOOLKIT.filter(t => (TKF === "all" || t.tags.indexOf(TKF) >= 0 || (TKF !== "extension" && t.tags.indexOf("all") >= 0)) && (!q || (t.t + " " + t.why + " " + t.where + " " + t.code.join(" ")).toLowerCase().includes(q)));
+    $("tkl").innerHTML = list.map((t, i) => `<div class="tkc"><h3>${esc(t.t)}</h3><p class="small" style="margin-top:4px">${esc(t.why)}</p><div class="wh"><b>Blocks:</b> ${esc(t.where)}</div><pre class="code">${esc(t.code.join("\n"))}</pre><div class="row" style="margin-top:6px"><button class="btn ghost sm" data-cp="${D.TOOLKIT.indexOf(t)}">📋 Copy code</button></div><div class="bug">🐞 ${esc(t.bug)}</div></div>`).join("") || `<p class="muted">Nothing found. Try another word.</p>`;
+    $("tkl").querySelectorAll("[data-cp]").forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(D.TOOLKIT[+b.dataset.cp].code.join("\n")); toast("Copied. Paste into MakeCode's JavaScript view."); } catch(e){ toast("Select the code and copy it."); } });
+  };
+  $("tkq").oninput = e => { TKQ = e.target.value; paintTK(); };
+  $("tkf").onchange = e => { TKF = e.target.value; paintTK(); };
+  paintTK();
+}
+function rubricView(){
+  return `<div class="card"><h2>📏 How I'm assessed</h2><p class="muted" style="margin-top:4px">This unit uses the four MYP criteria. Each stage gives evidence for one or two of them. Aim for the 7–8 column!</p>
+    ${D.RUBRIC.map(r => `<h3 style="margin-top:16px">Criterion ${r.c}: ${esc(r.n)} <span class="muted small" style="font-weight:400">· ${esc(r.st)}</span></h3><table class="rb"><tr>${r.b.map(b => `<th>${b[0]}</th>`).join("")}</tr><tr>${r.b.map(b => `<td>${esc(b[1])}</td>`).join("")}</tr></table>`).join("")}
+    <div class="notice" style="margin-top:16px"><b>Remember:</b> your teacher looks at your workbook here AND your MakeCode game. Write in full sentences, use the hints, and test as you go.</div></div>`;
+}
+
+/* ---------- start ---------- */
+async function start(){
+  if (!ACCT){ $("gateMsg").innerHTML = `<div class="card lockbox"><div class="big">🔑</div><h2>Sign in to Computer Science first</h2><p class="muted">Open your Python lessons, sign in, then come back to the Game Development unit.</p><div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="/python-pathways/">Go to Computer Science →</a></div></div>`; return; }
+  if (!TESTER && String(ACCT.grade) !== "7"){ $("gateMsg").innerHTML = `<div class="card lockbox"><div class="big">🎮</div><h2>This unit is for Grade 7</h2><p class="muted">Your Computer Science lessons are in Python Pathways.</p><div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="/python-pathways/">Back to my lessons →</a></div></div>`; return; }
+  $("gateMsg").innerHTML = `<div class="card"><p class="muted">Loading…</p></div>`;
+  if (!OFF) await loadSwitches();
+  if (!TESTER && !SW.on){ $("gateMsg").innerHTML = `<div class="card lockbox"><div class="big">🔒</div><h2>The Game Development unit isn't open yet</h2><p class="muted">Your teacher will switch it on when it starts.</p><div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="/python-pathways/">Back to my lessons →</a></div></div>`; return; }
+  $("gateMsg").innerHTML = TESTER && !SW.on ? `<div class="notice warn"><b>Preview.</b> The unit is switched off, so students can't see it. Switch it on in the staff dashboard → 🔀 Switches.</div>` : "";
+  $("who").textContent = ACCT.name + " · Grade " + (ACCT.grade || "7") + " · " + (ACCT.teacher || "") + (TESTER ? " · TEST" : "");
+  $("app").classList.remove("hidden");
+  if (window.SDC && !OFF){
+    try { SDC.strip("cs", switching => { if (!switching){ SDC.patchGate({ mode:"signin", logged:false, link:null }); location.href = "/python-pathways/"; } }, false, "#main"); SDC.setSignedIn(true); } catch(e){}
+    try { if (SDC.listen) SDC.listen("#view .intro", "", true); } catch(e){}
+  }
+  const first = D.STAGES.find(s => stageOpen(s.key) && !DB.sub[s.key]);
+  TAB = first ? first.key : "map"; tabsHTML(); paint();
+  badge("local");
+  if (await Cloud.init()){ badge("loading");
+    const R = await Cloud.pull();
+    if (R && (R.u || 0) > (DB.u || 0)){ DB = Object.assign(blank(), R); saveLocal(); paint(); toast("Your latest work was loaded."); }
+    badge("saved"); if ((DB.u || 0) > 0 && (!R || (R.u || 0) < (DB.u || 0))) Cloud.later();
+  }
+  setInterval(async () => { if (OFF) return; const before = JSON.stringify(SW); await loadSwitches(); if (JSON.stringify(SW) !== before){ tabsHTML(); if (!/^s\d$/.test(TAB) || !document.activeElement || !document.activeElement.closest("#form")) paint(); toast("Your teacher changed which stages are open."); } }, 300000);
+}
+start();
+})();
+</script>
+</body>
+</html>
