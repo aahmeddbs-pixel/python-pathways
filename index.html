@@ -8,7 +8,7 @@
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js?v=20261116lv"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261116lv"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261117mv"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -2602,6 +2602,8 @@ function applyAssign(acc, A){
 if (SDCG){
   try { SDC.strip("cs", switching => { if (profile) signOutCS(switching); }, false, "#signin, #map, #lesson",
     () => { show("signin"); document.querySelector('.tab[data-tab="in"]').click(); const n = $("loginName"); if (n){ n.focus(); n.scrollIntoView({ block:"center" }); } }); } catch(e){}
+  try { if (SDC.watchAssign) SDC.watchAssign(A => { if (!profile || !(A.c === "cs" || A.also === "cs")) return;   // a teacher moved this student while they're signed in
+    const was = profile.path + "|" + profile.grade; applyAssign(profile, A); if (profile.path + "|" + profile.grade !== was && !cur.lesson) openMap(); }); } catch(e){}
   try { if (SDC.listen) SDC.listen("#stepBody:not(:has(video)):not(:has(.sumtable)):not(:has(.lockbox))", "", true); } catch(e){}   // Read to me only on the steps with something to learn or do: Learn, Example, Exercises, Practice
   document.querySelector(".brand") && (document.title = "Computer Science · SISD Design and Computing");
   const lvl = $("levelSel"); lvl.classList.add("hidden"); if (lvl.previousElementSibling) lvl.previousElementSibling.classList.add("hidden");
