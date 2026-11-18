@@ -29,8 +29,9 @@ async function build(R){
     else if (b.k === "h2") body += par(b.t, "Heading2");
     else if (b.k === "h3") body += par(b.t, "Heading3");
     else if (b.k === "p") body += par(b.t);
+    else if (b.k === "q") body += `<w:p><w:pPr><w:spacing w:after="80"/></w:pPr>${run(b.t, `<w:color w:val="1452C8"/>`)}</w:p>`;   // task question text: blue
     else if (b.k === "note") body += par(b.t, "Note");
-    else if (b.k === "lab") body += `<w:p><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="40"/></w:pPr>${run(b.t, `<w:b/><w:color w:val="1B2D4E"/>`)}</w:p>`;
+    else if (b.k === "lab") body += `<w:p><w:pPr><w:keepNext/><w:spacing w:before="120" w:after="40"/></w:pPr>${run(b.t, `<w:b/><w:color w:val="1452C8"/>`)}</w:p>`;
     else if (b.k === "li") body += par("•  " + b.t, "ListPara");
     else if (b.k === "code"){ const L = String(b.t == null ? "" : b.t).replace(/\t/g, "    ").split("\n");
       body += `<w:p><w:pPr><w:pStyle w:val="Code"/></w:pPr>${L.map((l, i) => (i ? `<w:r><w:br/></w:r>` : "") + `<w:r><w:t xml:space="preserve">${XE(l)}</w:t></w:r>`).join("")}</w:p>`; }
@@ -53,7 +54,7 @@ async function build(R){
     st("Normal", "Normal", "") + st("Title", "Title", `<w:b/><w:sz w:val="52"/><w:color w:val="1B2D4E"/>`, `<w:spacing w:after="240"/>`) + st("Subtitle", "Subtitle", `<w:caps/><w:sz w:val="22"/><w:color w:val="DC2B3E"/>`) +
     st("Heading1", "heading 1", `<w:b/><w:sz w:val="36"/><w:color w:val="1B2D4E"/>`, `<w:keepNext/><w:spacing w:before="240" w:after="160"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="4" w:color="DC2B3E"/></w:pBdr><w:outlineLvl w:val="0"/>`) +
     st("Heading2", "heading 2", `<w:b/><w:sz w:val="28"/><w:color w:val="1B2D4E"/>`, `<w:keepNext/><w:spacing w:before="280" w:after="100"/><w:outlineLvl w:val="1"/>`) +
-    st("Heading3", "heading 3", `<w:b/><w:sz w:val="23"/>`, `<w:keepNext/><w:spacing w:before="180" w:after="60"/><w:outlineLvl w:val="2"/>`) +
+    st("Heading3", "heading 3", `<w:b/><w:sz w:val="23"/><w:color w:val="1452C8"/>`, `<w:keepNext/><w:spacing w:before="180" w:after="60"/><w:outlineLvl w:val="2"/>`) +
     st("Code", "Code", `<w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Consolas"/><w:sz w:val="19"/><w:color w:val="16223A"/>`, `<w:shd w:val="clear" w:color="auto" w:fill="F1F4F9"/><w:pBdr><w:left w:val="single" w:sz="18" w:space="6" w:color="1B6FD1"/></w:pBdr><w:spacing w:before="60" w:after="160" w:line="252" w:lineRule="auto"/><w:ind w:left="170"/>`) +
     st("Note", "Note", `<w:i/><w:sz w:val="19"/><w:color w:val="5B6782"/>`) + st("ListPara", "List Paragraph", "", `<w:ind w:left="360"/><w:spacing w:after="60"/>`) +
     st("Caption", "caption", `<w:i/><w:sz w:val="18"/><w:color w:val="5B6782"/>`, `<w:jc w:val="center"/>`) +

@@ -10,7 +10,7 @@
 <script src="/sisd-design-and-computing/sdc.js?v=20261117dl"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <script src="game-dev-data.js?v=20261116gd"></script>
-<script src="work-docx.js?v=20261118dl"></script>
+<script src="work-docx.js?v=20261118blue"></script>
 <style>
 :root{--navy:#1B2D4E;--navy-d:#101d35;--red:#DC2B3E;--red-d:#b81f30;--bg:#F3F5F9;--card:#fff;--ink:#16223A;--muted:#5B6782;--line:#D8DEEA;--soft:#E9EDF5;
   --ok:#1E8A55;--okbg:#E3F4EA;--warn:#8A4B00;--warnbg:#FFF2DC;--bad:#A3172A;--badbg:#FBE5E8;--r:14px;--gold:#f5b301}
@@ -59,6 +59,10 @@ h2{font-size:1.35rem;font-weight:900}h3{font-size:1.1rem;font-weight:900}
 .sec h3{color:var(--red)}.sec .crit{font-size:.75rem;font-weight:900;background:var(--navy);color:#fff;border-radius:99px;padding:2px 9px;margin-left:6px;vertical-align:middle}
 .fld{margin:14px 0}
 .fld>label,.fld .lab{display:flex;gap:8px;align-items:flex-start;font-weight:800;margin-bottom:6px}
+/* main task questions in blue */
+.fld>.lab>span:first-child{color:#1452C8}
+.fld>.lab>span:first-child .muted{color:var(--muted)}
+@media (prefers-color-scheme: dark){.fld>.lab>span:first-child{color:#7FB2FF}}
 .fld .lab>span:not(.tools){flex:1}
 .fld .tools{display:flex;gap:6px;flex:none}
 .hb{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:2px 8px;font-size:.8rem;font-weight:800;color:var(--muted)}

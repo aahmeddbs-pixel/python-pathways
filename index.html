@@ -8,7 +8,7 @@
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js?v=20261116lv"></script>
-<script src="work-docx.js?v=20261118dl"></script>
+<script src="work-docx.js?v=20261118blue"></script>
 <script src="/sisd-design-and-computing/sdc.js?v=20261117dl"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,6 +111,10 @@ input.t:focus{border-color:var(--blue)}
 .learn li{margin-bottom:4px}
 .learn pre,.task pre{background:#f1f4fa;border-radius:10px;padding:10px 14px;margin:0 0 12px;font-size:.92rem;border:1px solid var(--line)}
 .task{font-size:1.04rem}
+/* main task questions (Exercises 1-3) in blue; practice questions stay in the normal text colour */
+.mainQ{color:#1452C8}
+.mainQ pre,.mainQ code{color:var(--ink)}
+@media (prefers-color-scheme: dark){.mainQ{color:#7FB2FF}}
 .task pre{margin-top:8px}
 .ed-wrap{border-radius:12px;overflow:hidden;background:var(--code-bg);border:2px solid #1d2a4a;margin-top:14px}
 .ed-wrap:focus-within{border-color:var(--blue)}
@@ -1815,7 +1819,7 @@ function renderStep(){
     try { if (SDCG && window.SDC && SDC.slow){ if (s.solved[qn]) SDC.slow.stop(); else SDC.slow.start("cs|" + profile.path + "|" + cur.lesson + "|" + qn, "Lesson " + cur.lesson + ": " + Q.title, sdcAcct(profile), [6, 12, 18]); } } catch(e){}   // taking too long on one exercise
     const m0 = mastery(L, s);
     const head = isP ? 'PRACTICE QUESTION ' + s.prac.count + ' • ' + m0.prac + ' solved' + (m0.prac < m0.need ? ' (' + m0.need + ' needed to submit)' : ' ✓') : 'EXERCISE ' + (k + 1) + ' OF 3';
-    body.innerHTML = '<div class="muted" style="font-weight:800">' + head + '</div><h2>' + Q.title + '</h2>' + (isP ? '<p class="muted" style="margin-top:4px">Unlimited practice: every question is new, with different numbers and words.</p>' : '') + '<div class="task" style="margin-top:8px">' + Q.task + '</div>';
+    body.innerHTML = '<div class="muted" style="font-weight:800">' + head + '</div><h2' + (isP ? '' : ' class="mainQ"') + '>' + Q.title + '</h2>' + (isP ? '<p class="muted" style="margin-top:4px">Unlimited practice: every question is new, with different numbers and words.</p>' : '') + '<div class="task' + (isP ? '' : ' mainQ') + '" style="margin-top:8px">' + Q.task + '</div>';
     try { if (SDCG && window.SDC && SDC.live){ const lab = "Lesson " + cur.lesson + ": " + Q.title + (isP ? " (practice " + s.prac.count + ")" : " (exercise " + (k + 1) + ")"); SDC.live.where(lab); body.appendChild(SDC.live.button(lab)); } } catch(e){}   // "Need help" on every exercise
     ed = makeEditor(s.code[qn] != null ? s.code[qn] : Q.starter, isP ? "practice.py" : "exercise" + (k + 1) + ".py"); body.appendChild(ed.wrap);
     ed.ta.addEventListener("input", () => { clearTimeout(ed._t); ed._t = setTimeout(saveCode, 600); });
@@ -2021,7 +2025,7 @@ function myWorkReport(){
         const Q = (s.exq && s.exq[q]) || qOf(p, q); if (!Q) return;
         const code = String((s.code || {})[q] || ""), solved = !!(s.solved || {})[q], hints = (s.hints || {})[q] || 0;
         if (!solved && (!code.trim() || code.trim() === String(Q.starter || "").trim())) return;   // not attempted
-        ex.push({ k:"h3", t:"Exercise " + (k + 1) + ": " + Q.title }, ...WorkDocx.htmlText(Q.task).split(/\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ k:"p", t })),
+        ex.push({ k:"h3", t:"Exercise " + (k + 1) + ": " + Q.title }, ...WorkDocx.htmlText(Q.task).split(/\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ k:"q", t })),
           { k:"code", t:code.trim() ? code.replace(/\s+$/, "") : "(no code saved)" },
           { k:"note", t:solved ? "Solved ✓" + (hints ? " · advice used: " + hints : " · no advice used") : "Not solved yet" });
       });
