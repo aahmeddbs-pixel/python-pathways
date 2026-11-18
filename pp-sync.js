@@ -54,8 +54,11 @@ if (!window.gfSend) window.gfSend = (function(){
 function ppMake(PF){
 "use strict";
 const CFG = {
-  form: "https://docs.google.com/forms/d/e/1FAIpQLSdGZGdrzAvN_21zfKHufKcba8003hZIeUhzTKQJ3Mun53trlQ/viewform?usp=pp_url&entry.544835510=x",    // Python Pathways Sync form: pre-filled link
-  sheet: "https://docs.google.com/spreadsheets/d/12_g1ySZtyUX-rXTuOHcZ7_vUzCkdhXV_T7KF5NjBFa0/edit#gid=1433531983",   // Python Pathways Sync sheet: share link (anyone with the link can view)
+  // 18 Nov 2026: the first sync sheet (12_g1y…) grew past what Google Sheets can hold and stopped taking rows on 16 Nov at 10:44.
+  // Saves now go to the "SDC Sync 2" form and sheet; the old sheet is still read for older saves, keys and PINs.
+  form: "https://docs.google.com/forms/d/e/1FAIpQLScz4HZXAuqSguFrhRDLAtAV2PxAi6K8uF2Vzx4cPWFCevMYdA/viewform?usp=pp_url&entry.919327250=x",    // SDC Sync 2 form: pre-filled link
+  sheet: "https://docs.google.com/spreadsheets/d/1qRTsBkS6MfA7lHEU5ZN3e3cbQAGtjrF8xmSfHGHKEoE/edit#gid=996219689",   // SDC Sync 2 sheet: share link (anyone with the link can view)
+  oldSheets: ["https://docs.google.com/spreadsheets/d/12_g1ySZtyUX-rXTuOHcZ7_vUzCkdhXV_T7KF5NjBFa0/edit#gid=1433531983"],   // full: read only
   adminKeys: {"sigPub":{"key_ops":["verify"],"ext":true,"kty":"EC","x":"g6JG87cYBkusgs-I5KvQKNdcS2VGwCu4FP9lJYIvu58","y":"Tc06F7jM1RaDT6RsO7UTPumlWm7d3MNQNtqky5ygZAE","crv":"P-256"},"encPub":{"key_ops":["encrypt"],"ext":true,"alg":"RSA-OAEP-256","kty":"RSA","n":"hUBe-z8awlsSaMLLMbN09uiYjHBozpS3OATae6KaYRtd0VSGOHAe-sqxDpd3tt7lEvcEy9Q3oMgCR6bWsN8JY5zsN6GcHzdn_a5D9kgHT4YmxRVv31MvMb0yQhE7dbXSfurBMx0za1jPJgzkaRc-taIGBtdZserbU7U76yaVK2bf3wDzzd9beXDpen5E9xachauybxxXLBLmfhnoyhS95hd1WwzpsNFbhqPOUcrGagw6j5RLxti4hYE_NBi_gqxSed3j8EB4ChoEiRHJfN5pWb9d8bfXqYz8Rwm-niJWi_8gBfgrkPm_WnCo6LHl0Tz-OL1CjR3UpPUbIAOaeRhsaQ","e":"AQAB"},"wrap":{"iter":600000,"salt":"MVkn8WJRApLor1E8Nn+0fw==","iv":"sH/H8GF0OfhpDWaF","ct":"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"}}
 };
 const ROUNDS = 400000, CHUNK = 30000, QKEY = PF.q, PFX = PF.pfx;
@@ -71,7 +74,8 @@ function cfg(){
   const m = String(CFG.sheet).match(/\/spreadsheets\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]{20,})/), f = String(CFG.form).match(/docs\.google\.com\/forms\/d\/(e\/)?([^/]+)\//);
   const entry = (String(CFG.form).match(/entry\.(\d+)=/) || [])[1];
   if (!m || !f || !entry || m[1] === "e") return null;
-  return { action: `https://docs.google.com/forms/d/${f[1] || ""}${f[2]}/formResponse`, entry: "entry." + entry, id: m[1], gid: (String(CFG.sheet).match(/[#&?]gid=(\d+)/) || [])[1] || "" };
+  const old = (CFG.oldSheets || []).map(l => { const o = String(l).match(/\/spreadsheets\/(?:u\/\d+\/)?d\/([a-zA-Z0-9_-]{20,})/); return o ? { id: o[1], gid: (String(l).match(/[#&?]gid=(\d+)/) || [])[1] || "" } : null; }).filter(o => o && o.id !== m[1]);
+  return { action: `https://docs.google.com/forms/d/${f[1] || ""}${f[2]}/formResponse`, entry: "entry." + entry, id: m[1], gid: (String(CFG.sheet).match(/[#&?]gid=(\d+)/) || [])[1] || "", old };
 }
 const enabled = () => !!cfg();
 async function derive(email, pw){
@@ -130,9 +134,9 @@ function gvizRaw(c, tq, sheet){
     document.head.appendChild(sc);
   });
 }
-let COL = null, SEEN = "";
+let COL = null, SEEN = ""; const COLS = {};
 async function column(c, strict){
-  const k = c.id + "|" + c.gid; if (COL && COL.k === k) return COL;
+  const k = c.id + "|" + c.gid; if (COL && COL.k === k) return COL; if (!strict && COLS[k]) return COLS[k];
   // the linked tab, plus every "Form responses" tab: if the form was ever re-linked, new rows land in a new tab
   const tries = ["", ...[1,2,3,4,5,6].map(n => "Form responses " + n), "Form Responses 1", "Form Responses 2", "Form Responses 3"], seen = [], found = [], byLabel = []; let lastErr = null;
   for (const sheet of tries){
@@ -144,14 +148,15 @@ async function column(c, strict){
     if (cols.length) seen.push(`${sheet || "first tab"}: ${cols.map(x => x.label || x.id).join(", ")} (${rows.length} rows)`);
   }
   SEEN = seen.join(" · "); const locs = found.concat(byLabel.filter(b => !found.some(f => f.sheet === b.sheet)));
-  if (locs.length) return (COL = { k, locs });
+  if (locs.length) return (COLS[k] = COL = { k, locs });
   if (strict) throw (lastErr && !seen.length) ? lastErr : new Error("No sync rows found. What the sheet shows: " + (SEEN || "nothing"));
   return { k, locs: [{ col: "B", time: "A", sheet: "" }] };
 }
 async function cells(c, kind, idStart, limit){
-  const at = await column(c), out = []; let ok = 0, err = null;
-  for (const l of at.locs){
-    try { const r = await gvizRaw(c, `select ${l.col} where ${l.col} starts with '${PFX}|${kind}|${idStart}' order by ${l.time} desc${limit ? " limit " + limit : ""}`, l.sheet); ok++;
+  const out = []; let ok = 0, err = null, locs = [];
+  for (const s of [c].concat(c.old || [])){ try { locs = locs.concat((await column(s)).locs.map(l => Object.assign({ s }, l))); } catch(e){ err = e; } }   // the new sheet and the old, full one
+  for (const l of locs){
+    try { const r = await gvizRaw(l.s, `select ${l.col} where ${l.col} starts with '${PFX}|${kind}|${idStart}' order by ${l.time} desc${limit ? " limit " + limit : ""}`, l.sheet); ok++;
       ((r.table && r.table.rows) || []).forEach(row => out.push(((row.c || [])[0] || {}).v || "")); } catch(e){ err = e; } }
   if (!ok && err) throw err; return out;
 }

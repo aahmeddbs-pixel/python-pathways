@@ -7,9 +7,9 @@
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261116lv"></script>
+<script src="pp-sync.js?v=20261118sy"></script>
 <script src="work-docx.js?v=20261118blue"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261117dl"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261118sy"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1478,8 +1478,8 @@ async function ensureSync(acc, pin){
   if (!PPSync.enabled() || !/^\d{4}$/.test(pin)) return;
   try {
     if (!acc.dk){ const dk = await PPSync.findKey(slug(acc.name), pin); acc.dk = dk || PPSync.newKey(); acc.wrapFor = ""; }
-    // syncV 3: send the online key again once, because saves before 2 Nov 2026 never reached the sheet
-    if (acc.wrapFor !== acc.pin || acc.syncV !== 3){ await PPSync.publishWrap(slug(acc.name), pin, acc.dk); acc.wrapFor = acc.pin; acc.syncV = 3; }
+    // syncV 4: send the online key again once to the new sync sheet (the old one stopped taking rows on 16 Nov 2026, so PINs set after that never arrived)
+    if (acc.wrapFor !== acc.pin || acc.syncV !== 4){ await PPSync.publishWrap(slug(acc.name), pin, acc.dk); acc.wrapFor = acc.pin; acc.syncV = 4; }
     const got = await PPSync.pull(acc.dk);   // another computer may have newer progress: merge it in, never overwrite
     if (got){ applyBundle(acc, got.bundle, got.savedAt > (acc.savedAt || 0) && !!acc.savedAt); acc.savedAt = Math.max(acc.savedAt || 0, got.savedAt); }
     acc.syncSig = ""; saveAccount(acc);
