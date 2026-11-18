@@ -604,29 +604,29 @@ function analyse(st){
     L.core.filter(x => !x.ok).forEach(x => hints += x.h || 0);
     timeAll += lt; skipped += L.skipped || 0; coreDone += okCore.length; if (okCore.length === 3) lessonsComplete++;
     const avg = solvedItems.filter(x => x.ms).length ? solvedItems.reduce((p, x) => p + (x.ms || 0), 0) / solvedItems.filter(x => x.ms).length : 0;
-    rows.push({n:+n, title:L.title, core:okCore.length, prac:L.prac.length, time:lt, avg, hints:solvedItems.reduce((p, x) => p + (x.h || 0), 0), status:okCore.length === 3 ? (L.prac.length >= 3 ? "Mastered" : "Complete") : okCore.length + L.prac.length ? "In progress" : "Started", errs:L.errs || {}});
+    rows.push({n:+n, title:L.title, core:okCore.length, prac:L.prac.length, time:lt, avg, hints:solvedItems.reduce((p, x) => p + (x.h || 0), 0), status:okCore.length === 3 ? (okCore.every(x => !x.h) ? "Mastered" : "Complete") : okCore.length || L.core.some(x => x.h || x.c) ? "In progress" : "Started", errs:L.errs || {}});
   });
   const solved = done.length, avgTask = taskN ? taskMs / taskN : 0;
   const every = HOUSE_EVERY[path] || 15;
   // strengths & development
   const S = [], Dv = [];
   if (lessonsComplete) S.push("Completed all lesson exercises in " + lessonsComplete + " lesson" + (lessonsComplete > 1 ? "s" : "") + ": " + rows.filter(r => r.core === 3).map(r => r.title).slice(0, 4).join(", ") + ".");
-  const indep = done.filter(x => !x.h).length;
-  if (solved >= 3 && indep / solved >= 0.8) S.push("Works independently: " + indep + " of " + solved + " tasks solved without buying advice.");
-  if (avgTask && avgTask < 3 * 60000 && solved >= 3) S.push("Works at a strong pace: an average of " + fmtAvg(avgTask) + " per task.");
-  const pracTotal = rows.reduce((p, r) => p + r.prac, 0);
-  if (pracTotal >= 5) S.push("Shows perseverance with " + pracTotal + " extra practice questions completed.");
+  // strengths and development points are assessed on the lesson exercises only: practice questions are not assessed
+  const exDone = done.filter(x => x.kind === "Exercise"), indep = exDone.filter(x => !x.h).length;
+  const exTimed = exDone.filter(x => x.ms), avgEx = exTimed.length ? exTimed.reduce((p, x) => p + x.ms, 0) / exTimed.length : 0;
+  if (exDone.length >= 3 && indep / exDone.length >= 0.8) S.push("Works independently: " + indep + " of " + exDone.length + " exercises solved without buying advice.");
+  if (avgEx && avgEx < 3 * 60000 && exDone.length >= 3) S.push("Works at a strong pace: an average of " + fmtAvg(avgEx) + " per exercise.");
   if (P.house) S.push("Earned " + P.house + " House Point" + (P.house > 1 ? "s" : "") + " through consistent effort.");
   const mastered = rows.filter(r => r.status === "Mastered");
   if (mastered.length) S.push("Mastered: " + mastered.map(r => r.title).slice(0, 3).join(", ") + ".");
   const unfinished = rows.filter(r => r.core < 3);
   if (unfinished.length) Dv.push("Finish the lesson exercises in: " + unfinished.map(r => "Lesson " + r.n + " (" + r.title + ")").slice(0, 3).join(", ") + ".");
-  if (solved && hints / Math.max(1, solved) > 1) Dv.push("Try each task independently for a few minutes before buying advice (" + hints + " pieces of advice used).");
-  if (avgTask > 10 * 60000) Dv.push("Build speed and confidence: tasks are taking " + fmtAvg(avgTask) + " on average. Re-read the worked example first.");
+  const exHints = exDone.reduce((p, x) => p + (x.h || 0), 0);
+  if (exDone.length && exHints / Math.max(1, exDone.length) > 1) Dv.push("Try each exercise independently for a few minutes before buying advice (" + exHints + " pieces of advice used).");
+  if (avgEx > 10 * 60000) Dv.push("Build speed and confidence: exercises are taking " + fmtAvg(avgEx) + " on average. Re-read the worked example first.");
   const topErr = Object.keys(errs).sort((x, y) => errs[y] - errs[x])[0];
   const errTip = {SyntaxError:"Check syntax carefully: colons, brackets and quotation marks", IndentationError:"Indent code inside if, for, while and def by 4 spaces", NameError:"Check variable names are spelled the same each time, and put text in quotes", TypeError:"Convert between text and numbers with int() and str()", Timeout:"Make sure loops always finish", ValueError:"Check values before converting them with int()", IndexError:"Remember list positions start at 0"};
   if (topErr && errs[topErr] >= 3) Dv.push(errTip[topErr] + " (" + errs[topErr] + " " + topErr + "s).");
-  if (skipped >= 3) Dv.push("Have a proper go at practice questions before swapping them (" + skipped + " swapped).");
   const daysSince = lastAt ? (Date.now() - lastAt) / 86400000 : 99;
   if (solved && daysSince > 10) Dv.push("Keep momentum: no tasks completed in the last " + Math.floor(daysSince) + " days.");
   if (!solved) Dv.push("Get started: complete the first lesson's exercises.");

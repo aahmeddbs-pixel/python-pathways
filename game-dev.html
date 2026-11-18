@@ -10,6 +10,7 @@
 <script src="/sisd-design-and-computing/sdc.js?v=20261117dl"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <script src="game-dev-data.js?v=20261116gd"></script>
+<script src="work-docx.js?v=20261118dl"></script>
 <style>
 :root{--navy:#1B2D4E;--navy-d:#101d35;--red:#DC2B3E;--red-d:#b81f30;--bg:#F3F5F9;--card:#fff;--ink:#16223A;--muted:#5B6782;--line:#D8DEEA;--soft:#E9EDF5;
   --ok:#1E8A55;--okbg:#E3F4EA;--warn:#8A4B00;--warnbg:#FFF2DC;--bad:#A3172A;--badbg:#FBE5E8;--r:14px;--gold:#f5b301}
@@ -331,7 +332,7 @@ function formHTML(k){
     else if (f.type === "criteria") h += critHTML();
     h += `</div>`;
   });
-  return h + `<div class="row" style="margin-top:20px"><button class="btn red" id="submitBtn2">📤 Submit Stage ${k.slice(1)} to my teacher</button><button class="btn ghost" id="printBtn">🖨 Print / save as PDF</button></div>`;
+  return h + `<div class="row" style="margin-top:20px"><button class="btn red" id="submitBtn2">📤 Submit Stage ${k.slice(1)} to my teacher</button><button class="btn" id="dlWorkBtn" title="Every stage you have worked on, in one Word document. Examples and hints are not included.">📄 Download all my work (Word)</button><button class="btn ghost" id="printBtn">🖨 Print / save as PDF</button></div>`;
 }
 function rowsHTML(p, f, rows){
   const n = Math.max(f.minRows || 1, rows.length);
@@ -438,6 +439,49 @@ function bindForm(k){
   bindPixel(root); bindMaps(root);
   $("submitBtn2").onclick = () => submit(k);
   $("printBtn").onclick = () => printStage(k);
+  $("dlWorkBtn").onclick = () => downloadMyWork($("dlWorkBtn"));
+}
+/* ---------- Download all my work (Word): the student's own answers in every stage; never the examples or hints ---------- */
+function pixelPNG(str){ const s = String(str || ""); if (!/[1-9a-f]/i.test(s)) return null; const c = document.createElement("canvas"), z = 16; c.width = c.height = 16 * z; const x = c.getContext("2d");
+  for (let i = 0; i < 256; i++){ const v = parseInt(s[i] || "0", 16) || 0; x.fillStyle = v ? D.PALETTE[v] : ((i + Math.floor(i / 16)) % 2 ? "#eeeeee" : "#ffffff"); x.fillRect((i % 16) * z, Math.floor(i / 16) * z, z, z); }
+  return c.toDataURL("image/png"); }
+function mapPNG(m){ if (!m || !m.d) return null; const z = 28, c = document.createElement("canvas"); c.width = m.w * z; c.height = m.h * z; const x = c.getContext("2d");
+  x.textAlign = "center"; x.textBaseline = "middle"; x.font = Math.round(z * .7) + "px sans-serif";
+  for (let i = 0; i < m.w * m.h; i++){ const t = D.TILE[m.d[i]] || D.TILE["."], cx = (i % m.w) * z, cy = Math.floor(i / m.w) * z; x.fillStyle = t.c; x.fillRect(cx, cy, z, z); x.strokeStyle = "rgba(0,0,0,.08)"; x.strokeRect(cx + .5, cy + .5, z - 1, z - 1); if (t.e){ x.fillStyle = "#000"; x.fillText(t.e, cx + z / 2, cy + z / 2 + 1); } }
+  return c.toDataURL("image/png"); }
+const txt = v => String(v == null ? "" : v).trim();
+const paras = v => txt(v).split(/\n+/).map(x => x.trim()).filter(Boolean).map(t => ({ k:"p", t }));
+function stageBlocks(k){
+  const d = DB[k] || {}, out = []; let sec = null;
+  const head = () => { if (sec){ out.push(sec); sec = null; } };
+  D.F[k].forEach(f => {
+    if (f.sec){ sec = { k:"h2", t:f.sec + (f.crit ? " (Criterion " + f.crit + ")" : "") }; return; }
+    const v = d[f.id], add = (...b) => { head(); out.push({ k:"h3", t:f.label }, ...b); };
+    if (f.type === "text" || f.type === "area" || f.type === "select" || f.type === "link"){ if (txt(v)) add(...paras(v)); }
+    else if (f.type === "checks"){ const on = (v || []).filter(o => f.options.indexOf(o) >= 0); if (on.length) add(...on.map(t => ({ k:"li", t:"✓ " + t }))); }
+    else if (f.type === "controls"){ const c = v || {}, rows = D.BUTTONS.filter(b => txt(c[b[0]])).map(b => [b[1], txt(c[b[0]])]); if (rows.length) add({ k:"table", head:["Button", "What it does"], rows }); }
+    else if (f.type === "rows"){ const rows = (v || []).filter(r => r && f.cols.some(c => txt(r[c.id]))).map(r => f.cols.map(c => txt(r[c.id]))); if (rows.length) add({ k:"table", head:f.cols.map(c => c.label), rows }); }
+    else if (f.type === "pixel"){ const src = pixelPNG(v); if (src) add({ k:"img", src, cap:f.label }); }
+    else if (f.type === "criteria"){ const C = D.critList(DB), ev = v || {}, rows = C.map((r, i) => [r.c, r.t || "", (ev[i] || {}).r || "", txt((ev[i] || {}).e)]).filter(r => r[2] || r[3]); if (rows.length) add({ k:"table", head:["Success criterion", "Test", "Result", "Evidence"], rows }); }
+    else if (f.type === "levels"){ const lv = v || [], b = [];
+      lv.forEach((L, i) => { if (!L) return; const own = D.LEVEL_FIELDS.filter(x => x.type !== "map" && txt(L[x.id])), src = mapPNG(L.map); if (!own.length && !src) return;
+        b.push({ k:"h3", t:"Level " + (i + 1) + (txt(L.name) ? ": " + txt(L.name) : "") });
+        if (src) b.push({ k:"img", src, cap:"Level " + (i + 1) + " map" }, { k:"note", t:D.mapKey(L.map) });
+        own.filter(x => x.id !== "name").forEach(x => x.type === "area" ? b.push({ k:"lab", t:x.label }, ...paras(L[x.id])) : b.push({ k:"p", t:x.label + ": " + txt(L[x.id]) })); });
+      if (b.length){ head(); out.push(...b); } }
+  });
+  return out;
+}
+async function downloadMyWork(btn){
+  if (!window.WorkDocx){ toast("The download tool did not load. Refresh the page and try again."); return; }
+  const blocks = [];
+  D.STAGES.forEach(s => { const b = stageBlocks(s.key); if (b.length) blocks.push({ k:"h1", t:"Stage " + s.n + ": " + s.name }, ...b); });
+  if (!blocks.length){ toast("There is no work to download yet. Start Stage 1 first."); return; }
+  const R = { year:"Grade 7 Computer Science · Game Development · All my work", title:txt(DB.s1.title) || "My game", name:ACCT.name, teacher:ACCT.teacher || "", unit:"MakeCode Arcade game project. Examples and hints are not included.", blocks };
+  const t0 = btn.textContent; btn.disabled = true; btn.textContent = "Making your Word document…";
+  try { WorkDocx.save(await WorkDocx.build(R), WorkDocx.fileName(ACCT.name + " - Game Development - My work") + ".docx"); toast("Downloaded. Examples and hints are not included."); }
+  catch(e){ toast("The Word document could not be made: " + e.message); }
+  btn.disabled = false; btn.textContent = t0;
 }
 
 /* ---------- side checklist + submit ---------- */

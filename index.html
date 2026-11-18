@@ -8,6 +8,7 @@
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js?v=20261116lv"></script>
+<script src="work-docx.js?v=20261118dl"></script>
 <script src="/sisd-design-and-computing/sdc.js?v=20261117dl"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -276,6 +277,7 @@ input.pin{letter-spacing:.4em;font-weight:700}
   </div>
   <div class="housebox" id="mapHouse" style="margin-bottom:14px"></div>
   <div class="maptools"><label class="muted" style="font-weight:700" for="levelSel">Level:</label><select class="t" id="levelSel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select>
+    <button class="btn" id="dlWorkBtn" title="Your code for every lesson exercise in one Word document. Worked examples and practice questions are not included.">📄 Download my work (Word)</button>
     <button class="btn ghost" id="exportBtn">💾 Save my progress file</button><span class="muted" style="font-size:.88rem">Use this to move to another computer.</span></div>
   <div id="gdBox"></div>
   <p class="muted" style="margin:14px 0">Open the lesson your teacher tells you to do today. Each lesson: <b>Learn → Example → 3 Exercises → Practice</b>. Every completed exercise = 10 points. <b>Submit</b> unlocks each time you earn a House Point.</p>
@@ -1088,7 +1090,10 @@ function mastery(L, s){
   const prac = s.prac.done.filter(d => d.ok).length;
   const need = MIN_PRACTICE[profile.path];
   const skill = core === 3 && prac >= need;
-  const level = skill && prac >= need + 3 ? "Mastered" : skill ? "Proficient" : core === 3 ? "Familiar" : core + prac > 0 ? "Attempted" : "Not started";
+  /* the skill level is assessed on the three lesson exercises only (practice questions and the worked example are not assessed);
+     practice still counts towards unlocking Submit and House Points */
+  const hintsEx = L.ex.reduce((a, q) => a + ((s.hints || {})[q] || 0), 0), triedEx = L.ex.some(q => (s.tries || {})[q] || s.solved[q]);
+  const level = core === 3 && !hintsEx ? "Mastered" : core === 3 ? "Proficient" : core > 0 ? "Familiar" : triedEx ? "Attempted" : "Not started";
   const eligible = canSubmit();
   return {core, prac, need, eligible, level, total:core + prac, target:3 + need};
 }
@@ -1665,10 +1670,10 @@ function firstOpenStep(L, s){
 const STEP_NAMES = ["Learn", "Example", "Exercise 1", "Exercise 2", "Exercise 3", "Practice", "Submit"];
 function renderMastery(){
   const L = DATA.lessons[profile.path][cur.lesson - 1], m = mastery(L, lessonState(cur.lesson));
-  const pct = Math.min(100, Math.round(m.total / m.target * 100));
+  const pct = Math.round(m.core / 3 * 100);
   const msg = m.level === "Mastered" ? "🌟 Skill mastered! Keep going to earn more House Points." :
-    m.core < 3 ? "Solve the 3 lesson exercises, then practise to build this skill." : m.prac < m.need ? "Solve " + (m.need - m.prac) + " more practice question" + (m.need - m.prac > 1 ? "s" : "") + " to become Proficient." : "Proficient! " + (m.need + 3 - m.prac) + " more practice to reach Mastered.";
-  $("mastery").innerHTML = '<div class="housebox">' + houseHTML() + (m.eligible ? '<button class="btn green" id="houseSubmitBtn" style="margin-top:8px">📨 Submit to ' + esc(profile.teacher || "my teacher") + '</button>' : '') + '</div><div class="mast"><div class="mast-top"><b>Skill level: ' + m.level + '</b><span>Lesson skill: ' + Math.min(m.total, m.target) + ' / ' + m.target + '</span></div><div class="bar"><i style="width:' + pct + '%;background:var(--green)"></i></div><div class="mast-msg">' + msg + '</div></div>';
+    m.core < 3 ? "Solve the 3 lesson exercises: your skill level comes from these." : "Proficient! Solve all 3 exercises without buying advice to reach Mastered. Practice questions build confidence and House Points.";
+  $("mastery").innerHTML = '<div class="housebox">' + houseHTML() + (m.eligible ? '<button class="btn green" id="houseSubmitBtn" style="margin-top:8px">📨 Submit to ' + esc(profile.teacher || "my teacher") + '</button>' : '') + '</div><div class="mast"><div class="mast-top"><b>Skill level: ' + m.level + '</b><span>Lesson exercises: ' + m.core + ' / 3</span></div><div class="bar"><i style="width:' + pct + '%;background:var(--green)"></i></div><div class="mast-msg">' + msg + '</div></div>';
   const hb = document.getElementById("houseSubmitBtn"); if (hb) hb.onclick = () => goStep(SUBMIT);
 }
 /* steps open in order: run the example before Exercise 1, solve each exercise before the next one, all three before Practice */
@@ -1925,17 +1930,15 @@ function buildFeedback(L, s){
   const errTotals = {};
   Object.keys(s.errs).forEach(q => { const e = s.errs[q] || {}; Object.keys(e).forEach(k => errTotals[k] = (errTotals[k] || 0) + e[k]); });
   const m = mastery(L, s);
-  if (m.level === "Mastered") well.push("Reached Mastered: solved all three exercises plus " + m.prac + " practice questions.");
+  // feedback is about the three lesson exercises only: practice questions and the worked example are not assessed
+  if (m.level === "Mastered") well.push("Reached Mastered: solved all three exercises on " + L.title.toLowerCase() + " without advice.");
   else if (solved.length === 3) well.push("Completed all three exercises on " + L.title.toLowerCase() + ".");
-  const pracNoHint = s.prac.done.filter(d => d.ok && !d.hints).length;
-  if (m.prac && m.level !== "Mastered") well.push("Solved " + m.prac + " practice question" + (m.prac > 1 ? "s" : "") + (pracNoHint === m.prac ? ", all without hints" : "") + ".");
   L.ex.forEach((q, i) => {
     if (!s.solved[q]) return;
     if (!(s.hints[q] || 0) && (s.tries[q] || 0) <= 1) well.push("Solved \"" + titles[i] + "\" first time with no hints.");
     else if (!(s.hints[q] || 0)) well.push("Solved \"" + titles[i] + "\" independently, without hints.");
     else well.push("Used hints sensibly to solve \"" + titles[i] + "\".");
   });
-  if (s.ranExample) well.push("Ran and explored the worked example.");
   if (!solved.length && Object.keys(s.tries).length) well.push("Kept trying and had a go at the exercises.");
   L.ex.forEach((q, i) => {
     if (s.solved[q]) return;
@@ -1951,9 +1954,7 @@ function buildFeedback(L, s){
   if (hintsUsed >= 4) next.push("Try each exercise for a few minutes on your own before opening hints.");
   const manyTries = L.ex.filter(q => (s.tries[q] || 0) >= 5);
   if (manyTries.length) next.push("Read error messages carefully: they tell you which line to fix before you try again.");
-  if (m.prac < m.need) next.push("Solve " + (m.need - m.prac) + " more practice question" + (m.need - m.prac > 1 ? "s" : "") + " to show this skill is secure.");
-  if (s.prac.skipped >= 3) next.push("Have a proper go at practice questions before swapping them (" + s.prac.skipped + " skipped).");
-  if (m.eligible && m.level !== "Mastered" && !next.length) next.push("Keep practising to reach Mastered (" + (m.need + 3) + " practice questions).");
+  if (solved.length === 3 && m.level !== "Mastered" && !next.length) next.push("To reach Mastered, solve all three exercises without buying advice.");
   if (solved.length === 3 && hintsUsed === 0 && !next.length) next.push("Ready for more challenge: move on to the next lesson, or try making your solutions shorter.");
   if (!well.length) well.push("Signed in and started the lesson.");
   return {well:well.slice(0, 4), next:next.slice(0, 4)};
@@ -1983,16 +1984,17 @@ function renderSubmit(body, L, s){
     rows += '<tr><td><b>' + (i + 1) + '.</b> ' + Q.title + '</td><td>' + (s.solved[q] ? "✅ Solved" : s.tries[q] ? "🟡 Not yet" : "⬜ Not tried") + '</td><td>' + (s.hints[q] || 0) + '</td><td>' + (s.tries[q] || 0) + '</td></tr>';
   });
   const ph = s.prac.done.filter(x => x.ok).reduce((a, x) => a + (x.hints || 0), 0);
-  rows += '<tr><td><b>∞</b> Practice questions</td><td>' + (m.prac ? "✅ " + m.prac + " solved" : "⬜ None yet") + (s.prac.skipped ? " (" + s.prac.skipped + " swapped)" : "") + '</td><td>' + ph + '</td><td></td></tr></table>';
+  rows += '<tr><td><b>∞</b> Practice questions <span class="muted" style="font-size:.85em">(not assessed)</span></td><td>' + (m.prac ? "✅ " + m.prac + " solved" : "⬜ None yet") + (s.prac.skipped ? " (" + s.prac.skipped + " swapped)" : "") + '</td><td>' + ph + '</td><td></td></tr></table>';
   body.insertAdjacentHTML("beforeend", rows);
-  body.insertAdjacentHTML("beforeend", '<p><b>Skill level: ' + m.level + '</b> • ' + m.total + ' question' + (m.total === 1 ? '' : 's') + ' solved in this lesson • Time today: ' + fmtMin(day ? day.activeMs : 0) + '</p>');
+  body.insertAdjacentHTML("beforeend", '<p><b>Skill level: ' + m.level + '</b> (from the 3 exercises) • ' + m.core + ' / 3 exercises solved • Time today: ' + fmtMin(day ? day.activeMs : 0) + '</p>');
   const g = el("div", "fbgrid");
   g.innerHTML = '<div class="col w"><h3>🌟 What went well</h3><ul>' + fbk.well.map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div><div class="col i"><h3>🚀 Next steps</h3><ul>' + (fbk.next.length ? fbk.next : ["Keep up the great work!"]).map(x => "<li>" + esc(x) + "</li>").join("") + '</ul></div>';
   body.appendChild(g);
   const act = el("div", "actions");
   const sb = el("button", "btn green lg", m.eligible ? "📨 Submit to " + (profile.teacher || "my teacher") : "🔒 Submit unlocks at your next House Point");
   sb.disabled = !m.eligible;
-  act.appendChild(sb); body.appendChild(act);
+  const dw = el("button", "btn ghost lg", "📄 Download my work (Word)"); dw.title = "Your code for every lesson exercise in one Word document. Worked examples and practice questions are not included."; dw.onclick = () => downloadMyWork(dw);
+  act.appendChild(sb); act.appendChild(dw); body.appendChild(act);
   const st = el("div", ""); body.appendChild(st);
   if (last) showSent(st, last);
   sb.onclick = async () => {
@@ -2003,6 +2005,44 @@ function renderSubmit(body, L, s){
     renderSteps();
   };
 }
+/* ---------------- Download my work (Word) ----------------
+   Every level the student has worked in: each lesson's three exercises with the task and the student's own code.
+   Only the student's tasks: the worked example and the practice questions are never included. */
+function myWorkReport(){
+  const blocks = [], levels = [];
+  Object.keys(PATHS).forEach(p => {
+    const pr = p === profile.path ? prog : load("pyl_" + p + "_" + slug(profile.name), null);
+    if (!pr || !pr.lessons || !(DATA.lessons || {})[p]) return;
+    const out = [];
+    DATA.lessons[p].forEach((L, i) => {
+      const s = pr.lessons[i + 1]; if (!s) return;
+      const ex = [];
+      L.ex.forEach((q, k) => {
+        const Q = (s.exq && s.exq[q]) || qOf(p, q); if (!Q) return;
+        const code = String((s.code || {})[q] || ""), solved = !!(s.solved || {})[q], hints = (s.hints || {})[q] || 0;
+        if (!solved && (!code.trim() || code.trim() === String(Q.starter || "").trim())) return;   // not attempted
+        ex.push({ k:"h3", t:"Exercise " + (k + 1) + ": " + Q.title }, ...WorkDocx.htmlText(Q.task).split(/\n+/).map(t => t.trim()).filter(Boolean).map(t => ({ k:"p", t })),
+          { k:"code", t:code.trim() ? code.replace(/\s+$/, "") : "(no code saved)" },
+          { k:"note", t:solved ? "Solved ✓" + (hints ? " · advice used: " + hints : " · no advice used") : "Not solved yet" });
+      });
+      if (ex.length) out.push({ k:"h2", t:"Lesson " + (i + 1) + ": " + L.title }, ...ex);
+    });
+    if (out.length){ levels.push(PATHS[p].name); blocks.push({ k:"h1", t:"Python " + PATHS[p].name }, ...out); }
+  });
+  return { year:"Computer Science · Python Pathways · All my work", title:"My Python work", name:profile.name, teacher:profile.teacher || "",
+    unit:"Lesson exercises only. Worked examples and practice questions are not included.", blocks, levels };
+}
+async function downloadMyWork(btn){
+  if (!window.WorkDocx){ alert("The download tool did not load. Check the internet connection and refresh the page."); return; }
+  try { saveProg(); } catch(e){}
+  const R = myWorkReport();
+  if (!R.blocks.length){ alert("There is no work to download yet. Have a go at a lesson exercise first."); return; }
+  const t0 = btn ? btn.textContent : ""; if (btn){ btn.disabled = true; btn.textContent = "Making your Word document…"; }
+  try { WorkDocx.save(await WorkDocx.build(R), WorkDocx.fileName(profile.name + " - Python Pathways - My work") + ".docx"); }
+  catch(e){ alert("The Word document could not be made: " + e.message); }
+  if (btn){ btn.disabled = false; btn.textContent = t0; }
+}
+$("dlWorkBtn").onclick = () => downloadMyWork($("dlWorkBtn"));
 function esc(t){ return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;"}[c])); }
 function showSent(st, rec){
   const t = new Date(rec.at).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"});
