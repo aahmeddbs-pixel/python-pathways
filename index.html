@@ -9,7 +9,7 @@
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
 <script src="pp-sync.js?v=20261118sy"></script>
 <script src="work-docx.js?v=20261118blue"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261118sy"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261123ul"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1251,7 +1251,10 @@ $("loginBtn").onclick = async () => {
     return; }
   if (!acc){ err.textContent = "No account found for that name and PIN. Check the spelling and your PIN. If you used a different computer before, sign in there once first so your progress is saved online."; return; }
   const lk = "pyl_pinfail_" + slug(name), f = load(lk, {n:0, until:0});
-  if (f.until > Date.now()){ err.textContent = "Too many wrong PINs. This account is locked for " + Math.ceil((f.until - Date.now()) / 60000) + " more minute(s). Ask your teacher if you've forgotten your PIN."; $("loginPin").value = ""; return; }
+  /* locked out: offer "ask my teacher to unlock now" (the teacher presses Unlock now on the staff dashboard) */
+  const lockHelp = () => { try { if (window.SDC && SDC.lockHelp) SDC.lockHelp(err, { course:"cs", email: acc.email || "", name: acc.name, teacher: acc.teacher || "", grade: acc.grade || "",
+    since: f.until - 2 * 60000, onUnlock: () => { store(lk, {n:0, until:0}); setTimeout(() => { err.textContent = "✅ Your teacher has unlocked your account. Type your PIN again and press Sign in."; }, 2500); } }); } catch(e){} };
+  if (f.until > Date.now()){ err.textContent = "Too many wrong PINs. This account is locked for " + Math.ceil((f.until - Date.now()) / 60000) + " more minute(s). Don't want to wait? Ask your teacher to unlock it now, or to reset your PIN if you've forgotten it."; $("loginPin").value = ""; lockHelp(); return; }
   let pinOk = acc.pin === pinHash(name, pin);
   if (!pinOk && PPSync.enabled() && /^\d{4}$/.test(pin)){   // the teacher may have reset this PIN on another computer
     $("loginBtn").disabled = true; err.textContent = "Checking…";
@@ -1269,7 +1272,8 @@ $("loginBtn").onclick = async () => {
     store(lk, f);
     if (f.n === 3 || f.n === 5) securityAlert("Repeated wrong PINs", f.n + " wrong PIN attempts for " + acc.name + "'s account on this computer" + (f.n >= 5 ? " (account locked for 1 minute)." : ".") + " This may be a forgotten PIN, or someone trying to get into another student's account." + (load("pyl_lastName", "") && slug(load("pyl_lastName", "")) !== slug(acc.name) ? " The last student signed in on this computer was " + load("pyl_lastName", "") + "." : ""),
       {name:acc.name, email:acc.email, grade:acc.grade, teacher:acc.teacher, path:acc.path});
-    err.textContent = f.n >= 5 ? "Too many wrong PINs. This account is locked for 1 minute. Ask your teacher if you've forgotten your PIN." : "That PIN is not right. Try again, or ask your teacher for help.";
+    err.textContent = f.n >= 5 ? "Too many wrong PINs. This account is locked for 1 minute. Don't want to wait? Ask your teacher to unlock it now, or to reset your PIN if you've forgotten it." : "That PIN is not right. Try again, or ask your teacher for help.";
+    if (f.n >= 5) setTimeout(lockHelp, 0);
     if (resetListed(acc.name) && !resetUsed(acc)) err.textContent += " Your teacher has reset your PIN: type 0000, then choose a new PIN.";
     $("loginPin").value = ""; return;
   }
