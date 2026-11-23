@@ -1585,6 +1585,7 @@ function levelRow(){
     return '<button class="lvlbtn' + (on ? " on" : "") + (done ? " done" : "") + '" data-lvl="' + p + '" title="' + tip + '"' + (open ? "" : " disabled") + '>' + (done ? "✅ " : open ? "" : "🔒 ") + PATHS[p].name + '</button>';
   }).join("");
   row.querySelectorAll("[data-lvl]").forEach(b => b.onclick = () => { if (b.dataset.lvl !== profile.path) switchLevel(b.dataset.lvl); });
+  try { if (window.ppCertButtons) ppCertButtons(row, chain); } catch(e){}   // end-of-level certificates (cert.js)
   // just finished this level: tell them once that the next one is open
   const nx = LEVEL_NEXT[profile.path];
   if (nx && chain.indexOf(nx) >= 0 && levelDone(profile.path)){
@@ -1592,11 +1593,12 @@ function levelRow(){
     if (!profile.lvlCheered[profile.path]){
       profile.lvlCheered[profile.path] = Date.now(); saveAccount(profile);
       const bg = el("div", "modal-bg"), done = PATHS[profile.path].name, nn = PATHS[nx].name;
-      bg.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:3rem">🎉</div><h2>You finished ' + done + '!</h2><p style="margin-top:8px">Every exercise in all 10 lessons is done. <b>' + nn + '</b> is now unlocked.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn" id="lvlGo">Start ' + nn + ' →</button><button class="btn ghost" id="lvlStay">Stay on ' + done + '</button></div></div>';
+      bg.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:3rem">🎉</div><h2>You finished ' + done + '!</h2><p style="margin-top:8px">Every exercise in all 10 lessons is done. <b>' + nn + '</b> is now unlocked.</p><div style="display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap"><button class="btn" id="lvlCert" style="background:#C9A227">🏅 Download my ' + done + ' certificate</button><button class="btn" id="lvlGo">Start ' + nn + ' →</button><button class="btn ghost" id="lvlStay">Stay on ' + done + '</button></div></div>';
       document.body.appendChild(bg);
       try { sfx("unlock"); } catch(e){}
       bg.querySelector("#lvlGo").onclick = () => { bg.remove(); switchLevel(nx); };
       bg.querySelector("#lvlStay").onclick = () => bg.remove();
+      const cb = bg.querySelector("#lvlCert"), lp = profile.path; if (cb) cb.onclick = () => { try { ppCertDownload(lp); } catch(e){} };
     }
   }
 }
@@ -2680,5 +2682,6 @@ window.PPLive = { profile: () => profile, ready: () => !!(profile && prog), solv
 })();
 </script>
 <script src="leaderboard.js?v=20261112pop"></script>
+<script src="cert.js?v=20261123cert" charset="utf-8"></script>
 </body>
 </html>
