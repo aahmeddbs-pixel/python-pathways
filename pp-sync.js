@@ -139,8 +139,9 @@ async function column(c, strict){
   const k = c.id + "|" + c.gid; if (COL && COL.k === k) return COL; if (!strict && COLS[k]) return COLS[k];
   // the linked tab, plus every "Form responses" tab: if the form was ever re-linked, new rows land in a new tab
   const tries = ["", ...[1,2,3,4,5,6].map(n => "Form responses " + n), "Form Responses 1", "Form Responses 2", "Form Responses 3"], seen = [], found = [], byLabel = []; let lastErr = null;
-  for (const sheet of tries){
-    let r; try { r = await gvizRaw(c, "select * limit 30", sheet); } catch(e){ lastErr = e; continue; }
+  const probes = await Promise.all(tries.map(sheet => gvizRaw(c, "select * limit 30", sheet).then(r => ({ sheet, r }), e => ({ sheet, e }))));   // all tabs at once
+  for (const { sheet, r, e } of probes){
+    if (e){ lastErr = e; continue; }
     const cols = (r.table && r.table.cols) || [], rows = (r.table && r.table.rows) || [];
     const i = cols.findIndex((x, j) => rows.some(row => String(((row.c || [])[j] || {}).v || "").startsWith("PPS2|") || String(((row.c || [])[j] || {}).v || "").startsWith("DSS2|")));
     if (i >= 0) found.push({ col: cols[i].id, time: cols[0].id, sheet });
@@ -155,9 +156,8 @@ async function column(c, strict){
 async function cells(c, kind, idStart, limit){
   const out = []; let ok = 0, err = null, locs = [];
   for (const s of [c].concat(c.old || [])){ try { locs = locs.concat((await column(s)).locs.map(l => Object.assign({ s }, l))); } catch(e){ err = e; } }   // the new sheet and the old, full one
-  for (const l of locs){
-    try { const r = await gvizRaw(l.s, `select ${l.col} where ${l.col} starts with '${PFX}|${kind}|${idStart}' order by ${l.time} desc${limit ? " limit " + limit : ""}`, l.sheet); ok++;
-      ((r.table && r.table.rows) || []).forEach(row => out.push(((row.c || [])[0] || {}).v || "")); } catch(e){ err = e; } }
+  await Promise.all(locs.map(l => gvizRaw(l.s, `select ${l.col} where ${l.col} starts with '${PFX}|${kind}|${idStart}' order by ${l.time} desc${limit ? " limit " + limit : ""}`, l.sheet)
+    .then(r => { ok++; ((r.table && r.table.rows) || []).forEach(row => out.push(((row.c || [])[0] || {}).v || "")); }, e => { err = e; })));   // all at once
   if (!ok && err) throw err; return out;
 }
 function versions(list){
@@ -183,7 +183,7 @@ async function publishWrap(email, pw, dk){
   const A = await derive(email, pw), ver = String(Date.now());
   queueRow("W", A.lookup, ver, await seal(A.kek, JSON.stringify({ dk })));
   const s = await escrow(dk); if (s) queueRow("E", await emailId(email), ver, s);
-  flush(); return { lookup: A.lookup, ver };
+  flush(); return { lookup: A.lookup, ver, A };
 }
 const newKey = () => e64(crypto.getRandomValues(new Uint8Array(32)));
 /* the student's account key, found from email + password on any device (null = no such account / wrong password) */
@@ -213,7 +213,7 @@ async function recoveryKey(adminPw){
     return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({ name:"AES-GCM", iv: d64(w.iv) }, key, d64(w.ct)))).enc; } catch(e){ return null; }
 }
 /* the same reset, using the recovery key directly (staff dashboard: unlocked for the super admin, or passed to approved teachers) */
-async function resetWithKey(email, newPw, encJwk){
+async function resetWithKey(email, newPw, encJwk, opts){
   const c = cfg(); if (!c) throw new Error("Sync is not connected yet.");
   if (!encJwk) throw new Error("The PIN reset key isn't available on this computer yet.");
   const rsa = await crypto.subtle.importKey("jwk", encJwk, { name:"RSA-OAEP", hash:"SHA-256" }, false, ["decrypt"]);
@@ -222,11 +222,12 @@ async function resetWithKey(email, newPw, encJwk){
     let dk; try { dk = e64(new Uint8Array(await crypto.subtle.decrypt({ name:"RSA-OAEP" }, rsa, d64(v.text)))); } catch(e){ continue; }
     if (d64(dk).length !== 32 || (!PF.noData && !(await pull(dk)))) continue;
     const w = await publishWrap(email, newPw, dk); queueRow("R", await dataId(dk), String(w.ver), "x"); await flush();
-    // confirm the new PIN is really in the sheet, so it works on every computer straight away
-    for (let i = 0; i < 9; i++){
-      await new Promise(r => setTimeout(r, i ? 4000 : 1500));
-      try { if (await findKey(email, newPw) === dk) return true; } catch(e){}
-    }
+    // confirm the new PIN is really in the sheet, so it works on every computer (the key is derived once, not on every check)
+    const confirm = async () => { for (let i = 0; i < 20; i++){
+      await new Promise(r => setTimeout(r, i ? 3000 : 1500));
+      try { if (await openWrap(c, w.A) === dk) return true; } catch(e){} } return false; };
+    if (opts && opts.background) return { ok:true, confirmed: confirm() };   // the staff dashboard shows "Done" now and the check result later
+    if (await confirm()) return true;
     throw new Error("The new PIN was sent but hasn't reached the Sync sheet, so it won't work on other computers yet. Press Test sync below to see what needs fixing in Google Forms.");
   }
   return false;
