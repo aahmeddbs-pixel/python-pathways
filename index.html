@@ -2158,7 +2158,8 @@ function snapshot(type, extra){
       if (pcur) lessons[n].pcur = pcur;
     });
     const hpx = hpOf(pr, p), wk = workNow();
-    paths[p] = {solved, points:solved * POINTS_EACH - (pr.spent || 0), spent:pr.spent || 0, house:hpx.total, houseWeek:hpx.week, week:weekOf(), workMins:Math.floor(wk.ms / 60000), hpLedger:(pr.hp.ledger || []).slice(-30), lessons};
+    const coreTotal = DATA.lessons[p].reduce((t, L) => t + L.ex.length, 0), coreDone = DATA.lessons[p].reduce((t, L, i) => { const s = pr.lessons[i + 1]; return t + (s ? L.ex.filter(q => s.solved && s.solved[q]).length : 0); }, 0);
+    paths[p] = {coreDone, coreTotal, solved, points:solved * POINTS_EACH - (pr.spent || 0), spent:pr.spent || 0, house:hpx.total, houseWeek:hpx.week, week:weekOf(), workMins:Math.floor(wk.ms / 60000), hpLedger:(pr.hp.ledger || []).slice(-30), lessons};
   });
   return Object.assign({v:1, type, at:new Date().toISOString(), acct, paths}, extra || {});
 }
@@ -2686,6 +2687,6 @@ window.PPLive = { profile: () => profile, ready: () => !!(profile && prog), solv
 })();
 </script>
 <script src="leaderboard.js?v=20261112pop"></script>
-<script src="cert.js?v=20261123cert" charset="utf-8"></script>
+<script src="cert.js?v=20261124btn" charset="utf-8"></script>
 </body>
 </html>

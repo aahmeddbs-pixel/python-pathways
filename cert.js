@@ -130,16 +130,19 @@
     try { sfx("unlock"); } catch(e){}
   }
 
-  /* certificate buttons under the level buttons: one for every level the student has finished */
+  /* certificate buttons next to "Save my progress file": one per level up to the one they're on.
+     Grey and locked until every exercise in that level is solved; green and clickable once it is. */
   window.ppCertButtons = function(row, chain){
     const old = document.getElementById("certRow"); if (old) old.remove();
-    const done = chain.filter(p => levelDone(p)); if (!done.length) return;
-    const box = document.createElement("div"); box.id = "certRow";
-    box.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 4px;padding:10px 14px;border-radius:14px;background:#FFF7E0;border:2px solid #F0C64A";
-    box.innerHTML = '<span style="font-weight:800;color:#1B2D4E">\ud83c\udfc5 Well done! Your certificate' + (done.length > 1 ? "s are" : " is") + ' ready:</span>' +
-      done.map(p => '<button class="lvlbtn" data-cert="' + p + '" style="background:#1B2D4E;color:#fff;border-color:#1B2D4E">\u2b07 ' + PATHS[p].name.replace(/\s*\(.*\)\s*$/, "") + " certificate (PDF)</button>").join("");
-    row.insertAdjacentElement("afterend", box);
-    box.querySelectorAll("[data-cert]").forEach(b => b.onclick = () => download(b.dataset.cert));
+    const exp = document.getElementById("exportBtn"); let box = document.getElementById("certBtns");
+    if (!box && exp){ box = document.createElement("span"); box.id = "certBtns"; box.style.cssText = "display:inline-flex;flex-wrap:wrap;gap:8px"; (exp.nextElementSibling && exp.nextElementSibling.tagName === "SPAN" ? exp.nextElementSibling : exp).insertAdjacentElement("afterend", box); }
+    const upto = Math.max(0, chain.indexOf(profile.path)), levels = chain.slice(0, upto + 1), done = chain.filter(p => levelDone(p));
+    if (box){
+      box.innerHTML = levels.map(p => { const nm = PATHS[p].name.replace(/\s*\(.*\)\s*$/, ""), ok = levelDone(p), st = levelStats(p);
+        return ok ? '<button class="btn" data-cert="' + p + '" style="background:#1E8A55;border-color:#1E8A55;color:#fff" title="Download your ' + nm + ' certificate (PDF)">\ud83c\udfc5 ' + nm + ' certificate</button>'
+          : '<button class="btn" disabled style="background:#E3E7EE;border-color:#E3E7EE;color:#5B6782;cursor:not-allowed;opacity:1" title="Finish every exercise in ' + nm + ' to unlock your certificate (' + st.solved + ' of ' + st.total + ' done)">\ud83d\udd12 ' + nm + ' certificate (' + st.solved + '/' + st.total + ')</button>'; }).join("");
+      box.querySelectorAll("[data-cert]").forEach(b => b.onclick = () => download(b.dataset.cert));
+    }
     done.forEach(doneAt);
     // the last level has no "next level" pop-up, so congratulate once here
     done.filter(p => !LEVEL_NEXT[p]).forEach(p => {
