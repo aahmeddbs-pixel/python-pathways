@@ -20,6 +20,14 @@
     ls.forEach((L, i) => { const s = pr.lessons && pr.lessons[i + 1]; L.ex.forEach(q => { total++; if (s && s.solved && s.solved[q]) solved++; }); });
     return { total, solved, points: Math.max(0, solved * POINTS_EACH - (pr.spent || 0)) };
   }
+  /* a level counts as complete for the certificate when every lesson is finished: submitted (green "Submitted") or every exercise solved. Not every exercise has to be perfect. */
+  function lessonsDone(p){
+    const pr = levelProg(p) || { lessons:{} }, ls = DATA.lessons[p] || [];
+    const done = ls.filter((L, i) => { const s = pr.lessons && pr.lessons[i + 1]; if (!s) return false;
+      return (s.submissions || []).some(x => x.complete) || L.ex.every(q => s.solved && s.solved[q]); }).length;
+    return { done, total: ls.length };
+  }
+  function certDone(p){ const l = lessonsDone(p); return l.total > 0 && l.done >= l.total; }
   function doneAt(p){
     profile.certAt = profile.certAt || {};
     if (!profile.certAt[p]){ profile.certAt[p] = (profile.lvlCheered && profile.lvlCheered[p]) || Date.now(); try { saveAccount(profile); } catch(e){} }
@@ -67,7 +75,7 @@
     x.fillStyle = INK; x.fillText(profile.name, L, 99.5);
     x.strokeStyle = LINE; x.lineWidth = .5; x.beginPath(); x.moveTo(L, 103.5); x.lineTo(L + 172, 103.5); x.stroke();
     // what they did (bold parts, wrapped)
-    const segs = [["has completed all " + st.total + " exercises in the ", 0], [lvName, 1], [" level of Python Pathways, showing they can use ", 0], [SKILLS[p] || SKILLS[t === "a" ? "advanced" : t === "i" ? "intermediate" : "beginner"], 1], [" " + VERB[t], 0]];
+    const segs = [["has completed all " + lessonsDone(p).total + " lessons in the ", 0], [lvName, 1], [" level of Python Pathways, showing they can use ", 0], [SKILLS[p] || SKILLS[t === "a" ? "advanced" : t === "i" ? "intermediate" : "beginner"], 1], [" " + VERB[t], 0]];
     const words = []; segs.forEach(([s, b]) => s.split(/(\s+)/).forEach(w => { if (w) words.push([w, b]); }));
     let cx = L, cy = 112, maxW = 172, lh = 6.4; x.fillStyle = INK;
     words.forEach(([w, b]) => { font(b ? "700" : "400", 4.25); const ww = x.measureText(w).width;
@@ -75,7 +83,7 @@
       if (cx + ww > L + maxW){ cx = L; cy += lh; }
       x.fillStyle = b ? NAVY : INK; x.fillText(w, cx, cy); cx += ww; });
     // stat boxes
-    const boxes = [["Grade " + (profile.grade || ""), "GRADE"], [st.solved + " / " + st.total, "EXERCISES COMPLETE"], [st.points.toLocaleString("en-GB"), "POINTS EARNED"],
+    const boxes = [["Grade " + (profile.grade || ""), "GRADE"], [lessonsDone(p).done + " / " + lessonsDone(p).total, "LESSONS COMPLETE"], [st.solved + " / " + st.total, "EXERCISES SOLVED"], [st.points.toLocaleString("en-GB"), "POINTS EARNED"],
       [new Date(at).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }), "DATE COMPLETED"]];
     let bx = L, by = cy + 8;
     boxes.forEach(([v, k]) => { font("700", 3); const kw = x.measureText(k).width + k.length * .25; font("700", 5.3); const bw2 = Math.max(36, x.measureText(v).width + 8, kw + 8);
@@ -136,11 +144,11 @@
     const old = document.getElementById("certRow"); if (old) old.remove();
     const exp = document.getElementById("exportBtn"); let box = document.getElementById("certBtns");
     if (!box && exp){ box = document.createElement("span"); box.id = "certBtns"; box.style.cssText = "display:inline-flex;flex-wrap:wrap;gap:8px"; (exp.nextElementSibling && exp.nextElementSibling.tagName === "SPAN" ? exp.nextElementSibling : exp).insertAdjacentElement("afterend", box); }
-    const upto = Math.max(0, chain.indexOf(profile.path)), levels = chain.slice(0, upto + 1), done = chain.filter(p => levelDone(p));
+    const upto = Math.max(0, chain.indexOf(profile.path)), levels = chain.slice(0, upto + 1), done = chain.filter(p => certDone(p));
     if (box){
-      box.innerHTML = levels.map(p => { const nm = PATHS[p].name.replace(/\s*\(.*\)\s*$/, ""), ok = levelDone(p), st = levelStats(p);
+      box.innerHTML = levels.map(p => { const nm = PATHS[p].name.replace(/\s*\(.*\)\s*$/, ""), ok = certDone(p), ld = lessonsDone(p);
         return ok ? '<button class="btn" data-cert="' + p + '" style="background:#1E8A55;border-color:#1E8A55;color:#fff" title="Download your ' + nm + ' certificate (PDF)">\ud83c\udfc5 ' + nm + ' certificate</button>'
-          : '<button class="btn" disabled style="background:#E3E7EE;border-color:#E3E7EE;color:#5B6782;cursor:not-allowed;opacity:1" title="Finish every exercise in ' + nm + ' to unlock your certificate (' + st.solved + ' of ' + st.total + ' done)">\ud83d\udd12 ' + nm + ' certificate (' + st.solved + '/' + st.total + ')</button>'; }).join("");
+          : '<button class="btn" disabled style="background:#E3E7EE;border-color:#E3E7EE;color:#5B6782;cursor:not-allowed;opacity:1" title="Finish every lesson in ' + nm + ' to unlock your certificate (' + ld.done + ' of ' + ld.total + ' lessons done)">\ud83d\udd12 ' + nm + ' certificate (' + ld.done + '/' + ld.total + ' lessons)</button>'; }).join("");
       box.querySelectorAll("[data-cert]").forEach(b => b.onclick = () => download(b.dataset.cert));
     }
     done.forEach(doneAt);
