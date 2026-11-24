@@ -2682,6 +2682,33 @@ if (SDCG){
 $("loginName").value = load("pyl_lastName", "");
 if (!SDCG && !Object.keys(accounts()).length) document.querySelector('.tab[data-tab="up"]').click();
 show("signin");
+/* ---------- refreshing the page: stay signed in if they were active in the last 5 minutes ----------
+   The signed-in student and the time of their last activity are kept in this browser tab only (sessionStorage),
+   so closing the tab, or pressing Sign out, still signs them out. */
+(function(){
+  const KEY = "pyl_resume", WINDOW = 5 * 60000; let lastAct = Date.now();
+  ["pointerdown", "keydown", "input", "scroll", "touchstart"].forEach(t => window.addEventListener(t, () => { lastAct = Date.now(); }, { passive:true, capture:true }));
+  const keep = () => { try { if (profile && profile.name) sessionStorage.setItem(KEY, JSON.stringify({ name: profile.name, at: lastAct, path: profile.path }));
+    else sessionStorage.removeItem(KEY); } catch(e){} };
+  window.addEventListener("pagehide", keep); window.addEventListener("beforeunload", keep);
+  let R = null; try { R = JSON.parse(sessionStorage.getItem(KEY) || "null"); sessionStorage.removeItem(KEY); } catch(e){}
+  if (!R || !R.name || Date.now() - (+R.at || 0) > WINDOW || profile) return;
+  const acc = accounts()[slug(R.name)]; if (!acc) return;
+  promotePy(acc);
+  if (SDCG){   // the course check runs in the background, exactly as at sign-in
+    const pathWas = acc.path + "|" + acc.grade;
+    SDC.confirm(sdcAcct(acc), false).then(ck => {
+      if (!ck) return;
+      if (!ck.ok){ if (profile === acc) signOutCS(false); SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return; }
+      if (ck.assign){ applyAssign(acc, ck.assign); if (profile === acc && acc.path + "|" + acc.grade !== pathWas && !cur.lesson) openMap(); }
+    }).catch(() => {});
+  }
+  profile = acc; store("pyl_lastName", acc.name); lastAct = Date.now();
+  try { linkFromCS(acc); } catch(e){}
+  openMap();
+  if (acc.last && acc.last.path === acc.path && acc.last.lesson) openLesson(acc.last.lesson, acc.last.step);
+  if (acc.dk && PPSync.enabled()) setTimeout(() => { try { syncNow(); } catch(e){} }, 1500);   // catch up with work saved on other computers
+})();
 /* read-only window for the live class leaderboard (leaderboard.js) */
 window.PPLive = { profile: () => profile, ready: () => !!(profile && prog), solved: () => (prog ? solvedCount() : 0), confetti, say, sfx };
 })();
