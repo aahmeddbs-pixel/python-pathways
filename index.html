@@ -7,9 +7,9 @@
 <meta name="referrer" content="no-referrer">
 <meta name="color-scheme" content="light only">
 <script>try{if(window.top!==window.self){window.top.location=window.self.location}}catch(e){document.documentElement.style.display="none"}</script>
-<script src="pp-sync.js?v=20261123fast"></script>
+<script src="pp-sync.js?v=20261125live"></script>
 <script src="work-docx.js?v=20261118blue"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261123eye"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261125help"></script>
 <script>window.SDC && SDC.require(["cs"]);</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -1478,15 +1478,46 @@ async function restoreFromCloud(name, pin){
   const acc = {name: niceName(String(got.bundle.acct.name).slice(0, 60)), dk, syncSig: "", savedAt: got.savedAt};
   acc.pin = pinHash(acc.name, pin); acc.wrapFor = acc.pin; applyBundle(acc, got.bundle, true); saveAccount(acc); return acc;
 }
+/* 25 Nov 2026: work from another computer that arrives after the student is already in.
+   Sign-in only waits 1.5 s, so the merged copy used to land in storage while the page kept showing (and then saved
+   over it) the old copy from this computer. Now the work on screen is merged with it, and the page shows it. */
+function catchUp(acc){
+  if (!acc || profile !== acc || !prog) return false;
+  const stored = load(progKey(), null); if (!stored || !stored.lessons) return false;
+  const before = JSON.stringify(prog), merged = mergeProg(prog, stored); if (JSON.stringify(merged) === before) return false;
+  prog = merged; saveProg(); acc.syncSig = "";
+  if (!cur.lesson){ try { openMap(); } catch(e){} }   // in a lesson: the merged work is kept and shows on the map and the next lesson opened (the open lesson is never restarted)
+  try { toastPy("Your latest work from your other computer has been loaded."); } catch(e){}
+  return true;
+}
+function toastPy(t){ const d = document.createElement("div"); d.textContent = t; d.setAttribute("role", "status");
+  d.style.cssText = "position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2147483500;background:#1E8A55;color:#fff;padding:10px 16px;border-radius:12px;font:700 14px/1.4 Arial,Helvetica,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center";
+  document.body.appendChild(d); setTimeout(() => d.remove(), 5000); }
+/* live: while the page is open, check every 10 s whether another computer saved newer work, and bring it in */
+let liveBusyPy = false;
+setInterval(async () => {
+  const P = profile; if (!P || !P.dk || !PPSync.enabled() || !PPSync.head || document.hidden || liveBusyPy || syncBusy || PPSync.queued()) return;
+  liveBusyPy = true;
+  try { const v = await PPSync.head(P.dk); if (!v || v <= (P.savedAt || 0) || profile !== P) return;
+    const got = await PPSync.pull(P.dk); if (!got || profile !== P || !(got.savedAt > (P.savedAt || 0))) return;
+    try { saveCode(); } catch(e){} saveProg();   // what is typed here is kept: merging keeps the fuller copy of every lesson
+    applyBundle(P, got.bundle, false); P.savedAt = got.savedAt; saveAccount(P);
+    if (catchUp(P)) setTimeout(() => { if (profile === P) syncNow(true); }, 1500);   // send the merged copy so both computers agree
+  } catch(e){} finally { liveBusyPy = false; }
+}, 10000);
 async function ensureSync(acc, pin){
   if (!PPSync.enabled() || !/^\d{4}$/.test(pin)) return;
   try {
     if (!acc.dk){ const dk = await PPSync.findKey(slug(acc.name), pin); acc.dk = dk || PPSync.newKey(); acc.wrapFor = ""; }
+    // 25 Nov 2026: the other computer's work is fetched first (sending the key again is slow and can wait)
+    const pulling = PPSync.pull(acc.dk);   // another computer may have newer progress: merge it in, never overwrite
     // syncV 4: send the online key again once to the new sync sheet (the old one stopped taking rows on 16 Nov 2026, so PINs set after that never arrived)
-    if (acc.wrapFor !== acc.pin || acc.syncV !== 4){ await PPSync.publishWrap(slug(acc.name), pin, acc.dk); acc.wrapFor = acc.pin; acc.syncV = 4; }
-    const got = await PPSync.pull(acc.dk);   // another computer may have newer progress: merge it in, never overwrite
+    const wrapping = (acc.wrapFor !== acc.pin || acc.syncV !== 4) ? PPSync.publishWrap(slug(acc.name), pin, acc.dk).then(() => { acc.wrapFor = acc.pin; acc.syncV = 4; saveAccount(acc); }) : null;
+    const got = await pulling;
     if (got){ applyBundle(acc, got.bundle, got.savedAt > (acc.savedAt || 0) && !!acc.savedAt); acc.savedAt = Math.max(acc.savedAt || 0, got.savedAt); }
     acc.syncSig = ""; saveAccount(acc);
+    catchUp(acc);   // the student may already be on the map or in a lesson: bring the merged work onto the screen
+    if (wrapping) await wrapping;
     setTimeout(() => { if (profile && profile.dk === acc.dk) syncNow(true); }, 2500);
   } catch(e){ console.warn("sync", e); }
 }

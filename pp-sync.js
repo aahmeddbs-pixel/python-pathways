@@ -195,6 +195,14 @@ async function pull(dk){
   for (const v of list){ try { const o = JSON.parse(await open(dk, v.text)); if (o && (o.bundle || o.data)) return { savedAt: o.savedAt, bundle: o.bundle || null, data: o.data || null }; } catch(e){} }
   return null;
 }
+/* 25 Nov 2026: the version of the newest saved copy, read from the new sheet only (one small, quick read), so an open
+   page can tell within seconds that another computer has saved newer work */
+async function head(dk){
+  const c = cfg(); if (!c) return 0; const did = await dataId(dk), L = (await column(c)).locs;
+  const got = await Promise.all(L.map(l => gvizRaw(c, `select ${l.col} where ${l.col} starts with '${PFX}|D|${did}|' order by ${l.time} desc limit 1`, l.sheet).then(r => r, () => null)));
+  let best = 0; got.forEach(r => (((r && r.table && r.table.rows) || [])).forEach(row => { const v = +String(((row.c || [])[0] || {}).v || "").split("|")[3] || 0; if (v > best) best = v; }));
+  return best;
+}
 /* admin recovery: new password for a student, works on every device, work kept */
 async function adminReset(email, newPw, adminPw){
   const w = (CFG.adminKeys || {}).wrap; if (!w) throw new Error("No recovery keys in this build.");
@@ -291,7 +299,7 @@ async function boardRead(prefix){
   Object.keys(all).forEach(k => { out[k.slice(2)] = all[k][0].text; });
   return out;
 }
-return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, readSecrets, sealForStaff, openForStaff, boardPost, boardRead, queued: () => getQ().length };
+return { enabled, findKey, newKey, publishWrap, emailTaken, push, pull, head, flush, adminReset, resetWithKey, recoveryKey, test, escrowSecret, readSecrets, sealForStaff, openForStaff, boardPost, boardRead, queued: () => getQ().length };
 }
 window.PPSync = ppMake({ pfx:"PPS2", e:"pp-e|", d:"pp-d|", v:"pp-v2|", q:"pyl_syncq" });
 /* the same locked sync for the Design course's accounts (school email + password) */
