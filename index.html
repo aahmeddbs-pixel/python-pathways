@@ -1287,6 +1287,7 @@ $("loginBtn").onclick = async () => {
     sync.then(() => { promotePy(acc); }).catch(() => {});
   }
   promotePy(acc);   // the online copy may be from last school year
+  if (csGradeBlocked(acc)) return;
   if (SDCG){   // the course check runs in the background: the student goes straight in, and is only stopped if it fails
     const pathWas = acc.path + "|" + acc.grade;
     SDC.confirm(sdcAcct(acc), false).then(ck => {
@@ -1354,6 +1355,7 @@ async function autoLinkIn(){
   }
   if (!acc) return false;
   promotePy(acc);
+  if (csGradeBlocked(acc)) return true;
   let ck = {ok:true}; try { ck = await SDC.confirm(sdcAcct(acc), false); } catch(e){}
   if (!ck.ok){ SDC.signedOutNotice(ck.msg, ck.verify ? "warn" : "bad"); SDC.leave("blocked"); return true; }
   if (ck.assign) applyAssign(acc, ck.assign);
@@ -2655,6 +2657,14 @@ function sdcTask(title, kind){ if (SDCG && profile) SDC.task(sdcAcct(profile), t
    Last year's level stays as history: they can look at it, but it is no longer their classwork. */
 const schoolYear = t => (window.SDC && SDC.ay) ? SDC.ay(t) : (d => d.getMonth() >= 8 ? d.getFullYear() : d.getFullYear() - 1)(new Date(t == null ? Date.now() : t));
 const PATH_UP = {beginner:"intermediate", intermediate:"advanced", advanced:"advanced", dp_beginner:"dp_intermediate", dp_intermediate:"dp_advanced", dp_advanced:"dp_advanced"};
+/* Computer Science is only for its own grades (6–8, 11–12): a Grade 9 or 10 account is stopped straight away */
+function csGradeBlocked(acc){
+  if (!acc || isTesterAcc(acc) || !window.SDC || !SDC.gradeOK || SDC.gradeOK("cs", acc.grade)) return false;
+  try { SDC.log("wronggrade", sdcAcct(acc), { grade: acc.grade }); } catch(e){}
+  try { if (profile === acc) signOutCS(false); } catch(e){}
+  SDC.signedOutNotice("<b>Computer Science</b> is not part of Grade " + String(acc.grade).replace(/[^0-9A-Za-z]/g, "") + ". You can only see your own grade's courses. If this is wrong, ask your teacher.", "bad");
+  SDC.leave("blocked"); return true;
+}
 function promotePy(acc){
   if (!acc || isTesterAcc(acc)) return false;
   const now = schoolYear();
@@ -2726,6 +2736,7 @@ show("signin");
   if (!R || !R.name || Date.now() - (+R.at || 0) > WINDOW || profile) return;
   const acc = accounts()[slug(R.name)]; if (!acc) return;
   promotePy(acc);
+  if (csGradeBlocked(acc)) return;
   if (SDCG){   // the course check runs in the background, exactly as at sign-in
     const pathWas = acc.path + "|" + acc.grade;
     SDC.confirm(sdcAcct(acc), false).then(ck => {
