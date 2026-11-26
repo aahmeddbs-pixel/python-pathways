@@ -1449,8 +1449,15 @@ async function syncNow(force){
 }
 /* Save every 10 seconds, on its own clock (the lesson countdown never triggers a save): on this computer, then online
    if anything really changed (timers alone don't count). */
+/* 26 Nov 2026: work "sent" after "SDC Sync 2" filled up (24 Nov 11:54 Dubai) never arrived: send one full copy again to Sync 3 */
+const SYNC2_FULL = Date.parse("2026-11-24T07:54:00Z");
+function resendSync3(){
+  const P = profile; if (!P || !P.dk || syncBusy || (P.savedAt || 0) <= SYNC2_FULL) return false;
+  const k = "pp_sync3_" + slug(P.name); try { if (localStorage.getItem(k)) return false; localStorage.setItem(k, "1"); } catch(e){ return false; }
+  syncNow(true); return true;
+}
 setInterval(() => {
-  if (profile && prog){ try { saveCode(); } catch(e){} saveProg(); if (!syncBusy) syncNow(); }
+  if (profile && prog){ try { saveCode(); } catch(e){} saveProg(); if (!syncBusy && !resendSync3()) syncNow(); }
   else if (PPSync.queued()) PPSync.flush();
 }, 10000);
 /* "Saving… / ✓ Saved" in the top bar */
