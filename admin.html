@@ -202,7 +202,7 @@ td .em{color:var(--muted);font-size:.82rem}
 
 <script src="answers.enc.js"></script>
 <script src="pp-sync.js?v=20261126auto"></script>
-<script src="/sisd-design-and-computing/sdc.js?v=20261126auto"></script>
+<script src="/sisd-design-and-computing/sdc.js?v=20261128sec"></script>
 <script src="voice-recorder.js?v=20261109f"></script>
 <script src="answers-view.js?v=20261102d"></script>
 <script>
@@ -307,10 +307,30 @@ async function showGate(){
   } catch(e){}
 }
 function openApp(){ $("gate").classList.add("hidden"); $("app").classList.remove("hidden"); $("lockBtn").classList.remove("hidden"); paintSheet(); restoreCache(); liveLoad(); }
+let admWaitingCS = false;
 $("gateBtn").onclick = async () => {
+  if (admWaitingCS){ admWaitingCS = false; return; }   // "Cancel" while waiting for the approval email
   const pw = $("pw1").value; if (!pw) return;
   const wait = lockLeft(); if (wait > 0){ $("gateErr").textContent = waitMsg(wait); return; }
   $("gateBtn").disabled = true; $("gateErr").textContent = "Checking… (a few seconds)";
+  /* 28 Nov 2026: when super admin email approval is on, the password alone opens nothing */
+  const as = window.SDC && SDC.adminStatus ? await SDC.adminStatus() : null;
+  if (as && as.on){
+    const label = $("gateBtn").textContent; admWaitingCS = true; $("gateBtn").disabled = false; $("gateBtn").textContent = "Cancel"; $("pw1").value = "";
+    let pl = null, why = "";
+    try { pl = await SDC.adminUnlock(pw, html => { $("gateErr").innerHTML = html; }, () => !admWaitingCS); } catch(e){ why = e.message; }
+    admWaitingCS = false; $("gateBtn").textContent = label;
+    if (pl && pl.ak){
+      try { const raw = b64u8(pl.ak); await unlockWith(raw); try { sessionStorage.setItem("pyl_admin_key", u8b64(raw)); } catch(e){}
+        __fails = 0; clearFails(); $("gateErr").textContent = ""; openApp(); RESET_KEY = pl.enc || null;
+        crypto.subtle.importKey("jwk", pl.sig, { name:"ECDSA", namedCurve:"P-256" }, false, ["sign"]).then(k => { SIGKEY = k; if ($("tbl")) render(); }).catch(() => { SIGKEY = null; });
+        return; } catch(e){ why = "keys"; }
+    }
+    if (why === "password"){ __fails++; noteFail(); const d = __deviceStudent(); securityAlert("Wrong admin password", "Wrong admin password entered after approval" + (d.name ? " on a computer used by " + d.name + "." : "."), d); }
+    $("gateErr").textContent = ({ password:"Approved, but that password is not right.", denied:"The sign-in was denied in the approval email.", expired:"No approval in 10 minutes. Try again.", busy:"Too many sign-in attempts this hour. Try again later.",
+      stopped:"Cancelled.", keys:"The keys couldn't be opened. Try again.", reach:"The approval service couldn't be reached. Check the internet connection and try again." })[why] || "Couldn't sign in. Try again.";
+    return;
+  }
   try {
     const raw = await keyFromPassword(pw);
     await unlockWith(raw);
@@ -740,7 +760,7 @@ function changeCourseDialog(st){
       q("#ccGo").disabled = true; m("Checking the password… (a few seconds)", true);
       try { SIGKEY = await unlockSig(pw); } catch(e){ SIGKEY = null; }
       q("#ccGo").disabled = false;
-      if (!SIGKEY) return m("That password is not right.", false);
+      if (!SIGKEY) return m("That password is not right. If email approval is on, lock this page and sign in again (with approval) to change courses.", false);
     }
     if (!window.SDC) return m("The platform couldn't be reached. Check the internet connection.", false);
     const c = q("#ccC").value, g = q("#ccG").value, l = c === "cs" ? q("#ccL").value : "", t = q("#ccT").value;
